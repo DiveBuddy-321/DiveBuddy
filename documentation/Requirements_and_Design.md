@@ -47,17 +47,17 @@ Users can view all of the events they have joined/created, as well as their stat
 
 
 ### **3.4. Use Case Description**
-- Use cases for feature 1: Authentication
+**Use cases for feature 1: Authentication**
 1. **Sign Up**: The user uses Google Authentication to create an account 
 2. **Sign In**: The user uses Google Authentication to sign into their account. 
 3. **Sign Out**: The user signs out of their account.
 4. **Delete Account**: The user deletes their account (also signing them out). The user should no longer be able to sign in with their old credentials after this action is done.
 
-- Use cases for feature 2: Profile Management
+**Use cases for feature 2: Profile Management**
 1. **Set-Up Profile**: The user sets their account information on account creation to reflect their age, location, certification level, experience level, and preferred diving conditions. Setting these preferences will allow for optimal buddy matching.
 2. **Update Profile**: The user can update their profile to reflect any changes to it that have occurred since they have set up their account initially. 
 
-- Use cases for feature 3: Event Management
+**Use cases for feature 3: Event Management**
 1. **Create Event**: A user can create an event on the app with information about the event, including name, date/time, location (with map API), user capacity, gear/certification requirements. This user becomes the event organizer.
 2. **Update Event**: The event organizer can update information for an event they have made. Updates will notify users who have joined the event.
 3. **Delete Event**: The event creator can delete an event they have made. This will notify users who have joined the event, and remove them from the event.
@@ -67,7 +67,7 @@ Users can view all of the events they have joined/created, as well as their stat
 7. **Receive Event Updates**: After a user has joined an event, they will receive notifications if the event creator makes any updates to the event, or deletes the event.
 8. **Chat with event organizers/attendees**: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
 
-- Use cases for feature 4: Buddy Matching 
+**Use cases for feature 4: Buddy Matching**
 1. **Match with Other User**: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests. 
 
 - Use cases for feature 5: Chat
@@ -265,8 +265,14 @@ Users can view all of the events they have joined/created, as well as their stat
 
 1. **Real-time Experience SLOs (Matching and Chat)**
     - **Description**: Buddy suggestions return in ≤ 1.0 s p95 when there are 10,000 users in the database.
-    - **Justification**: This is to maintain a positive user experience. The app’s value lies in its ability for live coordination with other users, so a slow matching process will contribute to a poor user experience. 1s is the upper bound users still perceive as “instant” ; p95 means 95% of users will be able to achieve these response times. We believe that when the app is fully released, we will see an active userbase of around 10000 members, so we will use this metric to simulate a release environment. (https://www.nngroup.com/articles/powers-of-10-time-scales-in-ux/?utm_source=chatgpt.com)
-2. ...
+    - **Justification**: This is to maintain a positive user experience. The app’s value lies in its ability for live coordination with other users, so a slow matching process will contribute to a poor user experience. 1s is the upper bound users still perceive as “instant” ; p95 means 95% of users will be able to achieve these response times. We believe that when the app is fully released, we will see an active userbase of around 10000 members, so we will use this metric to simulate a release environment. (https://www.nngroup.com/articles/powers-of-10-time-scales-in-ux)
+2. **Reliability & Error-Budget Policy**
+    - **Description**: Core APIs (authentication, event registration, chat) must maintain 99.9% monthly availability, with explicit error budgets. Event registration and chat recovery time (RTO) ≤ 15 minutes, with data loss tolerance (RPO) ≤ 1 minute.
+
+    - **Justification**: Diving event coordination depends on fairness and safety—missed registrations or dropped chats directly break trust and can impact real-world activities. An error-budgeted SLO gives a measurable way to hold reliability to a high bar without blocking feature velocity.
+
+    - **Why these numbers**: SRE guidance recommends explicit SLOs + error budgets to manage reliability; 99.9% (three-nines) is a common consumer baseline, and Google’s SRE materials show how error budgets/alerting anchor ops decisions. The downtime math and burn-rate framing follow SRE best practices.(https://sre.google/sre-book/service-level-objectives)
+
 
 ---
 
