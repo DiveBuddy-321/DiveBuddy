@@ -70,7 +70,7 @@ Users can view all of the events they have joined/created, as well as their stat
 **Use cases for feature 4: Buddy Matching**
 1. **Match with Other User**: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests. 
 
-- Use cases for feature 5: Chat
+**Use cases for feature 5: Chat**
 1. **Chat with Matched User/ Event Attendee**: After matching as buddy with another user, the users can open a chat room to  start chatting with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event. 
 2. **Block**: When a user blocks another user, they can no longer message or receive messages from the user
 
