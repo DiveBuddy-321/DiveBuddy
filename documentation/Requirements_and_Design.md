@@ -266,15 +266,14 @@ Users can view all of the events they have joined/created, as well as their stat
 
 ### **3.7. Non-Functional Requirements**
 
-1. **Real-time Experience SLOs (Matching and Chat)**
+1. **Real-time User Experience SLOs (Matching and Chat)**
     - **Description**: Buddy algorithm suggestions return in ≤1.0s p95 when there are 10,000 users in the database.
-    - **Justification**: This is to maintain a positive user experience. The app’s value lies in its ability for live coordination with other users, so a slow matching process will contribute to a poor user experience. 1s is the upper bound users still perceive as "instant" ; p95 means 95% of users will be able to achieve these response times. We believe that when the app is fully released, we will see an active userbase of around 10000 members, so we will use this metric to simulate a release environment. (<https://www.nngroup.com/articles/powers-of-10-time-scales-in-ux>)
-2. **Reliability & Error-Budget Policy**
-    - **Description**: Core APIs (authentication, event registration, chat) must maintain 99.9% monthly availability, with explicit error budgets. Event registration and chat recovery time (RTO) ≤ 15 minutes, with data loss tolerance (RPO) ≤ 1 minute.
-
-    - **Justification**: Diving event coordination depends on fairness and safety—missed registrations or dropped chats directly break trust and can impact real-world activities. An error-budgeted SLO gives a measurable way to hold reliability to a high bar without blocking feature velocity.
-
-    - **Why these numbers**: SRE guidance recommends explicit SLOs + error budgets to manage reliability; 99.9% (three-nines) is a common consumer baseline, and Google’s SRE materials show how error budgets/alerting anchor ops decisions. The downtime math and burn-rate framing follow SRE best practices.(<https://sre.google/sre-book/service-level-objectives>)
+    - **Justification**: This is to maintain a positive user experience. The app’s value lies in its ability for live coordination with other users, so a slow matching process will contribute to a poor user experience.
+    - **Why these numbers**: 1s is the upper bound users still perceive as visual "instant" and p95 means 95% of users will be able to achieve these response times. We believe that when the app is fully released, we will see an active userbase of around 10000 members, so we will use this metric to simulate a release environment. (<https://www.nngroup.com/articles/powers-of-10-time-scales-in-ux>)
+2. **Server Availability**
+    - **Description**: Our API backend that provides our core services (authentication, event registration, chat) will aim to maintain 99.5% availability.
+    - **Justification**: This is important that our app is able to maintain a high level of availablity to service our users because it is important for ensuring trust in our system's overall reliability. It also is crucial for maintaining fairness for diving event registrations and dropped chat messages can directly impact real-world activities.
+    - **Why these numbers**: A whitepaper made by Amazon Web Services reports that having 99.5% availability is a common industry goal and is reasonable for most companies to achieve (<https://docs.aws.amazon.com/whitepapers/latest/availability-and-beyond-improving-resilience/measuring-availability.html>).
 
 ---
 
