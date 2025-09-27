@@ -74,8 +74,8 @@ Users can view all of the events they have joined/created, as well as their stat
 
 #### Use cases for feature 5: Chat
 
-1. **Chat with Matched User/ Event Attendee**: After matching as buddy with another user, the users can open a chat room to  start chatting with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event.
-2. **Block**: When a user blocks another user, they can no longer message or receive messages from the user
+1. **Chat**: After matching as buddy with another user, the users can open a chat room to  start chatting with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event.
+2. **Block User**: When a user blocks another user, they can no longer message or receive messages from the user
 
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
 
@@ -83,7 +83,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 **Description**: A user creates a new event with details including name, date/time, location, capacity, and recommended skill level. The user can add an image for the event as well. The app uses the Google Maps API to select and display the location.
 
-**Primary actor(s)**: User, Event Organize
+**Primary actor(s)**: User, Event Organizer
 
 **Main success scenario**:
 
@@ -225,7 +225,7 @@ Users can view all of the events they have joined/created, as well as their stat
   - 8a1. System shows “Chat unavailable, please retry.”
   - 8a2. User retries → resume at step 8.
 
-#### Use Case 5: Chat with Matched User/ Event Attendee
+#### Use Case 5: Chat
 
 **Description**: Two matched users, or users attending the same event, use the in-app chat to coordinate diving plans or events.
 
