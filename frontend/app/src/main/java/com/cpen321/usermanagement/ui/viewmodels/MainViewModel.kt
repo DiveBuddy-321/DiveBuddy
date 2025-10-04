@@ -8,7 +8,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 data class MainUiState(
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val currentScreen: String = "events"
 )
 
 @HiltViewModel
@@ -23,5 +24,9 @@ class MainViewModel @Inject constructor() : ViewModel() {
 
     fun clearSuccessMessage() {
         _uiState.value = _uiState.value.copy(successMessage = null)
+    }
+
+    fun setCurrentScreen(screen: String) {
+        _uiState.value = _uiState.value.copy(currentScreen = screen)
     }
 }

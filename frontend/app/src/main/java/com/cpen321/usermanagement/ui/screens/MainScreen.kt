@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.components.BottomNavigationBar
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 import com.cpen321.usermanagement.ui.viewmodels.MainUiState
@@ -42,7 +43,8 @@ fun MainScreen(
         uiState = uiState,
         snackBarHostState = snackBarHostState,
         onProfileClick = onProfileClick,
-        onSuccessMessageShown = mainViewModel::clearSuccessMessage
+        onSuccessMessageShown = mainViewModel::clearSuccessMessage,
+        onBottomNavItemClick = mainViewModel::setCurrentScreen
     )
 }
 
@@ -52,12 +54,19 @@ private fun MainContent(
     snackBarHostState: SnackbarHostState,
     onProfileClick: () -> Unit,
     onSuccessMessageShown: () -> Unit,
+    onBottomNavItemClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
             MainTopBar(onProfileClick = onProfileClick)
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                currentRoute = uiState.currentScreen,
+                onItemClick = onBottomNavItemClick
+            )
         },
         snackbarHost = {
             MainSnackbarHost(
@@ -67,7 +76,10 @@ private fun MainContent(
             )
         }
     ) { paddingValues ->
-        MainBody(paddingValues = paddingValues)
+        MainBody(
+            paddingValues = paddingValues,
+            currentScreen = uiState.currentScreen
+        )
     }
 }
 
@@ -148,15 +160,20 @@ private fun MainSnackbarHost(
 @Composable
 private fun MainBody(
     paddingValues: PaddingValues,
+    currentScreen: String,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(paddingValues),
-        contentAlignment = Alignment.Center
+            .padding(paddingValues)
     ) {
-        WelcomeMessage()
+        when (currentScreen) {
+            "events" -> EventsScreen()
+            "buddies" -> BuddiesScreen()
+            "chat" -> ChatScreen()
+            else -> EventsScreen()
+        }
     }
 }
 
