@@ -30,6 +30,22 @@ const userSchema = new Schema<IUser>(
       required: true,
       trim: true,
     },
+    age: {
+      type: Number,
+      required: false,
+    },
+    level: {
+      type: Number,
+      required: false,
+    },
+    long: {
+      type: Number,
+      required: false,
+    },
+    lat: {
+      type: Number,
+      required: false,
+    },
     profilePicture: {
       type: String,
       required: false,
@@ -140,6 +156,16 @@ export class UserModel {
     } catch (error) {
       console.error('Error finding user by Google ID:', error);
       throw new Error('Failed to find user');
+    }
+  }
+
+  async findAll(): Promise<IUser[]> {
+    try {
+      const users = await this.user.find({});
+      return users;
+    } catch (error) {
+      logger.error('Error finding all users:', error);
+      throw new Error('Failed to find users');
     }
   }
 }

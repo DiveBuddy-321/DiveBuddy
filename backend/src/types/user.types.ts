@@ -9,6 +9,10 @@ export interface IUser extends Document {
   googleId: string;
   email: string;
   name: string;
+  age?: number;
+  level?: number;
+  long?: number;
+  lat?: number;
   profilePicture?: string;
   bio?: string;
   hobbies: string[];
@@ -22,6 +26,10 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   googleId: z.string().min(1),
+  age: z.number().int().positive().optional(),
+  level: z.number().int().positive().optional(),
+  long: z.number().min(-180).max(180).optional(),
+  lat: z.number().min(-90).max(90).optional(),
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
   hobbies: z.array(z.string()).default([]),
@@ -29,6 +37,10 @@ export const createUserSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
+  age: z.number().int().positive().optional(),
+  level: z.number().int().positive().optional(),
+  long: z.number().min(-180).max(180).optional(),
+  lat: z.number().min(-90).max(90).optional(),
   bio: z.string().max(500).optional(),
   hobbies: z
     .array(z.string())
@@ -57,4 +69,15 @@ export type GoogleUserInfo = {
   email: string;
   name: string;
   profilePicture?: string;
+};
+
+// Helper functions
+// ------------------------------------------------------------
+export const isUserReadyForBuddyMatching = (user: IUser): boolean => {
+  return (
+    user.age !== undefined &&
+    user.level !== undefined &&
+    user.long !== undefined &&
+    user.lat !== undefined
+  );
 };
