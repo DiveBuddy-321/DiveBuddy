@@ -11,16 +11,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,8 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
+import java.time.LocalDate
+import java.time.LocalTime
+import java.util.Calendar
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,14 +57,25 @@ fun CreateEventScreen(
     var eventTitle by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
-    var eventDate by remember { mutableStateOf("") }
-    var eventTime by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
+    var requiredLevel by remember { mutableStateOf("") }
     var maxParticipants by remember { mutableStateOf("") }
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var expandedLevelDropdown by remember { mutableStateOf(false) }
+    
+    val levelOptions = listOf(
+        stringResource(R.string.beginner),
+        stringResource(R.string.intermediate),
+        stringResource(R.string.advanced)
+    )
     
     val spacing = LocalSpacing.current
     
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         topBar = {
             CreateEventTopBar(onBackClick = onDismiss)
         }
@@ -58,7 +84,7 @@ fun CreateEventScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = spacing.large, vertical = spacing.small)
+                .padding(horizontal = spacing.large)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(spacing.medium)
         ) {
@@ -89,29 +115,66 @@ fun CreateEventScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            
-            // Date and Time Row
-            Row(
+
+            // Date Picker
+            OutlinedTextField(
+                value = selectedDate?.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")) ?: "",
+                onValueChange = { },
+                label = { Text(stringResource(R.string.date)) },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+                readOnly = true,
+                placeholder = { Text(stringResource(R.string.select_date)) },
+                trailingIcon = {
+                    TextButton(onClick = { showDatePicker = true }) {
+                        Text("Select")
+                    }
+                }
+            )
+
+            // Time Picker
+            OutlinedTextField(
+                value = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "",
+                onValueChange = { },
+                label = { Text(stringResource(R.string.time)) },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                placeholder = { Text(stringResource(R.string.select_time)) },
+                trailingIcon = {
+                    TextButton(onClick = { showTimePicker = true }) {
+                        Text("Select")
+                    }
+                }
+            )
+            
+            // Required Minimum Level Dropdown
+            ExposedDropdownMenuBox(
+                expanded = expandedLevelDropdown,
+                onExpandedChange = { expandedLevelDropdown = !expandedLevelDropdown }
             ) {
                 OutlinedTextField(
-                    value = eventDate,
-                    onValueChange = { eventDate = it },
-                    label = { Text(stringResource(R.string.date)) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    placeholder = { Text("MM/DD/YYYY") }
+                    value = requiredLevel,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.required_minimum_level)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLevelDropdown) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
                 )
-                
-                OutlinedTextField(
-                    value = eventTime,
-                    onValueChange = { eventTime = it },
-                    label = { Text(stringResource(R.string.time)) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    placeholder = { Text("HH:MM") }
-                )
+                ExposedDropdownMenu(
+                    expanded = expandedLevelDropdown,
+                    onDismissRequest = { expandedLevelDropdown = false }
+                ) {
+                    levelOptions.forEach { level ->
+                        DropdownMenuItem(
+                            text = { Text(level) },
+                            onClick = {
+                                requiredLevel = level
+                                expandedLevelDropdown = false
+                            }
+                        )
+                    }
+                }
             }
             
             // Max Participants
@@ -123,14 +186,12 @@ fun CreateEventScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-
-            Spacer(modifier = Modifier.weight(1f))
             
             // Action Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = spacing.medium),
+                    .padding(top = spacing.large, bottom = spacing.large),
                 horizontalArrangement = Arrangement.spacedBy(spacing.medium)
             ) {
                 TextButton(
@@ -146,10 +207,19 @@ fun CreateEventScreen(
                 Button(
                     onClick = {
                         // TODO: Handle event creation logic here
-                        print("Event Title: $eventTitle, Event Description: $eventDescription, Event Location: $eventLocation, Event Date: $eventDate, Event Time: $eventTime, Max Participants: $maxParticipants")
+                        println("Event Title: $eventTitle")
+                        println("Event Description: $eventDescription")
+                        println("Event Location: $eventLocation")
+                        println("Event Date: $selectedDate")
+                        println("Event Time: $selectedTime")
+                        println("Required Level: $requiredLevel")
+                        println("Max Participants: $maxParticipants")
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = eventTitle.isNotBlank() && eventDescription.isNotBlank()
+                    enabled = eventTitle.isNotBlank() && 
+                             eventDescription.isNotBlank() && 
+                             selectedDate != null && 
+                             selectedTime != null
                 ) {
                     Text(
                         text = "Create Event",
@@ -158,6 +228,36 @@ fun CreateEventScreen(
                 }
             }
         }
+    }
+    
+    // Date Picker Dialog
+    if (showDatePicker) {
+        DatePickerModal(
+            onDateSelected = { dateMillis ->
+                dateMillis?.let {
+                    val calendar = Calendar.getInstance()
+                    calendar.timeInMillis = it
+                    selectedDate = LocalDate.of(
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH) + 1,
+                        calendar.get(Calendar.DAY_OF_MONTH)
+                    )
+                }
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+
+    // Time Picker Dialog
+    if (showTimePicker) {
+        TimePickerModal(
+            onTimeSelected = { hour, minute ->
+                selectedTime = LocalTime.of(hour, minute)
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false }
+        )
     }
 }
 
@@ -183,6 +283,73 @@ private fun CreateEventTopBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerModal(
+    onTimeSelected: (Int, Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val currentTime = Calendar.getInstance()
+    val timePickerState = rememberTimePickerState(
+        initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
+        initialMinute = currentTime.get(Calendar.MINUTE),
+        is24Hour = true,
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(stringResource(R.string.select_time))
+        },
+        text = {
+            TimeInput(state = timePickerState)
+        },
+        confirmButton = {
+            Button(
+                onClick = {onTimeSelected(timePickerState.hour, timePickerState.minute)}
+            ) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerModal(
+    onDateSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(stringResource(R.string.select_date))
+        },
+        text = {
+            DatePicker(state = datePickerState)
+        },
+        confirmButton = {
+            Button(onClick = {
+                onDateSelected(datePickerState.selectedDateMillis)
+            }) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
     )
 }
 
