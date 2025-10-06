@@ -332,7 +332,7 @@ private fun ProfileForm(
 
 @Composable
 private fun ProfilePictureCard(
-    profilePicture: String,
+    profilePicture: String?,
     isLoadingPhoto: Boolean,
     onEditClick: () -> Unit,
     onLoadingChange: (Boolean) -> Unit,
@@ -364,7 +364,7 @@ private fun ProfilePictureCard(
 
 @Composable
 private fun ProfilePictureWithEdit(
-    profilePicture: String,
+    profilePicture: String?,
     isLoadingPhoto: Boolean,
     onEditClick: () -> Unit,
     onLoadingChange: (Boolean) -> Unit,
@@ -375,16 +375,32 @@ private fun ProfilePictureWithEdit(
     Box(
         modifier = modifier.size(spacing.extraLarge5)
     ) {
-        AsyncImage(
-            model = RetrofitClient.getPictureUri(profilePicture),
-            onLoading = { onLoadingChange(true) },
-            onSuccess = { onLoadingChange(false) },
-            onError = { onLoadingChange(false) },
-            contentDescription = stringResource(R.string.profile_picture),
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-        )
+        if (!profilePicture.isNullOrEmpty()) {
+            AsyncImage(
+                model = RetrofitClient.getPictureUri(profilePicture),
+                onLoading = { onLoadingChange(true) },
+                onSuccess = { onLoadingChange(false) },
+                onError = { onLoadingChange(false) },
+                contentDescription = stringResource(R.string.profile_picture),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+        } else {
+            // Show default icon when no profile picture is available
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    name = R.drawable.ic_account_circle,
+                    type = "regular"
+                )
+            }
+        }
 
         if (isLoadingPhoto) {
             Box(

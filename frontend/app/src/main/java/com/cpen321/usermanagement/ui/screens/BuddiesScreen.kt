@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,10 +30,10 @@ fun BuddiesScreen(
     BuddiesContent(
         modifier = modifier,
         isLoading = uiState.isLoading,
-        buddiesCount = uiState.buddies.size,
         errorMessage = uiState.errorMessage,
-        successMessage = uiState.successMessage,
-        onMatchClick = { viewModel.fetchBuddies() }
+        onMatchClick = { 
+            viewModel.fetchBuddies()
+        }
     )
 }
 
@@ -39,20 +41,19 @@ fun BuddiesScreen(
 private fun BuddiesContent(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    buddiesCount: Int = 0,
     errorMessage: String? = null,
-    successMessage: String? = null,
     onMatchClick: () -> Unit = {}
 ) {
     val spacing = LocalSpacing.current
 
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
+            modifier = Modifier.padding(top = spacing.large).fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(spacing.medium)
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = "Buddies",
@@ -64,34 +65,25 @@ private fun BuddiesContent(
             if (isLoading) {
                 CircularProgressIndicator()
             } else {
-                Button(
-                    onClick = onMatchClick
+                Column(
+                    modifier = Modifier.padding(bottom = spacing.large),
+                    verticalArrangement = Arrangement.spacedBy(spacing.small),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "Match with Buddies")
-                }
-                
-                errorMessage?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                
-                successMessage?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                if (buddiesCount > 0) {
-                    Text(
-                        text = "Showing $buddiesCount matches",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Button(
+                        onClick = onMatchClick,
+                        fullWidth = false
+                    ) {
+                        Text(text = "Match with Buddies")
+                    }
+                    
+                    errorMessage?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

@@ -16,8 +16,12 @@ data class User(
     val email: String,
     val name: String,
     val bio: String?,
-    val profilePicture: String,
+    val profilePicture: String?,
     val hobbies: List<String> = emptyList(),
+    val age: Int? = null,
+    val level: Int? = null,
+    val lat: Double? = null,
+    val long: Double? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null
 )

@@ -16,7 +16,8 @@ data class BuddyUiState(
     val isLoading: Boolean = false,
     val buddies: List<Buddy> = emptyList(),
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val showMatches: Boolean = false
 )
 
 @HiltViewModel
@@ -30,6 +31,8 @@ class BuddyViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(BuddyUiState())
     val uiState: StateFlow<BuddyUiState> = _uiState.asStateFlow()
+    
+    var onNavigateToMatch: (() -> Unit)? = null
 
     fun fetchBuddies() {
         viewModelScope.launch {
@@ -46,8 +49,14 @@ class BuddyViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     buddies = buddies,
-                    successMessage = "Found ${buddies.size} buddies!"
+                    successMessage = "Found ${buddies.size} buddies!",
+                    showMatches = buddies.isNotEmpty()
                 )
+                
+                // Immediately navigate to match screen if we have buddies
+                if (buddies.isNotEmpty()) {
+                    onNavigateToMatch?.invoke()
+                }
             } else {
                 val error = result.exceptionOrNull()
                 Log.e(TAG, "Failed to fetch buddies", error)
@@ -66,6 +75,10 @@ class BuddyViewModel @Inject constructor(
 
     fun clearSuccessMessage() {
         _uiState.value = _uiState.value.copy(successMessage = null)
+    }
+
+    fun clearState() {
+        _uiState.value = BuddyUiState()
     }
 }
 

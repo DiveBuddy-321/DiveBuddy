@@ -9,7 +9,8 @@ import javax.inject.Inject
 
 data class MainUiState(
     val successMessage: String? = null,
-    val currentScreen: String = "events"
+    val currentScreen: String = "events",
+    val showMatchScreen: Boolean = false
 )
 
 @HiltViewModel
@@ -27,6 +28,17 @@ class MainViewModel @Inject constructor() : ViewModel() {
     }
 
     fun setCurrentScreen(screen: String) {
-        _uiState.value = _uiState.value.copy(currentScreen = screen)
+        _uiState.value = _uiState.value.copy(
+            currentScreen = screen,
+            showMatchScreen = false
+        )
+    }
+
+    fun navigateToMatchScreen() {
+        _uiState.value = _uiState.value.copy(showMatchScreen = true)
+    }
+
+    fun navigateBackFromMatchScreen() {
+        _uiState.value = _uiState.value.copy(showMatchScreen = false)
     }
 }
