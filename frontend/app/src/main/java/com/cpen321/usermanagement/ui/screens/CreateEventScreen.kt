@@ -4,7 +4,6 @@ import Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,19 +13,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType.Companion.PrimaryEditable
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimeInput
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -40,8 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import java.time.LocalDate
 import java.time.LocalTime
@@ -64,7 +62,7 @@ fun CreateEventScreen(
     
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
-    var expandedLevelDropdown by remember { mutableStateOf(false) }
+    var expandedExpDropdown by remember { mutableStateOf(false) }
     
     val levelOptions = listOf(
         stringResource(R.string.beginner),
@@ -93,7 +91,7 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = eventTitle,
                 onValueChange = { eventTitle = it },
-                label = { Text(stringResource(R.string.event_title)) },
+                label = { RequiredTextLabel(label = stringResource(R.string.event_title)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -102,7 +100,7 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = eventDescription,
                 onValueChange = { eventDescription = it },
-                label = { Text(stringResource(R.string.description)) },
+                label = { RequiredTextLabel(label = stringResource(R.string.description)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5
@@ -112,7 +110,7 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = eventLocation,
                 onValueChange = { eventLocation = it },
-                label = { Text(stringResource(R.string.location)) },
+                label = { RequiredTextLabel(label = stringResource(R.string.location)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -123,7 +121,7 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = selectedDate?.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")) ?: "",
                 onValueChange = { },
-                label = { Text(stringResource(R.string.date)) },
+                label = { RequiredTextLabel(label = stringResource(R.string.date)) },
                 modifier = Modifier.fillMaxWidth(),
                 readOnly = true,
                 placeholder = { Text(stringResource(R.string.select_date)) },
@@ -138,7 +136,7 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "",
                 onValueChange = { },
-                label = { Text(stringResource(R.string.time)) },
+                label = { RequiredTextLabel(label = stringResource(R.string.time)) },
                 modifier = Modifier.fillMaxWidth(),
                 readOnly = true,
                 placeholder = { Text(stringResource(R.string.select_time)) },
@@ -149,29 +147,29 @@ fun CreateEventScreen(
                 }
             )
             
-            // Required Minimum Level Dropdown
+            // Minimum Experience Level Dropdown
             ExposedDropdownMenuBox(
-                expanded = expandedLevelDropdown,
-                onExpandedChange = { expandedLevelDropdown = !expandedLevelDropdown }
+                expanded = expandedExpDropdown,
+                onExpandedChange = { expandedExpDropdown = !expandedExpDropdown }
             ) {
                 OutlinedTextField(
                     value = requiredLevel,
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text(stringResource(R.string.required_minimum_level)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLevelDropdown) },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text(stringResource(R.string.min_exp_level)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedExpDropdown) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(type = PrimaryEditable, enabled = true)
                 )
                 ExposedDropdownMenu(
-                    expanded = expandedLevelDropdown,
-                    onDismissRequest = { expandedLevelDropdown = false }
+                    expanded = expandedExpDropdown,
+                    onDismissRequest = { expandedExpDropdown = false }
                 ) {
                     levelOptions.forEach { level ->
                         DropdownMenuItem(
                             text = { Text(level) },
                             onClick = {
                                 requiredLevel = level
-                                expandedLevelDropdown = false
+                                expandedExpDropdown = false
                             }
                         )
                     }
@@ -218,7 +216,8 @@ fun CreateEventScreen(
                     },
                     modifier = Modifier.weight(1f),
                     enabled = eventTitle.isNotBlank() && 
-                             eventDescription.isNotBlank() && 
+                             eventDescription.isNotBlank() &&
+                             eventLocation.isNotBlank() &&
                              selectedDate != null && 
                              selectedTime != null
                 ) {

@@ -39,7 +39,7 @@
     <string name="date">Date</string>
     <string name="time">Time</string>
     <string name="max_participants">Max Participants</string>
-    <string name="required_minimum_level">Required Minimum Level</string>
+    <string name="min_exp_level">Minimum Experience Level</string>
     <string name="beginner">Beginner</string>
     <string name="intermediate">Intermediate</string>
     <string name="advanced">Advanced</string>
