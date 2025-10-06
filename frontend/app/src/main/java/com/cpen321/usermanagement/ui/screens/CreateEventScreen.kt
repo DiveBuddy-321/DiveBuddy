@@ -107,6 +107,7 @@ fun CreateEventScreen(
             )
             
             // Event Location
+            // TODO: Implement Google Maps integration
             OutlinedTextField(
                 value = eventLocation,
                 onValueChange = { eventLocation = it },
@@ -185,6 +186,8 @@ fun CreateEventScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
+
+            // TODO: Add image upload field
             
             // Action Buttons
             Row(
