@@ -12,7 +12,7 @@ export const buddyAlgorithm = (long: number, lat: number, level: number, age: nu
     
     //sort results in order of closest to furthest distance
     const sortedDistanceUsers = Array.from(distanceUsers.entries()).sort((a, b) => a[1] - b[1]);
-    return sortedDistanceUsers;
+    return sortedDistanceUsers.slice(0,100);
 }
 
 function calculateDistance(long1: number | undefined, 
