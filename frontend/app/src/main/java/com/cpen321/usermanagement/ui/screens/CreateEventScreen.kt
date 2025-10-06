@@ -73,7 +73,8 @@ fun CreateEventScreen(
     )
     
     val spacing = LocalSpacing.current
-    
+
+    // FIXME: too much white space at the top of the screen
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -117,6 +118,8 @@ fun CreateEventScreen(
             )
 
             // Date Picker
+            // FIXME: date picker in modal is not styled correctly (too narrow)
+            // FIXME: date in text field does not match to date selected in modal (one day before)
             OutlinedTextField(
                 value = selectedDate?.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")) ?: "",
                 onValueChange = { },
@@ -157,9 +160,7 @@ fun CreateEventScreen(
                     readOnly = true,
                     label = { Text(stringResource(R.string.required_minimum_level)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLevelDropdown) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+                    modifier = Modifier.fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = expandedLevelDropdown,
