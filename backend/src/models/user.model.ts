@@ -7,6 +7,7 @@ import {
   IUser,
   updateProfileSchema,
   } from '../types/user.types';
+import { SKILL_LEVELS } from '../constants/statics';
 import logger from '../utils/logger.util';
 
 const userSchema = new Schema<IUser>(
@@ -40,6 +41,11 @@ const userSchema = new Schema<IUser>(
       trim: true,
       maxlength: 500,
     },
+    age: {
+      type: Number,
+      required: false,
+      min: 0,
+    },
     location: {
       type: String,
       required: false,
@@ -52,7 +58,13 @@ const userSchema = new Schema<IUser>(
     longitude: {
       type: Number,
       required: false,
-    }
+    },
+    skillLevel: {
+      type: String,
+      enum: SKILL_LEVELS,
+      required: false,
+      trim: true,
+    },
   },
   {
     timestamps: true,
