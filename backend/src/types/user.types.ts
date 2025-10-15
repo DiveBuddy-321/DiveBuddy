@@ -32,7 +32,7 @@ export const createUserSchema = z.object({
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  skillLevel: z.enum(SKILL_LEVELS as unknown as [string, ...string[]]).optional()
+  skillLevel: z.enum(SKILL_LEVELS).optional()
 });
 
 export const updateProfileSchema = z.object({
@@ -43,7 +43,7 @@ export const updateProfileSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   profilePicture: z.string().min(1).optional(),
-  skillLevel: z.enum(SKILL_LEVELS as unknown as [string, ...string[]]).optional()
+  skillLevel: z.enum(SKILL_LEVELS).optional()
 });
 
 // Request types
