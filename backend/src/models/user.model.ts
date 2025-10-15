@@ -152,6 +152,15 @@ export class UserModel {
       throw new Error('Failed to find user');
     }
   }
+
+  async findAll(): Promise<IUser[]> {
+    try {
+      return await this.user.find().sort({ createdAt: -1 }).exec();
+    } catch (error) {
+      logger.error('Error fetching all users:', error);
+      throw new Error('Failed to fetch users');
+    }
+  }
 }
 
 export const userModel = new UserModel();

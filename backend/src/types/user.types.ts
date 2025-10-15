@@ -42,7 +42,7 @@ export const updateProfileSchema = z.object({
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  profilePicture: z.string().min(1).optional(),
+  profilePicture: z.string().optional(),
   skillLevel: z.enum(SKILL_LEVELS).optional()
 });
 
