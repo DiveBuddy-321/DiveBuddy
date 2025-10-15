@@ -1,13 +1,13 @@
 import mongoose, { Schema } from 'mongoose';
 import { z } from 'zod';
 
-import { HOBBIES } from '../constants/hobbies';
 import {
   createUserSchema,
   GoogleUserInfo,
   IUser,
   updateProfileSchema,
   } from '../types/user.types';
+import { SKILL_LEVELS } from '../constants/statics';
 import logger from '../utils/logger.util';
 
 const userSchema = new Schema<IUser>(
@@ -41,19 +41,29 @@ const userSchema = new Schema<IUser>(
       trim: true,
       maxlength: 500,
     },
-    hobbies: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (hobbies: string[]) {
-          return (
-            hobbies.length === 0 ||
-            hobbies.every(hobby => HOBBIES.includes(hobby))
-          );
-        },
-        message:
-          'Hobbies must be non-empty strings and must be in the available hobbies list',
-      },
+    age: {
+      type: Number,
+      required: false,
+      min: 0,
+    },
+    location: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    latitude: {
+      type: Number,
+      required: false,
+    },
+    longitude: {
+      type: Number,
+      required: false,
+    },
+    skillLevel: {
+      type: String,
+      enum: SKILL_LEVELS,
+      required: false,
+      trim: true,
     },
   },
   {
@@ -140,6 +150,15 @@ export class UserModel {
     } catch (error) {
       console.error('Error finding user by Google ID:', error);
       throw new Error('Failed to find user');
+    }
+  }
+
+  async findAll(): Promise<IUser[]> {
+    try {
+      return await this.user.find().sort({ createdAt: -1 }).exec();
+    } catch (error) {
+      logger.error('Error fetching all users:', error);
+      throw new Error('Failed to fetch users');
     }
   }
 }
