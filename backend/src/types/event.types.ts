@@ -1,7 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
 import { SKILL_LEVELS, SkillLevel } from '../constants/statics';
-import e from 'express';
 
 // Event model
 // ------------------------------------------------------------
