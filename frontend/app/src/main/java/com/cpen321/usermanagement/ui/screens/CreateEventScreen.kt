@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -117,7 +118,6 @@ fun CreateEventScreen(
             )
 
             // Date Picker
-            // FIXME: date picker in modal is not styled correctly (too narrow)
             // FIXME: date in text field does not match to date selected in modal (one day before)
             OutlinedTextField(
                 value = selectedDate?.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")) ?: "",
@@ -246,7 +246,6 @@ fun CreateEventScreen(
                         calendar.get(Calendar.DAY_OF_MONTH)
                     )
                 }
-                showDatePicker = false
             },
             onDismiss = { showDatePicker = false }
         )
@@ -333,17 +332,12 @@ fun DatePickerModal(
 ) {
     val datePickerState = rememberDatePickerState()
 
-    AlertDialog(
+    DatePickerDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(stringResource(R.string.select_date))
-        },
-        text = {
-            DatePicker(state = datePickerState)
-        },
         confirmButton = {
-            Button(onClick = {
+            TextButton(onClick = {
                 onDateSelected(datePickerState.selectedDateMillis)
+                onDismiss()
             }) {
                 Text(stringResource(R.string.confirm))
             }
@@ -353,7 +347,9 @@ fun DatePickerModal(
                 Text(stringResource(R.string.cancel))
             }
         }
-    )
+    ) {
+        DatePicker(state = datePickerState)
+    }
 }
 
 
