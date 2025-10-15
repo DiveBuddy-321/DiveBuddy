@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.Buddy
 import com.cpen321.usermanagement.data.repository.BuddyRepository
-import com.cpen321.usermanagement.utils.GeocoderUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,7 +94,7 @@ class MatchViewModel @Inject constructor(
                 level = user.level ?: 0,
                 bio = user.bio ?: "",
                 profilePicture = user.profilePicture,
-                location = formatLocation(user.city, user.province, user.country),
+                location = formatLocation(user.lat, user.long),
                 distance = buddy.distance,
                 hasMoreProfiles = currentIndex < buddies.size - 1
             )
@@ -146,17 +145,11 @@ class MatchViewModel @Inject constructor(
     }
 
     private fun formatLocation(lat: Double?, long: Double?): String {
-        // This method is now obsolete as we use the geocoded location from the User object
-        // Kept for backward compatibility
         return if (lat != null && long != null) {
             "%.2f, %.2f".format(lat, long)
         } else {
             "Unknown"
         }
-    }
-    
-    private fun formatLocation(city: String?, province: String?, country: String?): String {
-        return GeocoderUtil.formatLocation(city, province, country)
     }
 }
 
