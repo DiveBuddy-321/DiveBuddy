@@ -4,6 +4,7 @@ import { GetProfileResponse, UpdateProfileRequest } from '../types/user.types';
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { userModel } from '../models/user.model';
+import { getLocationFromCoordinates } from '../utils/geoCoding.util';
 
 export class UserController {
   getProfile(req: Request, res: Response<GetProfileResponse>) {
@@ -22,8 +23,29 @@ export class UserController {
   ) {
     try {
       const user = req.user!;
+      const updateData = { ...req.body };
 
-      const updatedUser = await userModel.update(user._id, req.body);
+      // If location coordinates are being updated, geocode them
+      if (updateData.lat !== undefined && updateData.long !== undefined) {
+        try {
+          logger.info(`Geocoding location for user ${user._id}: (${updateData.lat}, ${updateData.long})`);
+          const locationInfo = await getLocationFromCoordinates(
+            updateData.lat,
+            updateData.long
+          );
+          
+          updateData.city = locationInfo.city;
+          updateData.province = locationInfo.province;
+          updateData.country = locationInfo.country;
+          
+          logger.info(`Geocoded to: ${locationInfo.city}, ${locationInfo.province}, ${locationInfo.country}`);
+        } catch (error) {
+          logger.error('Geocoding failed:', error);
+          // Continue with update even if geocoding fails
+        }
+      }
+
+      const updatedUser = await userModel.update(user._id, updateData);
 
       if (!updatedUser) {
         return res.status(404).json({

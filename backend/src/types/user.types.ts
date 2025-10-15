@@ -13,6 +13,9 @@ export interface IUser extends Document {
   level?: number;
   long?: number;
   lat?: number;
+  city?: string;
+  province?: string;
+  country?: string;
   profilePicture?: string;
   bio?: string;
   hobbies: string[];
@@ -30,6 +33,9 @@ export const createUserSchema = z.object({
   level: z.number().int().positive().optional(),
   long: z.number().min(-180).max(180).optional(),
   lat: z.number().min(-90).max(90).optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  country: z.string().optional(),
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
   hobbies: z.array(z.string()).default([]),
@@ -41,6 +47,9 @@ export const updateProfileSchema = z.object({
   level: z.number().int().positive().optional(),
   long: z.number().min(-180).max(180).optional(),
   lat: z.number().min(-90).max(90).optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  country: z.string().optional(),
   bio: z.string().max(500).optional(),
   hobbies: z
     .array(z.string())

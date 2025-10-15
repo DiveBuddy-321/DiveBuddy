@@ -9,6 +9,7 @@ import {
   updateProfileSchema,
   } from '../types/user.types';
 import logger from '../utils/logger.util';
+import { getLocationFromCoordinates } from '../utils/geoCoding.util';
 
 const userSchema = new Schema<IUser>(
   {
@@ -45,6 +46,21 @@ const userSchema = new Schema<IUser>(
     lat: {
       type: Number,
       required: false,
+    },
+    city: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    province: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    country: {
+      type: String,
+      required: false,
+      trim: true,
     },
     profilePicture: {
       type: String,
@@ -87,6 +103,23 @@ export class UserModel {
   async create(userInfo: GoogleUserInfo): Promise<IUser> {
     try {
       const validatedData = createUserSchema.parse(userInfo);
+
+      // Geocode if coordinates are provided
+      if (validatedData.lat !== undefined && validatedData.long !== undefined) {
+        try {
+          const locationInfo = await getLocationFromCoordinates(
+            validatedData.lat,
+            validatedData.long
+          );
+          validatedData.city = locationInfo.city;
+          validatedData.province = locationInfo.province;
+          validatedData.country = locationInfo.country;
+          logger.info(`Geocoded new user location: ${locationInfo.city}, ${locationInfo.province}, ${locationInfo.country}`);
+        } catch (error) {
+          logger.error('Geocoding failed during user creation:', error);
+          // Continue with user creation even if geocoding fails
+        }
+      }
 
       return await this.user.create(validatedData);
     } catch (error) {
