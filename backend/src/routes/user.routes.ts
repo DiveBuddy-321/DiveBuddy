@@ -16,7 +16,7 @@ router.delete('/:id', userController.deleteProfileById);
 router.put(
   '/:id',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  userController.updateProfile
+  userController.updateProfileById
 );
 
 router.post(

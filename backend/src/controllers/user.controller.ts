@@ -62,6 +62,37 @@ export class UserController {
       next(error);
     }
   }
+  async updateProfileById(
+    req: Request<unknown, unknown, UpdateProfileRequest>,
+    res: Response<GetProfileResponse>,
+    next: NextFunction
+  ) {
+    try {
+      const { id } = req.params as { id: string };
+
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid user id' });
+      }
+
+      const targetId = new mongoose.Types.ObjectId(id);
+      const targetUser = await userModel.findById(targetId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const updated = await userModel.update(targetId, req.body);
+
+      if (!updated) {
+        return res.status(500).json({ message: 'Failed to update user' });
+      }
+
+      res.status(200).json({ message: 'User updated successfully', data: { user: updated } });
+    } catch (error) {
+      logger.error('Failed to update user by id:', error);
+      next(error);
+    }
+  }
   getProfile(req: Request, res: Response<GetProfileResponse>) {
     const user = req.user!;
 
