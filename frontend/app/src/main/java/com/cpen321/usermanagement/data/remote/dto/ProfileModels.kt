@@ -23,7 +23,10 @@ data class User(
     val lat: Double? = null,
     val long: Double? = null,
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    var city: String? = null,
+    var province: String? = null,
+    var country: String? = null
 )
 
 data class UploadImageData(
