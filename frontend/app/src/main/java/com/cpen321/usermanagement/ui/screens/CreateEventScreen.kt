@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.ui.screens
 
 import Icon
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -130,7 +131,7 @@ fun CreateEventScreen(
                 placeholder = { Text(stringResource(R.string.select_date)) },
                 trailingIcon = {
                     TextButton(onClick = { showDatePicker = true }) {
-                        Text("Select")
+                        Text(stringResource(R.string.select))
                     }
                 }
             )
@@ -145,7 +146,7 @@ fun CreateEventScreen(
                 placeholder = { Text(stringResource(R.string.select_time)) },
                 trailingIcon = {
                     TextButton(onClick = { showTimePicker = true }) {
-                        Text("Select")
+                        Text(stringResource(R.string.select))
                     }
                 }
             )
@@ -211,13 +212,13 @@ fun CreateEventScreen(
                 Button(
                     onClick = {
                         // TODO: Handle event creation logic here
-                        println("Event Title: $eventTitle")
-                        println("Event Description: $eventDescription")
-                        println("Event Location: $eventLocation")
-                        println("Event Date: $selectedDate")
-                        println("Event Time: $selectedTime")
-                        println("Required Level: $requiredLevel")
-                        println("Max Participants: $maxParticipants")
+                        Log.d("CreateEventScreen", "Event Title: $eventTitle; " +
+                                "\nEvent Description: $eventDescription; " +
+                                "\nEvent Location: $eventLocation " +
+                                "\nEvent Date: $selectedDate " +
+                                "\nEvent Time: $selectedTime " +
+                                "\nRequired Level: $requiredLevel " +
+                                "\nMax Participants: $maxParticipants")
                     },
                     modifier = Modifier.weight(1f),
                     enabled = eventTitle.isNotBlank() && 
@@ -227,7 +228,7 @@ fun CreateEventScreen(
                              selectedTime != null
                 ) {
                     Text(
-                        text = "Create Event",
+                        text = stringResource(R.string.create_event),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
@@ -349,5 +350,3 @@ fun DatePickerModal(
         DatePicker(state = datePickerState)
     }
 }
-
-
