@@ -42,8 +42,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneOffset
 import java.util.Calendar
 import java.time.format.DateTimeFormatter
 
@@ -238,13 +240,9 @@ fun CreateEventScreen(
         DatePickerModal(
             onDateSelected = { dateMillis ->
                 dateMillis?.let {
-                    val calendar = Calendar.getInstance()
-                    calendar.timeInMillis = it
-                    selectedDate = LocalDate.of(
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH) + 1,
-                        calendar.get(Calendar.DAY_OF_MONTH)
-                    )
+                    selectedDate = Instant.ofEpochMilli(it)
+                        .atZone(ZoneOffset.UTC)
+                        .toLocalDate()
                 }
             },
             onDismiss = { showDatePicker = false }
