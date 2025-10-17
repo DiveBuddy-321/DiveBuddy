@@ -22,6 +22,9 @@ data class User(
     val level: Int? = null,
     val lat: Double? = null,
     val long: Double? = null,
+    val city: String? = null,
+    val province: String? = null,
+    val country: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null
 )
