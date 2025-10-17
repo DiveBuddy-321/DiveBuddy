@@ -201,7 +201,8 @@ async function startViewer() {
           <th>Email</th>
           <th>Age</th>
           <th>Level</th>
-          <th>Location (Lat, Long)</th>
+          <th>Coordinates</th>
+          <th>Location</th>
           <th>Hobbies</th>
           <th>Bio</th>
           <th>Ready</th>
@@ -210,6 +211,10 @@ async function startViewer() {
       <tbody>
         ${users.map((user: any, index: number) => {
           const isReady = user.age && user.level && user.lat && user.long;
+          const hasLocation = user.city || user.province || user.country;
+          const locationParts = [user.city, user.province, user.country].filter(Boolean);
+          const locationText = hasLocation ? locationParts.join(', ') : '-';
+          
           return `
             <tr>
               <td>${skip + index + 1}</td>
@@ -217,7 +222,8 @@ async function startViewer() {
               <td style="font-size: 12px;">${user.email}</td>
               <td>${user.age || '-'}</td>
               <td>${user.level || '-'}</td>
-              <td style="font-size: 12px;">${user.lat ? user.lat.toFixed(4) : '-'}, ${user.long ? user.long.toFixed(4) : '-'}</td>
+              <td style="font-size: 11px;">${user.lat ? user.lat.toFixed(4) : '-'}, ${user.long ? user.long.toFixed(4) : '-'}</td>
+              <td style="font-size: 12px;">${locationText}</td>
               <td class="hobbies">${user.hobbies?.join(', ') || '-'}</td>
               <td style="font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${user.bio || '-'}</td>
               <td><span class="ready-badge ${isReady ? 'ready-yes' : 'ready-no'}">${isReady ? 'YES' : 'NO'}</span></td>
