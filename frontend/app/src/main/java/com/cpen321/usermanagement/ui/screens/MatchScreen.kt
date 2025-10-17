@@ -23,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -101,7 +102,8 @@ private fun MatchContent(
                     
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(bottom = spacing.medium),
                     ) {
                         Text(
                             text = name,
@@ -112,11 +114,16 @@ private fun MatchContent(
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(bottom = spacing.medium),
                     ) {
+                        Icon(
+                            painter = painterResource(id = com.cpen321.usermanagement.R.drawable.ic_location),
+                            contentDescription = null
+                        )
                         Text(
                             text = location,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -125,20 +132,55 @@ private fun MatchContent(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(spacing.medium)
                     ) {
-                        Text(
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = com.cpen321.usermanagement.R.drawable.ic_person),
+                                contentDescription = null
+                            )
+                            Text(
                             text = "Age: $age",
-                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "Level: $level",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = com.cpen321.usermanagement.R.drawable.ic_level),
+                                contentDescription = null
+                            )
+                            Text(
+                                text = "Level: $level",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                     
                     Spacer(modifier = Modifier.height(spacing.small))
+
+                    Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = com.cpen321.usermanagement.R.drawable.ic_bio),
+                                contentDescription = null
+                            )
+                            Text(
+                                text = "Bio:",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     
                     Text(
                         text = bio.ifEmpty { "No bio available" },

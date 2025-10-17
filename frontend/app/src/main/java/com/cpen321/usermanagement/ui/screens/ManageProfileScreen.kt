@@ -462,15 +462,15 @@ private fun ProfileFields(
             enabled = false
         )
 
-            OutlinedTextField(
-                value = data.bio,
-                onValueChange = data.onBioChange,
-                label = { Text(stringResource(R.string.bio)) },
-                placeholder = { Text(stringResource(R.string.bio_placeholder)) },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                maxLines = 5,
-            )
+        OutlinedTextField(
+            value = data.bio,
+            onValueChange = data.onBioChange,
+            label = { Text(stringResource(R.string.bio)) },
+            placeholder = { Text(stringResource(R.string.bio_placeholder)) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            maxLines = 5,
+        )
     }
 }
 
