@@ -62,7 +62,12 @@ class MatchViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             
-            val result = buddyRepository.getBuddies()
+            val result = buddyRepository.getBuddies(
+                targetMinLevel = null,
+                targetMaxLevel = null,
+                targetMinAge = null,
+                targetMaxAge = null
+            )
             
             if (result.isSuccess) {
                 buddies = result.getOrNull() ?: emptyList()

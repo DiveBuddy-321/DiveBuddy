@@ -15,6 +15,12 @@ export class BuddyController {
     try {
       const currentUser = req.user!;
 
+      //age and level filters
+      const targetMinLevel = req.query.targetMinLevel as number | undefined;
+      const targetMaxLevel = req.query.targetMaxLevel as number | undefined;
+      const targetMinAge = req.query.targetMinAge as number | undefined;
+      const targetMaxAge = req.query.targetMaxAge as number | undefined;
+
       // Check if current user has completed their profile
       if (!isUserReadyForBuddyMatching(currentUser)) {
         return res.status(400).json({
@@ -34,6 +40,10 @@ export class BuddyController {
         currentUser.lat!,
         currentUser.level!,
         currentUser.age!,
+        targetMinLevel,
+        targetMaxLevel,
+        targetMinAge,
+        targetMaxAge,
         otherUsers
       );
 

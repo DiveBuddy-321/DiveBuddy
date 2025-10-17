@@ -16,9 +16,20 @@ class BuddyRepositoryImpl @Inject constructor(
         private const val TAG = "BuddyRepositoryImpl"
     }
 
-    override suspend fun getBuddies(): Result<List<Buddy>> {
+    override suspend fun getBuddies(
+        targetMinLevel: Int?,
+        targetMaxLevel: Int?,
+        targetMinAge: Int?,
+        targetMaxAge: Int?
+    ): Result<List<Buddy>> {
         return try {
-            val response = buddyInterface.getBuddies("") // Auth header is handled by interceptor
+            val response = buddyInterface.getBuddies(
+                authHeader = "",
+                targetMinLevel = targetMinLevel,
+                targetMaxLevel = targetMaxLevel,
+                targetMinAge = targetMinAge,
+                targetMaxAge = targetMaxAge
+            ) // Auth header is handled by interceptor
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.buddies)
             } else {
