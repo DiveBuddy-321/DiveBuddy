@@ -21,10 +21,24 @@ export const buddyAlgorithm = (long: number, lat: number, level: number, age: nu
         const distance = calculateDistance(user.long, user.lat, user.level, user.age, long, lat, level, age);
         distanceUsers.set(user, distance);
     }
-    
+    const filteredUserCount = distanceUsers.size;
     //sort results in order of closest to furthest distance
     const sortedDistanceUsers = Array.from(distanceUsers.entries()).sort((a, b) => a[1] - b[1]);
-    return sortedDistanceUsers.slice(0,10);
+
+    //threshold for number of users to return based on filtered user couts
+    if (filteredUserCount < 10) {
+        return sortedDistanceUsers
+    } else {
+        if (filteredUserCount < 200) {
+            const threshold = Math.min(Math.floor(filteredUserCount * 0.5), 10);
+            return sortedDistanceUsers.slice(0, threshold);
+        } else {
+            return sortedDistanceUsers.slice(0, 100);
+        }
+    }
+
+    
+    
 }
 
 function calculateDistance(long1: number | undefined, 
