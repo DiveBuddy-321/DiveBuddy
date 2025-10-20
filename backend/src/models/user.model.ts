@@ -9,7 +9,6 @@ import {
   } from '../types/user.types';
 import { SKILL_LEVELS } from '../constants/statics';
 import logger from '../utils/logger.util';
-import { getLocationFromCoordinates } from '../utils/geoCoding.util';
 
 const userSchema = new Schema<IUser>(
   {
@@ -35,33 +34,6 @@ const userSchema = new Schema<IUser>(
       type: Number,
       required: false,
     },
-    level: {
-      type: Number,
-      required: false,
-    },
-    long: {
-      type: Number,
-      required: false,
-    },
-    lat: {
-      type: Number,
-      required: false,
-    },
-    city: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    province: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    country: {
-      type: String,
-      required: false,
-      trim: true,
-    },
     profilePicture: {
       type: String,
       required: false,
@@ -72,11 +44,6 @@ const userSchema = new Schema<IUser>(
       required: false,
       trim: true,
       maxlength: 500,
-    },
-    age: {
-      type: Number,
-      required: false,
-      min: 0,
     },
     location: {
       type: String,
@@ -113,24 +80,6 @@ export class UserModel {
   async create(userInfo: GoogleUserInfo): Promise<IUser> {
     try {
       const validatedData = createUserSchema.parse(userInfo);
-
-      // Geocode if coordinates are provided
-      if (validatedData.lat !== undefined && validatedData.long !== undefined) {
-        try {
-          const locationInfo = await getLocationFromCoordinates(
-            validatedData.lat,
-            validatedData.long
-          );
-          validatedData.city = locationInfo.city;
-          validatedData.province = locationInfo.province;
-          validatedData.country = locationInfo.country;
-          logger.info(`Geocoded new user location: ${locationInfo.city}, ${locationInfo.province}, ${locationInfo.country}`);
-        } catch (error) {
-          logger.error('Geocoding failed during user creation:', error);
-          // Continue with user creation even if geocoding fails
-        }
-      }
-
       return await this.user.create(validatedData);
     } catch (error) {
       if (error instanceof z.ZodError) {

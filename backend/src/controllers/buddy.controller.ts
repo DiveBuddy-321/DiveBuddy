@@ -16,10 +16,10 @@ export class BuddyController {
       const currentUser = req.user!;
 
       //age and level filters
-      const targetMinLevel = req.query.targetMinLevel as number | undefined;
-      const targetMaxLevel = req.query.targetMaxLevel as number | undefined;
-      const targetMinAge = req.query.targetMinAge as number | undefined;
-      const targetMaxAge = req.query.targetMaxAge as number | undefined;
+      const targetMinLevel = req.query.targetMinLevel !== undefined ? Number(req.query.targetMinLevel) : undefined;
+      const targetMaxLevel = req.query.targetMaxLevel !== undefined ? Number(req.query.targetMaxLevel) : undefined;
+      const targetMinAge = req.query.targetMinAge !== undefined ? Number(req.query.targetMinAge) : undefined;
+      const targetMaxAge = req.query.targetMaxAge !== undefined ? Number(req.query.targetMaxAge) : undefined;
 
       // Check if current user has completed their profile
       if (!isUserReadyForBuddyMatching(currentUser)) {
@@ -35,10 +35,20 @@ export class BuddyController {
       );
 
       // Run buddy matching algorithm
+      const currentLong = currentUser.longitude;
+      const currentLat = currentUser.latitude;
+      const currentLevel = ((): number | undefined => {
+        if (currentUser.skillLevel !== undefined) {
+          const idx = ['Beginner','Intermediate','Expert'].indexOf(currentUser.skillLevel);
+          return idx === -1 ? undefined : idx + 1;
+        }
+        return undefined;
+      })();
+
       const sortedBuddies = buddyAlgorithm(
-        currentUser.long!,
-        currentUser.lat!,
-        currentUser.level!,
+        currentLong!,
+        currentLat!,
+        currentLevel!,
         currentUser.age!,
         targetMinLevel,
         targetMaxLevel,

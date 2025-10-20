@@ -10,15 +10,9 @@ export interface IUser extends Document {
   email: string;
   name: string;
   age?: number;
-  level?: number;
-  long?: number;
-  lat?: number;
-  city?: string;
-  province?: string;
-  country?: string;
+  
   profilePicture?: string;
   bio?: string;
-  age?: number;
   location?: string;
   latitude?: number;
   longitude?: number;
@@ -34,15 +28,9 @@ export const createUserSchema = z.object({
   name: z.string().min(1),
   googleId: z.string().min(1),
   age: z.number().int().positive().optional(),
-  level: z.number().int().positive().optional(),
-  long: z.number().min(-180).max(180).optional(),
-  lat: z.number().min(-90).max(90).optional(),
-  city: z.string().optional(),
-  province: z.string().optional(),
-  country: z.string().optional(),
+  
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
-  age: z.number().min(0).optional(),
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -52,14 +40,8 @@ export const createUserSchema = z.object({
 export const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
   age: z.number().int().positive().optional(),
-  level: z.number().int().positive().optional(),
-  long: z.number().min(-180).max(180).optional(),
-  lat: z.number().min(-90).max(90).optional(),
-  city: z.string().optional(),
-  province: z.string().optional(),
-  country: z.string().optional(),
+  
   bio: z.string().max(500).optional(),
-  age: z.number().min(0).optional(),
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -92,8 +74,8 @@ export type GoogleUserInfo = {
 export const isUserReadyForBuddyMatching = (user: IUser): boolean => {
   return (
     user.age !== undefined &&
-    user.level !== undefined &&
-    user.long !== undefined &&
-    user.lat !== undefined
+    user.skillLevel !== undefined &&
+    user.longitude !== undefined &&
+    user.latitude !== undefined
   );
 };

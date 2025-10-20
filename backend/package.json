@@ -9,7 +9,6 @@
     "seed": "ts-node src/scripts/seedUsers.ts",
     "db": "ts-node src/scripts/viewAllUsers.ts",
     "update-user": "ts-node src/scripts/updateUserProfile.ts",
-    "geocode-users": "ts-node src/scripts/geocodeExistingUsers.ts",
     "format": "prettier --check \"src/**/*.{ts,js,json}\"",
     "format:fix": "prettier --write \"src/**/*.{ts,js,json}\""
   },

@@ -196,7 +196,7 @@ async function startViewer() {
           <th>Name</th>
           <th>Email</th>
           <th>Age</th>
-          <th>Level</th>
+          <th>Skill Level</th>
           <th>Coordinates</th>
           <th>Location</th>
           <th>Bio</th>
@@ -205,10 +205,8 @@ async function startViewer() {
       </thead>
       <tbody>
         ${users.map((user: any, index: number) => {
-          const isReady = user.age && user.level && user.lat && user.long;
-          const hasLocation = user.city || user.province || user.country;
-          const locationParts = [user.city, user.province, user.country].filter(Boolean);
-          const locationText = hasLocation ? locationParts.join(', ') : '-';
+          const isReady = user.age && user.skillLevel && user.latitude && user.longitude;
+          const locationText = user.location || '-';
           
           return `
             <tr>
@@ -216,8 +214,8 @@ async function startViewer() {
               <td><strong>${user.name}</strong></td>
               <td style="font-size: 12px;">${user.email}</td>
               <td>${user.age || '-'}</td>
-              <td>${user.level || '-'}</td>
-              <td style="font-size: 11px;">${user.lat ? user.lat.toFixed(4) : '-'}, ${user.long ? user.long.toFixed(4) : '-'}</td>
+              <td>${user.skillLevel || '-'}</td>
+              <td style="font-size: 11px;">${user.latitude ? user.latitude.toFixed(4) : '-'}, ${user.longitude ? user.longitude.toFixed(4) : '-'}</td>
               <td style="font-size: 12px;">${locationText}</td>
               <td style="font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${user.bio || '-'}</td>
               <td><span class="ready-badge ${isReady ? 'ready-yes' : 'ready-no'}">${isReady ? 'YES' : 'NO'}</span></td>
