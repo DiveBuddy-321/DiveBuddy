@@ -34,11 +34,6 @@ object NetworkModule {
         return RetrofitClient.imageInterface
     }
 
-    @Provides
-    @Singleton
-    fun provideHobbyService(): HobbyInterface {
-        return RetrofitClient.hobbyInterface
-    }
 
     @Provides
     @Singleton

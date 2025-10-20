@@ -15,16 +15,16 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 
 interface UserInterface {
-    @GET("user/profile")
+    @GET("users/profile")
     suspend fun getProfile(@Header("Authorization") authHeader: String): Response<ApiResponse<ProfileData>>
 
-    @POST("user/profile")
+    @POST("users/")
     suspend fun updateProfile(
         @Header("Authorization") authHeader: String,
         @Body request: UpdateProfileRequest
     ): Response<ApiResponse<ProfileData>>
 
-    @DELETE("user/profile")
+    @DELETE("users/")
     suspend fun deleteProfile(@Header("Authorization") authHeader: String): Response<ApiResponse<Unit>>
 }
 

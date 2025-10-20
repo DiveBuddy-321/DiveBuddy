@@ -15,7 +15,6 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.screens.AuthScreen
 import com.cpen321.usermanagement.ui.screens.LoadingScreen
 import com.cpen321.usermanagement.ui.screens.MainScreen
-import com.cpen321.usermanagement.ui.screens.ManageHobbiesScreen
 import com.cpen321.usermanagement.ui.screens.ManageProfileScreen
 import com.cpen321.usermanagement.ui.screens.ProfileScreenActions
 import com.cpen321.usermanagement.ui.screens.ProfileCompletionScreen
@@ -31,7 +30,6 @@ object NavRoutes {
     const val MAIN = "main"
     const val PROFILE = "profile"
     const val MANAGE_PROFILE = "manage_profile"
-    const val MANAGE_HOBBIES = "manage_hobbies"
     const val PROFILE_COMPLETION = "profile_completion"
 }
 
@@ -123,11 +121,6 @@ private fun handleNavigationEvent(
             navigationStateManager.clearNavigationEvent()
         }
 
-        is NavigationEvent.NavigateToManageHobbies -> {
-            navController.navigate(NavRoutes.MANAGE_HOBBIES)
-            navigationStateManager.clearNavigationEvent()
-        }
-
         is NavigationEvent.NavigateBack -> {
             navController.popBackStack()
             navigationStateManager.clearNavigationEvent()
@@ -189,7 +182,6 @@ private fun AppNavHost(
                 actions = ProfileScreenActions(
                     onBackClick = { navigationStateManager.navigateBack() },
                     onManageProfileClick = { navigationStateManager.navigateToManageProfile() },
-                    onManageHobbiesClick = { navigationStateManager.navigateToManageHobbies() },
                     onLogout = { 
                         // Clear cached user data from ViewModels
                         authViewModel.clearUserData()
@@ -215,11 +207,5 @@ private fun AppNavHost(
             )
         }
 
-        composable(NavRoutes.MANAGE_HOBBIES) {
-            ManageHobbiesScreen(
-                profileViewModel = profileViewModel,
-                onBackClick = { navigationStateManager.navigateBack() }
-            )
-        }
     }
 }
