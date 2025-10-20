@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
 import { userModel } from '../models/user.model';
-import { HOBBIES } from '../constants/hobbies';
 
 config();
 
@@ -106,17 +105,6 @@ function addLocationNoise(coord: number, isLatitude: boolean): number {
   }
 }
 
-function generateRandomHobbies(): string[] {
-  const numHobbies = getRandomInt(2, 6);
-  const selectedHobbies = new Set<string>();
-  
-  while (selectedHobbies.size < numHobbies) {
-    selectedHobbies.add(getRandomElement(HOBBIES));
-  }
-  
-  return Array.from(selectedHobbies);
-}
-
 function generateUser(city: string, lat: number, long: number, index: number) {
   const firstName = getRandomElement(firstNames);
   const lastName = getRandomElement(lastNames);
@@ -133,7 +121,6 @@ function generateUser(city: string, lat: number, long: number, index: number) {
     lat: addLocationNoise(lat, true),
     long: addLocationNoise(long, false),
     bio: Math.random() > 0.3 ? getRandomElement(bios) : undefined,
-    hobbies: generateRandomHobbies(),
     profilePicture: undefined,
   };
 }

@@ -115,10 +115,6 @@ async function startViewer() {
     tr:hover {
       background: #f5f5f5;
     }
-    .hobbies {
-      font-size: 12px;
-      color: #666;
-    }
     .pagination {
       display: flex;
       gap: 10px;
@@ -203,7 +199,6 @@ async function startViewer() {
           <th>Level</th>
           <th>Coordinates</th>
           <th>Location</th>
-          <th>Hobbies</th>
           <th>Bio</th>
           <th>Ready</th>
         </tr>
@@ -224,7 +219,6 @@ async function startViewer() {
               <td>${user.level || '-'}</td>
               <td style="font-size: 11px;">${user.lat ? user.lat.toFixed(4) : '-'}, ${user.long ? user.long.toFixed(4) : '-'}</td>
               <td style="font-size: 12px;">${locationText}</td>
-              <td class="hobbies">${user.hobbies?.join(', ') || '-'}</td>
               <td style="font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${user.bio || '-'}</td>
               <td><span class="ready-badge ${isReady ? 'ready-yes' : 'ready-no'}">${isReady ? 'YES' : 'NO'}</span></td>
             </tr>
