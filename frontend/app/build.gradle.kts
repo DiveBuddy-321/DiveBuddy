@@ -77,6 +77,10 @@ dependencies {
     // Google Sign-In
     implementation(libs.play.services.auth)
     
+    // Google Maps and Places
+    implementation(libs.play.services.maps)
+    implementation(libs.places)
+    
     // HTTP client
     implementation(libs.retrofit)
     implementation(libs.converter.gson)

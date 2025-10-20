@@ -41,6 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.components.LocationAutocomplete
+import com.cpen321.usermanagement.ui.components.LocationResult
 import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import java.time.Instant
@@ -59,6 +61,7 @@ fun CreateEventScreen(
     var eventTitle by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
+    var selectedLocation by remember { mutableStateOf<LocationResult?>(null) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
     var requiredLevel by remember { mutableStateOf("") }
@@ -111,13 +114,16 @@ fun CreateEventScreen(
             )
             
             // Event Location
-            // TODO: Implement Google Maps integration
-            OutlinedTextField(
+            LocationAutocomplete(
                 value = eventLocation,
                 onValueChange = { eventLocation = it },
-                label = { RequiredTextLabel(label = stringResource(R.string.location)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                onLocationSelected = { locationResult ->
+                    selectedLocation = locationResult
+                    eventLocation = locationResult.address
+                },
+                label = stringResource(R.string.location),
+                placeholder = stringResource(R.string.search_location),
+                modifier = Modifier.fillMaxWidth()
             )
 
             // Date Picker
@@ -215,6 +221,7 @@ fun CreateEventScreen(
                         Log.d("CreateEventScreen", "Event Title: $eventTitle; " +
                                 "\nEvent Description: $eventDescription; " +
                                 "\nEvent Location: $eventLocation " +
+                                "\nSelected Location: $selectedLocation " +
                                 "\nEvent Date: $selectedDate " +
                                 "\nEvent Time: $selectedTime " +
                                 "\nRequired Level: $requiredLevel " +
