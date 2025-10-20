@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes';
 import hobbiesRoutes from './routes/hobbies.routes';
 import mediaRoutes from './routes/media.routes';
 import usersRoutes from './routes/user.routes';
+import chatRoutes from "./routes/chat.routes";
 
 const router = Router();
 
@@ -15,5 +16,7 @@ router.use('/hobbies', authenticateToken, hobbiesRoutes);
 router.use('/user', authenticateToken, usersRoutes);
 
 router.use('/media', authenticateToken, mediaRoutes);
+
+router.use("/chat", chatRoutes);
 
 export default router;
