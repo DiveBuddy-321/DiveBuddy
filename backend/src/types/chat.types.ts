@@ -12,3 +12,27 @@ export interface IChat {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+// Message types for chat functionality (MVP - text only)
+export interface IMessage {
+  _id?: Id;
+  chat: Id;                           // reference to chat
+  sender: Id;                         // reference to user who sent the message
+  content: string;                    // message content (text only for MVP)
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Populated message with sender details
+export interface IMessageWithSender extends Omit<IMessage, 'sender'> {
+  sender: {
+    _id: Id;
+    name: string;
+    avatar?: string;
+  };
+}
+
+// Message creation request (MVP - text only)
+export interface ICreateMessageRequest {
+  content: string;
+}

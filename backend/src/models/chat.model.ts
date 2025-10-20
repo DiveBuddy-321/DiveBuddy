@@ -1,5 +1,6 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
 import type { IChat } from "../types/chat.types";
+import { Message } from "./message.model";
 
 /**
  * Your IChat extends Document in chat.types.ts, which conflicts with Mongoose's Document _id.
@@ -82,16 +83,7 @@ chatSchema.statics.createPair = function (
   } as any);
 };
 
-// 4) Latest N messages (newest→oldest); assumes Message model exists
-chatSchema.statics.getLastConversation = function (chatId: string, limit: number = 50) {
-  const Message: any = mongoose.model("Message");
-  return Message.find({ chat: chatId })
-    .sort({ createdAt: -1 })
-    .limit(Math.max(1, Math.min(200, limit)))
-    .populate("sender", "name avatar")
-    .lean()
-    .exec();
-};
+// Note: Message queries are handled by Message model for better separation of concerns
 
 // 5) Leave a chat; delete if it becomes empty
 chatSchema.statics.leave = async function (
