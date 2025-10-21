@@ -86,6 +86,44 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateProfileFull(
+        name: String?,
+        bio: String?,
+        age: Int?,
+        location: String?,
+        latitude: Double?,
+        longitude: Double?,
+        skillLevel: String?
+    ): Result<User> {
+        return try {
+            val updateRequest = UpdateProfileRequest(
+                name = name?.trim(),
+                bio = bio?.take(500)?.trim(),
+                age = age,
+                location = location?.trim(),
+                latitude = latitude,
+                longitude = longitude,
+                skillLevel = skillLevel?.lowercase()?.trim()
+            )
+
+            val response = userInterface.updateProfile("", updateRequest) // keep if "" path param needed
+
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!.user)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to update profile.")
+                Log.e(TAG, "Failed to update profile: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error while updating profile", e)
+            Result.failure(e)
+        }
+    }
+
+
+
     override suspend fun uploadProfilePicture(imageUri: Uri): Result<User> {
         return try {
             // First, upload the image

@@ -21,6 +21,8 @@ android {
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
+        //Google MAP API KEY
+        buildConfigField("String", "MAPS_API_KEY", "\"${project.properties["MAPS_API_KEY"] ?: ""}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +69,7 @@ dependencies {
     
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
+    implementation(libs.androidx.compose.foundation)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
     
@@ -99,6 +102,9 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    //Google Maps
+    implementation("com.google.android.libraries.places:places:5.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
