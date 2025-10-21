@@ -23,12 +23,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType.Companion.PrimaryEditable
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimeInput
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -36,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,166 +77,172 @@ fun CreateEventScreen(
     
     val spacing = LocalSpacing.current
 
-    // FIXME: too much white space at the top of the screen
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            CreateEventTopBar(onBackClick = onDismiss)
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = spacing.large)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = spacing.large)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(spacing.small)
+    ) {
+        // Header w/ Back Button
+        Row (
+            modifier = modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Event Title
-            OutlinedTextField(
-                value = eventTitle,
-                onValueChange = { eventTitle = it },
-                label = { RequiredTextLabel(label = stringResource(R.string.event_title)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+            IconButton(onClick = onDismiss) {
+                Icon(name = R.drawable.ic_arrow_back)
+            }
+            Text(
+                text = stringResource(R.string.create_event),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            
-            // Event Description
-            OutlinedTextField(
-                value = eventDescription,
-                onValueChange = { eventDescription = it },
-                label = { RequiredTextLabel(label = stringResource(R.string.description)) },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                maxLines = 5
-            )
-            
-            // Event Location
-            LocationAutocomplete(
-                value = eventLocation,
-                onValueChange = { eventLocation = it },
-                onLocationSelected = { locationResult ->
-                    selectedLocation = locationResult
-                    eventLocation = locationResult.address
-                },
-                label = stringResource(R.string.location),
-                placeholder = stringResource(R.string.search_location),
-                modifier = Modifier.fillMaxWidth()
-            )
+        }
 
-            // Date Picker
-            // FIXME: date in text field does not match to date selected in modal (one day before)
-            OutlinedTextField(
-                value = selectedDate?.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")) ?: "",
-                onValueChange = { },
-                label = { RequiredTextLabel(label = stringResource(R.string.date)) },
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                placeholder = { Text(stringResource(R.string.select_date)) },
-                trailingIcon = {
-                    TextButton(onClick = { showDatePicker = true }) {
-                        Text(stringResource(R.string.select))
-                    }
-                }
-            )
+        // Event Title
+        OutlinedTextField(
+            value = eventTitle,
+            onValueChange = { eventTitle = it },
+            label = { RequiredTextLabel(label = stringResource(R.string.event_title)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
 
-            // Time Picker
-            OutlinedTextField(
-                value = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "",
-                onValueChange = { },
-                label = { RequiredTextLabel(label = stringResource(R.string.time)) },
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                placeholder = { Text(stringResource(R.string.select_time)) },
-                trailingIcon = {
-                    TextButton(onClick = { showTimePicker = true }) {
-                        Text(stringResource(R.string.select))
-                    }
-                }
-            )
-            
-            // Minimum Experience Level Dropdown
-            ExposedDropdownMenuBox(
-                expanded = expandedExpDropdown,
-                onExpandedChange = { expandedExpDropdown = !expandedExpDropdown }
-            ) {
-                OutlinedTextField(
-                    value = requiredLevel,
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.min_exp_level)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedExpDropdown) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(type = PrimaryEditable, enabled = true)
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedExpDropdown,
-                    onDismissRequest = { expandedExpDropdown = false }
-                ) {
-                    levelOptions.forEach { level ->
-                        DropdownMenuItem(
-                            text = { Text(level) },
-                            onClick = {
-                                requiredLevel = level
-                                expandedExpDropdown = false
-                            }
-                        )
-                    }
+        // Event Description
+        OutlinedTextField(
+            value = eventDescription,
+            onValueChange = { eventDescription = it },
+            label = { RequiredTextLabel(label = stringResource(R.string.description)) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            maxLines = 5
+        )
+
+        // Event Location
+        LocationAutocomplete(
+            value = eventLocation,
+            onValueChange = { eventLocation = it },
+            onLocationSelected = { locationResult ->
+                selectedLocation = locationResult
+                eventLocation = locationResult.address
+            },
+            label = stringResource(R.string.location),
+            placeholder = stringResource(R.string.search_location),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Date Picker
+        OutlinedTextField(
+            value = selectedDate?.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")) ?: "",
+            onValueChange = { },
+            label = { RequiredTextLabel(label = stringResource(R.string.date)) },
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            placeholder = { Text(stringResource(R.string.select_date)) },
+            trailingIcon = {
+                TextButton(onClick = { showDatePicker = true }) {
+                    Text(stringResource(R.string.select))
                 }
             }
-            
-            // Max Participants
-            OutlinedTextField(
-                value = maxParticipants,
-                onValueChange = { maxParticipants = it },
-                label = { Text(stringResource(R.string.max_participants)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
+        )
 
-            // TODO: Add image upload field
-            
-            // Action Buttons
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = spacing.large, bottom = spacing.large),
-                horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+        // Time Picker
+        OutlinedTextField(
+            value = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "",
+            onValueChange = { },
+            label = { RequiredTextLabel(label = stringResource(R.string.time)) },
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            placeholder = { Text(stringResource(R.string.select_time)) },
+            trailingIcon = {
+                TextButton(onClick = { showTimePicker = true }) {
+                    Text(stringResource(R.string.select))
+                }
+            }
+        )
+
+        // Minimum Experience Level Dropdown
+        ExposedDropdownMenuBox(
+            expanded = expandedExpDropdown,
+            onExpandedChange = { expandedExpDropdown = !expandedExpDropdown }
+        ) {
+            OutlinedTextField(
+                value = requiredLevel,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text(stringResource(R.string.min_exp_level)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedExpDropdown) },
+                modifier = Modifier.fillMaxWidth().menuAnchor(type = PrimaryEditable, enabled = true)
+            )
+            ExposedDropdownMenu(
+                expanded = expandedExpDropdown,
+                onDismissRequest = { expandedExpDropdown = false }
             ) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.cancel),
-                        color = MaterialTheme.colorScheme.onSurface
+                levelOptions.forEach { level ->
+                    DropdownMenuItem(
+                        text = { Text(level) },
+                        onClick = {
+                            requiredLevel = level
+                            expandedExpDropdown = false
+                        }
                     )
                 }
-                
-                Button(
-                    onClick = {
-                        // TODO: Handle event creation logic here
-                        Log.d("CreateEventScreen", "Event Title: $eventTitle; " +
-                                "\nEvent Description: $eventDescription; " +
-                                "\nEvent Location: $eventLocation " +
-                                "\nSelected Location: $selectedLocation " +
-                                "\nEvent Date: $selectedDate " +
-                                "\nEvent Time: $selectedTime " +
-                                "\nRequired Level: $requiredLevel " +
-                                "\nMax Participants: $maxParticipants")
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = eventTitle.isNotBlank() && 
-                             eventDescription.isNotBlank() &&
-                             eventLocation.isNotBlank() &&
-                             selectedDate != null && 
-                             selectedTime != null
-                ) {
-                    Text(
-                        text = stringResource(R.string.create_event),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+            }
+        }
+
+        // Max Participants
+        OutlinedTextField(
+            value = maxParticipants,
+            onValueChange = { maxParticipants = it },
+            label = { Text(stringResource(R.string.max_participants)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+
+        // TODO: Add image upload field
+
+        // Action Buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = spacing.large, bottom = spacing.large),
+            horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+        ) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = stringResource(R.string.cancel),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Button(
+                onClick = {
+                    // TODO: Handle event creation logic here
+                    Log.d("CreateEventScreen", "Event Title: $eventTitle; " +
+                            "\nEvent Description: $eventDescription; " +
+                            "\nEvent Location: $eventLocation " +
+                            "\nSelected Location: $selectedLocation " +
+                            "\nEvent Date: $selectedDate " +
+                            "\nEvent Time: $selectedTime " +
+                            "\nRequired Level: $requiredLevel " +
+                            "\nMax Participants: $maxParticipants")
+                },
+                modifier = Modifier.weight(1f),
+                enabled = eventTitle.isNotBlank() &&
+                         eventDescription.isNotBlank() &&
+                         eventLocation.isNotBlank() &&
+                         selectedDate != null &&
+                         selectedTime != null
+            ) {
+                Text(
+                    text = stringResource(R.string.create_event),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
@@ -267,31 +271,6 @@ fun CreateEventScreen(
             onDismiss = { showTimePicker = false }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CreateEventTopBar(
-    onBackClick: () -> Unit,
-) {
-    TopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.create_event),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(name = R.drawable.ic_arrow_back)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
