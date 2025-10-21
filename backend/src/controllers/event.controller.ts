@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
-
-import { GetEventResponse, UpdateEventRequest, CreateEventRequest } from '../types/event.types';
+import { GetEventResponse, UpdateEventRequest, CreateEventRequest, IEvent } from '../types/event.types';
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { eventModel } from '../models/event.model';
+import mongoose from 'mongoose';
 
 export class EventController {
-  async getAllEvents(req: Request, res: Response<{ message: string; data?: { events: any[] } }>, next: NextFunction) {
+  async getAllEvents(req: Request, res: Response<{ message: string; data?: { events: IEvent[] } }>, next: NextFunction) {
     try {
       const events = await eventModel.findAll();
 
@@ -23,7 +23,6 @@ export class EventController {
   async getEventById(req: Request, res: Response<GetEventResponse>, next: NextFunction) {
     try {
       const { id } = req.params as { id: string };
-      const mongoose = require('mongoose');
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid event id' });
       }
@@ -63,7 +62,6 @@ export class EventController {
   ) {
     try {
       const { id } = req.params as { id: string };
-      const mongoose = require('mongoose');
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid event id' });
@@ -83,11 +81,106 @@ export class EventController {
 
       res.status(200).json({ message: 'Event updated successfully', data: { event: updated } });
     } catch (error) {
-      logger.error('Failed to update user info:', error);
+      logger.error('Failed to update event info:', error);
 
       if (error instanceof Error) {
         return res.status(500).json({
-          message: error.message || 'Failed to update user info',
+          message: error.message || 'Failed to update event info',
+        });
+      }
+
+      next(error);
+    }
+  }
+
+  async joinEvent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params as { id: string };
+      const requester = req.user!;
+      
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid event id' });
+      }
+
+      const eventId = new mongoose.Types.ObjectId(id);
+
+      const existing = await eventModel.findById(eventId);
+      if (!existing) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+
+      if (existing.attendees.includes(requester._id)) {
+        return res.status(400).json({ message: 'User already joined the event' });
+      }
+
+      existing.attendees.push(requester._id);
+
+      const { __v, createdAt, updatedAt, createdBy, _id, ...rest } = existing.toObject();
+
+      const updateBody = {
+        ...rest,
+        attendees: existing.attendees.map((a: any) => a.toString()),
+      };
+
+      const updated = await eventModel.update(eventId, updateBody);
+      if (!updated) {
+        return res.status(500).json({ message: 'Failed to update event' });
+      }
+      res.status(200).json({ message: 'Joined event successfully', data: { event: updated } });
+
+    } catch (error) {
+      logger.error('Failed to join event:', error);
+
+      if (error instanceof Error) {
+        return res.status(500).json({
+          message: 'Failed to join event',
+        });
+      }
+
+      next(error);
+    }
+  }
+
+  async leaveEvent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params as { id: string };
+      const requester = req.user!;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid event id' });
+      }
+
+      const eventId = new mongoose.Types.ObjectId(id);
+
+      const existing = await eventModel.findById(eventId);
+      if (!existing) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+
+      if (!existing.attendees.includes(requester._id)) {
+        return res.status(400).json({ message: 'User is not an attendee of the event' });
+      }
+
+      existing.attendees = existing.attendees.filter((attendeeId) => !attendeeId.equals(requester._id));
+
+      const { __v, createdAt, updatedAt, createdBy, _id, ...rest } = existing.toObject();
+
+      const updateBody = {
+        ...rest,
+        attendees: existing.attendees.map((a: any) => a.toString()),
+      };
+
+      const updated = await eventModel.update(eventId, updateBody);
+      if (!updated) {
+        return res.status(500).json({ message: 'Failed to update event' });
+      }
+      res.status(200).json({ message: 'Left event successfully', data: { event: updated } });
+    } catch (error) {
+      logger.error('Failed to leave event:', error);
+
+      if (error instanceof Error) {
+        return res.status(500).json({
+          message: 'Failed to leave event',
         });
       }
 
@@ -97,9 +190,7 @@ export class EventController {
 
   async deleteEvent(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
       const { id } = req.params as { id: string };
-      const mongoose = require('mongoose');
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid event id' });
@@ -113,7 +204,7 @@ export class EventController {
 
       // delete related media if any
       if (existing.photo) {
-        await MediaService.deleteAllUserImages(existing.createdBy.toString());
+        await MediaService.deleteImage(existing.photo);
       }
 
       await eventModel.delete(eventId);

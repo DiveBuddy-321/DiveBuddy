@@ -55,7 +55,7 @@ const eventSchema = new Schema<IEvent>(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: false
+      required: true
     },
     attendees: [{
       type: Schema.Types.ObjectId,
@@ -89,8 +89,8 @@ export class EventModel {
         console.error('Validation error:', error.issues);
         throw new Error('Invalid update data');
       }
-      console.error('Error updating user:', error);
-      throw new Error('Failed to update user');
+      console.error('Error creating event:', error);
+      throw new Error('Failed to create event');
     }
   }
 

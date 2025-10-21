@@ -13,6 +13,10 @@ router.get('/:id', eventController.getEventById);
 
 router.post('/', validateBody<CreateEventRequest>(createEventSchema), eventController.createEvent);
 
+router.put('/join/:id', eventController.joinEvent);
+
+router.put('/leave/:id', eventController.leaveEvent);
+
 router.put('/:id', validateBody<UpdateEventRequest>(updateEventSchema), eventController.updateEvent);
 
 router.delete('/:id', eventController.deleteEvent);

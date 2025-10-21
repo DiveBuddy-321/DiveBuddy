@@ -46,7 +46,6 @@ export const updateEventSchema = z.object({
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  createdBy: z.string().optional(),
   attendees: z.array(z.string()),
   photo: z.string().optional()
 });
