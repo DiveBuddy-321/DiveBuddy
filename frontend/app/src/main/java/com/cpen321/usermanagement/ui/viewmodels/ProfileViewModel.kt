@@ -243,14 +243,15 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+
     fun updateProfileFull(
-        name: String?,              // keep if your backend accepts it; otherwise drop
+        name: String,
         bio: String?,
         age: Int?,
         location: String?,
         latitude: Double?,
         longitude: Double?,
-        skillLevel: String?,        // pass lowercased "beginner|intermediate|advanced"
+        skillLevel: String?,
         onSuccess: () -> Unit = {}
     ) {
         viewModelScope.launch {
@@ -260,39 +261,40 @@ class ProfileViewModel @Inject constructor(
                 successMessage = null
             )
 
-            // normalize inputs
-            val safeBio = bio?.take(500)?.trim()
-            val safeSkill = skillLevel?.lowercase()?.trim()
+            // Normalize before sending
+            val safeName = name.trim()
+            val safeBio = bio?.take(500)?.trim()?.takeIf { it.isNotEmpty() }
+            val safeLocation = location?.trim()?.takeIf { it.isNotEmpty() }
+            val safeLat = latitude?.takeIf { !it.isNaN() }
+            val safeLng = longitude?.takeIf { !it.isNaN() }
+            val allowedSkills = setOf("Beginner", "Intermediate", "Expert")
+            val safeSkill = skillLevel?.trim()?.takeIf { it in allowedSkills }
 
-            // Call your repository method that accepts the full payload
             val result = profileRepository.updateProfileFull(
-                name = name?.trim(),                 // drop if backend doesn't accept name here
+                name = safeName,
                 bio = safeBio,
                 age = age,
-                location = location?.trim(),
-                latitude = latitude,
-                longitude = longitude,
-                skillLevel = safeSkill
+                location = safeLocation,
+                latitude = safeLat,
+                longitude = safeLng,
+                skillLevel = safeSkill,
+                profilePicture = null // keep null unless actually updating photo in another flow
             )
 
             if (result.isSuccess) {
-                val updatedUser = result.getOrNull()!!
                 _uiState.value = _uiState.value.copy(
                     isSavingProfile = false,
-                    user = updatedUser,
+                    user = result.getOrNull(),
                     successMessage = "Profile updated successfully!"
                 )
                 onSuccess()
             } else {
-                val error = result.exceptionOrNull()
-                Log.e(TAG, "Failed to update profile", error)
-                _uiState.value = _uiState.value.copy(
-                    isSavingProfile = false,
-                    errorMessage = error?.message ?: "Failed to update profile"
-                )
+                val msg = result.exceptionOrNull()?.message ?: "Failed to update profile"
+                _uiState.value = _uiState.value.copy(isSavingProfile = false, errorMessage = msg)
             }
         }
     }
+
 
 
     /**

@@ -14,6 +14,7 @@ interface ProfileRepository {
         latitude: Double? = null,
         longitude: Double? = null,
         skillLevel: String? = null,
+        profilePicture: String? = null
     ): Result<User>
     suspend fun uploadProfilePicture(imageUri: Uri): Result<User>
     suspend fun deleteAccount(): Result<Unit>

@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.ui.screens
 
 import Button
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,11 +25,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,9 +46,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
@@ -73,37 +81,50 @@ private data class ProfileCompletionFormState(
     val name: String = "",
     val ageText: String = "",
     val cityQuery: String = "",
-    val selectedCity: String? = null, // label shown after selection
-    val selectedCityPlaceId: String? = null, // <-- NEW: store the Google placeId
+    val selectedCity: String? = null,
+    val selectedCityPlaceId: String? = null,
     val experience: ExperienceLevel? = null,
-    val conditions: Set<DivingCondition> = emptySet(),
     val bioText: String = "",
-    val hasSavedBio: Boolean = false
+    val showErrors: Boolean = false      // NEW: controls when to display errors
 ) {
-    val ageOrNull: Int? get() = ageText.toIntOrNull()
+    // --- hard validity (used by canSave) ---
+    private fun isNameValid() = name.isNotBlank()
 
-    // --- errors ---
-    val nameError: String? get() = if (name.isBlank()) "Required" else null
-    val ageError: String?
-        get() = when (val a = ageOrNull) {
-            null -> "Enter a number"
-            in 13..100 -> null
-            else -> "Age must be 13–100"
-        }
-    // inside ProfileCompletionFormState
-    val cityError: String? get() = if (selectedCityPlaceId.isNullOrBlank()) "Pick a city from suggestions" else null
-    val expError: String? get() = if (experience == null) "Select level" else null
-    val conditionsError: String? get() = if (conditions.isEmpty()) "Select at least one" else null
-    val bioError: String? get() = if (bioText.length > 1000) "Max 1000 characters" else null
+    private fun isAgeValid(): Boolean {
+        if (ageText.isBlank()) return true            // age optional
+        val a = ageText.toIntOrNull() ?: return false
+        return a in 13..120                            // adjust if you want 13..100
+    }
+
+    private fun isCityValid() = !selectedCityPlaceId.isNullOrBlank()
+    private fun isExpValid() = experience != null
+    private fun isBioValid() = bioText.length <= 500 // backend max
 
     fun canSave(): Boolean =
-        nameError == null &&
-                ageError == null &&
-                cityError == null &&
-                expError == null &&
-                //conditionsError == null &&
-                bioError == null
+        isNameValid() && isAgeValid() && isCityValid() && isExpValid() && isBioValid()
+
+    val ageOrNull: Int?
+        get() = ageText.toIntOrNull()
+    // --- UI error messages (only when showErrors = true) ---
+    val nameError: String?
+        get() = if (!showErrors) null else if (!isNameValid()) "Required" else null
+
+    val ageError: String?
+        get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (13–120)" else null
+
+    val cityError: String?
+        get() = if (!showErrors) null else if (!isCityValid()) "Pick a city from suggestions" else null
+
+    val expError: String?
+        get() = if (!showErrors) null else if (!isExpValid()) "Select experience level" else null
+
+    // Ignore conditions for now
+    val conditionsError: String? get() = null
+
+    val bioError: String?
+        get() = if (!showErrors) null else if (!isBioValid()) "Max 500 characters" else null
 }
+
 
 
 private data class ProfileCompletionScreenData(
@@ -117,7 +138,7 @@ private data class ProfileCompletionScreenData(
     val onCityQueryChange: (String) -> Unit = {},
     val onCitySelect: (String) -> Unit = {},
     val onExperienceSelect: (ExperienceLevel) -> Unit = {},
-    val onConditionToggle: (DivingCondition) -> Unit = {},
+    //val onConditionToggle: (DivingCondition) -> Unit = {},
     val onBioChange: (String) -> Unit,
     val onSkipClick: () -> Unit,
     val onSaveClick: () -> Unit
@@ -135,7 +156,7 @@ private data class ProfileCompletionScreenContentData(
     val onCityQueryChange: (String) -> Unit = {},
     val onCitySelect: (String) -> Unit = {},
     val onExperienceSelect: (ExperienceLevel) -> Unit = {},
-    val onConditionToggle: (DivingCondition) -> Unit = {},
+    //val onConditionToggle: (DivingCondition) -> Unit = {},
     val onBioChange: (String) -> Unit,
     val onSkipClick: () -> Unit,
     val onSaveClick: () -> Unit,
@@ -179,14 +200,6 @@ fun ProfileCompletionScreen(
         }
     }
 
-    LaunchedEffect(uiState.user) {
-        uiState.user?.let { user ->
-            if (user.bio != null && user.bio.isNotBlank() && !formState.hasSavedBio) {
-                onProfileCompleted()
-            }
-        }
-    }
-
     ProfileCompletionContent(
         data = ProfileCompletionScreenContentData(
             uiState = uiState,
@@ -197,12 +210,6 @@ fun ProfileCompletionScreen(
             onNameChange = { formState = formState.copy(name = it) },
             onAgeChange  = { v -> if (v.length <= 3 && v.all(Char::isDigit)) formState = formState.copy(ageText = v) },
             onExperienceSelect = { lvl -> formState = formState.copy(experience = lvl) },
-            onConditionToggle = { cond ->
-                val next = formState.conditions.toMutableSet().apply {
-                    if (contains(cond)) remove(cond) else add(cond)
-                }
-                formState = formState.copy(conditions = next)
-            },
 
             // keep bio but clamp to 1000 to be safe
             onBioChange = { formState = formState.copy(bioText = it.take(1000)) },
@@ -211,11 +218,19 @@ fun ProfileCompletionScreen(
             citySuggestions = suggestions.map { it.label },
 
             onCityQueryChange = { q ->
-                formState = formState.copy(cityQuery = q, selectedCity = null, selectedCityPlaceId = null)
+                formState = formState.copy(
+                    cityQuery = q,
+                    selectedCity = null,
+                    selectedCityPlaceId = null
+                )
                 cityJob?.cancel()
                 cityJob = scope.launch {
-                    delay(200) // debounce typing
-                    profileViewModel.queryCities(q)
+                    delay(200) // debounce
+                    if (q.length >= 2) {
+                        profileViewModel.queryCities(q)
+                    } else {
+                        profileViewModel.queryCities("") // clears suggestions
+                    }
                 }
             },
             onCitySelect = { label ->
@@ -223,7 +238,7 @@ fun ProfileCompletionScreen(
                 formState = formState.copy(
                     selectedCity = label,
                     selectedCityPlaceId = match?.placeId,
-                    cityQuery = ""
+                    cityQuery = "" // collapse the menu
                 )
             },
 
@@ -232,11 +247,14 @@ fun ProfileCompletionScreen(
             onSaveClick = {
                 // Local validation first (you already have canSave())
                 if (!formState.canSave()) {
+                    formState = formState.copy(showErrors = true)   // <-- show errors now
                     scope.launch { snackBarHostState.showSnackbar("Please complete all required fields") }
                     return@ProfileCompletionScreenContentData
                 }
+
                 val pid = formState.selectedCityPlaceId
                 if (pid == null) {
+                    formState = formState.copy(showErrors = true)   // <-- also ensure errors show
                     scope.launch { snackBarHostState.showSnackbar("Please pick a city from suggestions") }
                     return@ProfileCompletionScreenContentData
                 }
@@ -248,7 +266,7 @@ fun ProfileCompletionScreen(
                         val safeName = formState.name.trim()
                         val safeBio = formState.bioText.take(500).trim()                 // backend max 500
                         val safeAge = formState.ageOrNull                                 // nullable Int
-                        val skill = formState.experience?.name?.lowercase()               // "beginner|intermediate|advanced"
+                        val skill = formState.experience?.label           // "beginner|intermediate|advanced"
 
                         // Call the full-profile updater in your ViewModel
                         profileViewModel.updateProfileFull(
@@ -303,7 +321,7 @@ private fun ProfileCompletionContent(
                 onCityQueryChange = data.onCityQueryChange,
                 onCitySelect = data.onCitySelect,
                 onExperienceSelect = data.onExperienceSelect,
-                onConditionToggle = data.onConditionToggle,
+//                onConditionToggle = data.onConditionToggle,
                 onBioChange = data.onBioChange,
                 onSkipClick = data.onSkipClick,
                 onSaveClick = data.onSaveClick
@@ -328,7 +346,7 @@ private fun ProfileCompletionBody(
             .padding(spacing.extraLarge)
             .verticalScroll(scroll),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         ProfileCompletionHeader()
 
@@ -356,13 +374,17 @@ private fun ProfileCompletionBody(
 
         // --- City (autocomplete suggestions list shown as a dropdown) ---
         CityAutocompleteField(
-            query = data.formState.cityQuery.takeIf { data.formState.selectedCity == null }
-                ?: (data.formState.selectedCity ?: ""),
+            query = data.formState.cityQuery,
+            selectedCity = data.formState.selectedCity,
             suggestions = data.citySuggestions,
             isEnabled = !data.isSavingProfile,
             error = data.formState.cityError,
             onQueryChange = data.onCityQueryChange,
-            onSelect = data.onCitySelect
+            onSelect = data.onCitySelect,
+            onClearSelection = {
+                // clear both selection and placeId, and clear the query
+                data.onCityQueryChange("")
+            }
         )
 
         Spacer(modifier = Modifier.height(spacing.extraLarge))
@@ -396,28 +418,10 @@ private fun ProfileCompletionBody(
 
         Spacer(modifier = Modifier.height(spacing.extraLarge))
 
-        // DEBUG: show what's blocking save (remove in prod)
-        val blockers = listOf(
-            "nameError" to data.formState.nameError,
-            "ageError" to data.formState.ageError,
-            "cityError" to data.formState.cityError,
-            "expError" to data.formState.expError,
-            "conditionsError" to data.formState.conditionsError,
-            "bioError" to data.formState.bioError
-        ).filter { it.second != null }
-
-        if (blockers.isNotEmpty()) {
-            Text(
-                text = "Blocking: " + blockers.joinToString { it.first },
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
         // --- Actions ---
         ActionButtons(
             isSavingProfile = data.isSavingProfile,
-            isSaveEnabled = data.formState.canSave(),
+            isSaveEnabled = true,
             onSkipClick = data.onSkipClick,
             onSaveClick = data.onSaveClick
         )
@@ -532,46 +536,89 @@ private fun AgeInputField(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CityAutocompleteField(
     query: String,
+    selectedCity: String?,
     suggestions: List<String>,
     isEnabled: Boolean,
     error: String?,
     onQueryChange: (String) -> Unit,
     onSelect: (String) -> Unit,
+    onClearSelection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
+    var hasFocus by remember { mutableStateOf(false) }
 
-    Column(modifier) {
+    // show selected label when you have a selection and no in-progress query
+    val textValue = if (selectedCity != null && query.isBlank()) selectedCity else query
+
+    // only show menu while focused + there’s a query + we have suggestions
+    val shouldShowMenu = isEnabled && hasFocus && query.isNotBlank() && suggestions.isNotEmpty()
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && shouldShowMenu,
+        onExpandedChange = { if (isEnabled) expanded = it && hasFocus },
+        modifier = modifier.fillMaxWidth()
+    ) {
         OutlinedTextField(
-            value = query,
-            onValueChange = {
-                onQueryChange(it)
-                showMenu = it.isNotBlank()
+            value = textValue,
+            onValueChange = { newText ->
+                if (selectedCity != null) onClearSelection() // typing clears selection
+                onQueryChange(newText)
+                expanded = true
             },
             label = { Text("City") },
             placeholder = { Text("Start typing…") },
-            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             isError = error != null,
             enabled = isEnabled,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrect = false),
+            trailingIcon = {
+                when {
+                    selectedCity != null -> IconButton(onClick = {
+                        onClearSelection()
+                        expanded = hasFocus && query.isNotBlank()
+                    }) { Icon(Icons.Default.Close, contentDescription = "Clear city") }
+                    shouldShowMenu -> ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+                .onFocusChanged {
+                    hasFocus = it.isFocused
+                    expanded = it.isFocused && query.isNotBlank() && suggestions.isNotEmpty()
+                }
         )
-        DropdownMenu(
-            expanded = showMenu && suggestions.isNotEmpty(),
-            onDismissRequest = { showMenu = false },
-            modifier = Modifier.fillMaxWidth()
+
+        ExposedDropdownMenu(
+            expanded = expanded && shouldShowMenu,
+            onDismissRequest = { expanded = false }
         ) {
-            suggestions.take(8).forEach { s ->
+            suggestions.take(8).forEach { item ->
                 DropdownMenuItem(
-                    text = { Text(s) },
-                    onClick = { onSelect(s); showMenu = false }
+                    text = { Text(item) },
+                    onClick = {
+                        onSelect(item)      // parent sets selectedCity + placeId, clears query
+                        expanded = false
+                    }
                 )
             }
         }
-        if (error != null) Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+
+    if (error != null) {
+        Text(
+            text = error,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
 @Composable

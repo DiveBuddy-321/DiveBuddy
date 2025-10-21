@@ -1,5 +1,5 @@
 [versions]
-agp = "8.12.2"
+agp = "8.13.0"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
 credentials = "1.5.0"
@@ -25,6 +25,7 @@ playServicesAuth = "21.4.0"
 retrofit = "3.0.0"
 secretsGradlePlugin = "2.0.1"
 foundation = "1.9.3"
+uiText = "1.9.3"
 
 [libraries]
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityCompose" }
@@ -61,6 +62,7 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
