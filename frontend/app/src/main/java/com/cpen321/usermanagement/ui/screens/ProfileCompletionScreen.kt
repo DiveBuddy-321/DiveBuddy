@@ -1,4 +1,6 @@
 package com.cpen321.usermanagement.ui.screens
+import com.cpen321.usermanagement.ui.components.ExperienceLevel
+
 
 import Button
 import android.util.Log
@@ -62,10 +64,6 @@ import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-
-private enum class ExperienceLevel(val label: String) {
-    BEGINNER("Beginner"), INTERMEDIATE("Intermediate"), EXPERT("Expert")
-}
 
 private enum class DivingCondition(val label: String) {
     POOL("Pool"),

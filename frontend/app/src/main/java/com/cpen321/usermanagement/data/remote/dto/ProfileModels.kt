@@ -23,8 +23,14 @@ data class User(
     val bio: String?,
     val profilePicture: String,
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val age: Int? = null,
+    val location: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val skillLevel: String? = null
 )
+
 
 data class UploadImageData(
     val image: String
