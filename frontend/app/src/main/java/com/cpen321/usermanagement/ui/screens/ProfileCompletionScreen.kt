@@ -574,7 +574,7 @@ private fun CityAutocompleteField(
             singleLine = true,
             isError = error != null,
             enabled = isEnabled,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrect = false),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrectEnabled = false),
             trailingIcon = {
                 when {
                     selectedCity != null -> IconButton(onClick = {
