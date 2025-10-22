@@ -12,6 +12,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+// --- Kotlin and coroutine basics ---
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+// --- Google Maps / Places ---
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.PlacesClient
+import kotlinx.coroutines.suspendCancellableCoroutine
+
 
 data class ProfileUiState(
     // Loading states
@@ -38,6 +51,101 @@ class ProfileViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+
+    // -------------------------
+    // Google Places: City field
+    // -------------------------
+
+    data class CitySuggestion(val label: String, val placeId: String)
+
+    private val _citySuggestions = MutableStateFlow<List<CitySuggestion>>(emptyList())
+    val citySuggestions: StateFlow<List<CitySuggestion>> = _citySuggestions.asStateFlow()
+
+    private var placesClient: PlacesClient? = null
+    private var sessionToken: AutocompleteSessionToken? = null
+
+    fun attachPlacesClient(client: PlacesClient) {
+        placesClient = client
+    }
+
+    /** Call when the user types in the City box (debounce in UI). */
+    fun queryCities(query: String) {
+        val client = placesClient ?: return
+        if (query.isBlank()) {
+            _citySuggestions.value = emptyList()
+            return
+        }
+        if (sessionToken == null) sessionToken = AutocompleteSessionToken.newInstance()
+
+        val request = FindAutocompletePredictionsRequest.builder()
+            .setQuery(query)
+            // SDK 3.x uses string place types; "locality" = city/town
+            .setTypesFilter(listOf("locality"))
+            // .setCountries(listOf("CA","US")) // optional: restrict to countries
+            .setSessionToken(sessionToken)
+            .build()
+
+        client.findAutocompletePredictions(request)
+            .addOnSuccessListener { resp ->
+                _citySuggestions.value = resp.autocompletePredictions.map {
+                    CitySuggestion(
+                        label = it.getFullText(null).toString(),
+                        placeId = it.placeId
+                    )
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.w("ProfileViewModel", "Places predictions failed: ${e.message}")
+                _citySuggestions.value = emptyList()
+            }
+    }
+
+    data class ResolvedCity(
+        val display: String,
+        val placeId: String,
+        val lat: Double,
+        val lng: Double
+    )
+
+    /** Call on submit after a suggestion is selected (we have placeId). */
+    suspend fun resolveCity(placeId: String): ResolvedCity {
+        val client = placesClient ?: throw IllegalStateException("PlacesClient not attached")
+        val fields = listOf(
+            Place.Field.ID,
+            Place.Field.FORMATTED_ADDRESS,
+            Place.Field.DISPLAY_NAME,
+            Place.Field.LOCATION
+        )
+        val request = FetchPlaceRequest.builder(placeId, fields)
+            .setSessionToken(sessionToken)
+            .build()
+
+        return suspendCancellableCoroutine { cont ->
+            client.fetchPlace(request)
+                .addOnSuccessListener { r ->
+                    val p = r.place
+                    val label = p.formattedAddress ?: p.displayName
+                    val loc = p.location
+                    if (label == null) {
+                        cont.resumeWithException(IllegalStateException("Could not resolve city label"))
+                    } else {
+                        cont.resume(
+                            ResolvedCity(
+                                display = label,
+                                placeId = p.id ?: placeId,
+                                lat = loc?.latitude ?: 0.0,
+                                lng = loc?.longitude ?: 0.0
+                            )
+                        )
+                        sessionToken = null // end autocomplete session after success
+                    }
+                }
+                .addOnFailureListener { e ->
+                    cont.resumeWithException(e)
+                }
+        }
+    }
+
 
     fun loadProfile() {
         viewModelScope.launch {
@@ -139,6 +247,59 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateProfileFull(
+        name: String,
+        bio: String?,
+        age: Int?,
+        location: String?,
+        latitude: Double?,
+        longitude: Double?,
+        skillLevel: String?,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSavingProfile = true,
+                errorMessage = null,
+                successMessage = null
+            )
+
+            // Normalize before sending
+            val safeName = name.trim()
+            val safeBio = bio?.take(500)?.trim()?.takeIf { it.isNotEmpty() }
+            val safeLocation = location?.trim()?.takeIf { it.isNotEmpty() }
+            val safeLat = latitude?.takeIf { !it.isNaN() }
+            val safeLng = longitude?.takeIf { !it.isNaN() }
+            val allowedSkills = setOf("Beginner", "Intermediate", "Expert")
+            val safeSkill = skillLevel?.trim()?.takeIf { it in allowedSkills }
+
+            val result = profileRepository.updateProfileFull(
+                name = safeName,
+                bio = safeBio,
+                age = age,
+                location = safeLocation,
+                latitude = safeLat,
+                longitude = safeLng,
+                skillLevel = safeSkill,
+                profilePicture = null // keep null unless actually updating photo in another flow
+            )
+
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(
+                    isSavingProfile = false,
+                    user = result.getOrNull(),
+                    successMessage = "Profile updated successfully!"
+                )
+                onSuccess()
+            } else {
+                val msg = result.exceptionOrNull()?.message ?: "Failed to update profile"
+                _uiState.value = _uiState.value.copy(isSavingProfile = false, errorMessage = msg)
+            }
+        }
+    }
+
+
 
     /**
      * Clear all cached profile data (used when account is deleted)
