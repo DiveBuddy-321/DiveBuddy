@@ -18,3 +18,7 @@ data class Event(
     val createdAt: Date,
     val updatedAt: Date
 )
+
+data class EventData(
+    val events: List<Event>
+)

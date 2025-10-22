@@ -2,6 +2,7 @@ package com.cpen321.usermanagement.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,9 +11,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,8 +23,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
+import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
+import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -29,9 +35,11 @@ import java.util.Locale
 @Composable
 fun EventsScreen(
     modifier: Modifier = Modifier,
+    eventViewModel: EventViewModel = hiltViewModel()
 ) {
     var selectedEvent by remember { mutableStateOf<Event?>(null) }
     var showCreateEventForm by remember { mutableStateOf(false) }
+    val uiState by eventViewModel.uiState.collectAsState()
 
     if (showCreateEventForm) {
         Text(
@@ -54,75 +62,29 @@ fun EventsScreen(
     } else {
         EventsContent(
             modifier = modifier,
-                onCreateEventClick = {
-                    showCreateEventForm = true
-                },
-                onEventClick = { event ->
-                    selectedEvent = event
-                }
-            )
-        }
+            uiState = uiState,
+            onCreateEventClick = {
+                showCreateEventForm = true
+            },
+            onEventClick = { event ->
+                selectedEvent = event
+            },
+            onRefresh = {
+                eventViewModel.refreshEvents()
+            }
+        )
+    }
 }
 
 @Composable
 private fun EventsContent(
     modifier: Modifier = Modifier,
+    uiState: EventUiState,
     onCreateEventClick: () -> Unit,
-    onEventClick: (Event) -> Unit
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit
 ) {
     val spacing = LocalSpacing.current
-    
-    // Dummy data for events
-    val dummyEvents = listOf(
-        Event(
-            _id = "1",
-            title = "Basketball Tournament",
-            description = "Join us for an exciting basketball tournament! All skill levels welcome.",
-            date = Date(System.currentTimeMillis() + 86400000), // Tomorrow
-            capacity = 20,
-            skillLevel = "Intermediate",
-            location = "UBC Thunderbird Sports Centre",
-            latitude = 49.2606,
-            longitude = -123.2460,
-            createdBy = "user1",
-            attendees = listOf("user2", "user3", "user4"),
-            photo = null,
-            createdAt = Date(),
-            updatedAt = Date()
-        ),
-        Event(
-            _id = "2",
-            title = "Soccer Practice",
-            description = "Weekly soccer practice session. Focus on technique and teamwork.",
-            date = Date(System.currentTimeMillis() + 172800000), // Day after tomorrow
-            capacity = 15,
-            skillLevel = "Beginner",
-            location = "UBC Soccer Field",
-            latitude = 49.2611,
-            longitude = -123.2450,
-            createdBy = "user2",
-            attendees = listOf("user1", "user3"),
-            photo = null,
-            createdAt = Date(),
-            updatedAt = Date()
-        ),
-        Event(
-            _id = "3",
-            title = "Tennis Doubles",
-            description = "Friendly tennis doubles match. Bring your racket and competitive spirit!",
-            date = Date(System.currentTimeMillis() + 259200000), // 3 days from now
-            capacity = 4,
-            skillLevel = "Advanced",
-            location = "UBC Tennis Courts",
-            latitude = 49.2620,
-            longitude = -123.2440,
-            createdBy = "user3",
-            attendees = listOf("user1", "user2"),
-            photo = null,
-            createdAt = Date(),
-            updatedAt = Date()
-        )
-    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -151,15 +113,49 @@ private fun EventsContent(
             modifier = Modifier.padding(bottom = spacing.small)
         )
         
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
-            modifier = Modifier.padding(horizontal = spacing.large)
-        ) {
-            items(dummyEvents) { event ->
-                EventCard(
-                    event = event,
-                    onClick = { onEventClick(event) }
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            uiState.error != null -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(spacing.medium)
+                ) {
+                    Text(
+                        text = "Error: ${uiState.error}",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Button(onClick = onRefresh) {
+                        Text("Retry")
+                    }
+                }
+            }
+            uiState.events.isEmpty() -> {
+                Text(
+                    text = "No events available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                    modifier = Modifier.padding(horizontal = spacing.large)
+                ) {
+                    items(uiState.events) { event ->
+                        EventCard(
+                            event = event,
+                            onClick = { onEventClick(event) }
+                        )
+                    }
+                }
             }
         }
     }
