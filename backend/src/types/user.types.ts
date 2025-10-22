@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
-import { SKILL_LEVELS, SkillLevel } from '../constants/statics';
+import { SKILL_LEVELS, SkillLevel, MIN_AGE, MAX_AGE } from '../constants/statics';
 
 // User model
 // ------------------------------------------------------------
@@ -27,7 +27,7 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   googleId: z.string().min(1),
-  age: z.number().int().positive().optional(),
+  age: z.number().int().positive().optional().refine(age => age !== undefined && age >= MIN_AGE && age <= MAX_AGE),
   
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
