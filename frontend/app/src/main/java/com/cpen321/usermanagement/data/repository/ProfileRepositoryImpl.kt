@@ -60,9 +60,43 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateProfile(name: String, bio: String): Result<User> {
+        return updateProfileFull(
+            name = name,
+            bio = bio,
+            age = null,
+            location = null,
+            latitude = null,
+            longitude = null,
+            skillLevel = null
+        )
+    }
+
+
+    override suspend fun updateProfileFull(
+        name: String?,
+        bio: String?,
+        age: Int?,
+        location: String?,
+        latitude: Double?,
+        longitude: Double?,
+        skillLevel: String?,
+        profilePicture: String?
+    ): Result<User> {
         return try {
-            val updateRequest = UpdateProfileRequest(name = name, bio = bio)
-            val response = userInterface.updateProfile("", updateRequest) // Auth header is handled by interceptor
+            val updateRequest = UpdateProfileRequest(
+                name = name,
+                bio = bio,
+                age = age,
+                location = location,
+                latitude = latitude,
+                longitude = longitude,
+                skillLevel = skillLevel,
+                profilePicture = null
+            )
+
+            // Auth header handled by interceptor; keep the same endpoint signature you use elsewhere
+            val response = userInterface.updateProfile("", updateRequest)
+
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.user)
             } else {
@@ -85,6 +119,9 @@ class ProfileRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+
+
 
     override suspend fun uploadProfilePicture(imageUri: Uri): Result<User> {
         return try {

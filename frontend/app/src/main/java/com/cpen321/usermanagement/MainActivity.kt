@@ -20,6 +20,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        if (!com.google.android.libraries.places.api.Places.isInitialized()) {
+            com.google.android.libraries.places.api.Places.initialize(
+                applicationContext,
+                BuildConfig.MAPS_API_KEY
+            )
+        }
+
         setContent {
             UserManagementTheme {
                 UserManagementApp()
