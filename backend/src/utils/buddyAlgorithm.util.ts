@@ -38,7 +38,7 @@ export const buddyAlgorithm = (
     //sort results in order of closest to furthest distance
     const sortedDistanceUsers = Array.from(distanceUsers.entries()).sort((a, b) => a[1] - b[1]);
 
-    //threshold for number of users to return based on filtered user couts
+    //threshold for number of users to return based on filtered user counts
     if (filteredUserCount < 10) {
         return sortedDistanceUsers
     } else {
