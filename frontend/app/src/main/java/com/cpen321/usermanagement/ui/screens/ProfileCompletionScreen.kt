@@ -211,8 +211,8 @@ fun ProfileCompletionScreen(
             onAgeChange  = { v -> if (v.length <= 3 && v.all(Char::isDigit)) formState = formState.copy(ageText = v) },
             onExperienceSelect = { lvl -> formState = formState.copy(experience = lvl) },
 
-            // keep bio but clamp to 1000 to be safe
-            onBioChange = { formState = formState.copy(bioText = it.take(1000)) },
+            // keep bio but clamp to 500 to match validation and submission
+            onBioChange = { formState = formState.copy(bioText = it.take(500)) },
 
             // --- City autocomplete wiring ---
             citySuggestions = suggestions.map { it.label },
