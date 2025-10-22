@@ -223,7 +223,7 @@ fun ManageProfileScreen(
     LaunchedEffect(Unit) {
         profileViewModel.clearSuccessMessage()
         profileViewModel.clearError()
-        profileViewModel.attachPlacesClient(placesClient) // NEW
+        profileViewModel.attachPlacesClient(placesClient)
         if (uiState.user == null) {
             profileViewModel.loadProfile()
         }
