@@ -116,7 +116,7 @@ private fun BuddiesContent(
                     Text(text = "Filters", style = MaterialTheme.typography.headlineSmall)
 
                     // Level range slider
-                    Text(text = "Level: $minLevel - $maxLevel", style = MaterialTheme.typography.bodyLarge)
+                    Text(text = "Level: ${getLevelLabel(minLevel, maxLevel)}", style = MaterialTheme.typography.bodyLarge)
                     RangeSlider(
                         value = minLevel.toFloat()..maxLevel.toFloat(),
                         onValueChange = { range ->
@@ -156,5 +156,17 @@ private fun BuddiesContent(
                 }
             }
         }
+    }
+}
+
+private fun getLevelLabel(minLevel: Int, maxLevel: Int): String {
+    return when {
+        minLevel == 1 && maxLevel == 1 -> "Beginner only"
+        minLevel == 1 && maxLevel == 2 -> "Beginner and Intermediate"
+        minLevel == 1 && maxLevel == 3 -> "All levels"
+        minLevel == 2 && maxLevel == 2 -> "Intermediate only"
+        minLevel == 2 && maxLevel == 3 -> "Intermediate and Advanced"
+        minLevel == 3 && maxLevel == 3 -> "Advanced only"
+        else -> "Invalid level range"
     }
 }
