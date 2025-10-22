@@ -62,6 +62,7 @@ import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import com.cpen321.usermanagement.common.Constants
 
 private enum class ExperienceLevel(val label: String) {
     BEGINNER("Beginner"), INTERMEDIATE("Intermediate"), EXPERT("Expert")
@@ -92,12 +93,12 @@ private data class ProfileCompletionFormState(
     private fun isAgeValid(): Boolean {
         if (ageText.isBlank()) return true            // age optional
         val a = ageText.toIntOrNull() ?: return false
-        return a in 13..120                            // adjust if you want 13..100
+        return a in Constants.MIN_AGE..Constants.MAX_AGE                            // adjust if you want 13..100
     }
 
     private fun isCityValid() = !selectedCityPlaceId.isNullOrBlank()
     private fun isExpValid() = experience != null
-    private fun isBioValid() = bioText.length <= 500 // backend max
+    private fun isBioValid() = bioText.length <= Constants.MAX_BIO_LENGTH // backend max
 
     fun canSave(): Boolean =
         isNameValid() && isAgeValid() && isCityValid() && isExpValid() && isBioValid()
@@ -109,7 +110,7 @@ private data class ProfileCompletionFormState(
         get() = if (!showErrors) null else if (!isNameValid()) "Required" else null
 
     val ageError: String?
-        get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (13–120)" else null
+        get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (${Constants.MIN_AGE}–${Constants.MAX_AGE})" else null
 
     val cityError: String?
         get() = if (!showErrors) null else if (!isCityValid()) "Pick a city from suggestions" else null
@@ -121,7 +122,7 @@ private data class ProfileCompletionFormState(
     val conditionsError: String? get() = null
 
     val bioError: String?
-        get() = if (!showErrors) null else if (!isBioValid()) "Max 500 characters" else null
+        get() = if (!showErrors) null else if (!isBioValid()) "Max ${Constants.MAX_BIO_LENGTH} characters" else null
 }
 
 
@@ -211,7 +212,7 @@ fun ProfileCompletionScreen(
             onExperienceSelect = { lvl -> formState = formState.copy(experience = lvl) },
 
             // keep bio but clamp to 500 to match validation and submission
-            onBioChange = { formState = formState.copy(bioText = it.take(500)) },
+            onBioChange = { formState = formState.copy(bioText = it.take(Constants.MAX_BIO_LENGTH)) },
 
             // --- City autocomplete wiring ---
             citySuggestions = suggestions.map { it.label },
@@ -224,7 +225,7 @@ fun ProfileCompletionScreen(
                 )
                 cityJob?.cancel()
                 cityJob = scope.launch {
-                    delay(200) // debounce
+                    delay(Constants.DEFAULT_DEBOUNCE_MS.toLong()) // debounce
                     if (q.length >= 2) {
                         profileViewModel.queryCities(q)
                     } else {
@@ -263,7 +264,7 @@ fun ProfileCompletionScreen(
                         val resolved = profileViewModel.resolveCity(pid)
 
                         val safeName = formState.name.trim()
-                        val safeBio = formState.bioText.take(500).trim()                 // backend max 500
+                        val safeBio = formState.bioText.take(Constants.MAX_BIO_LENGTH).trim()                 // backend max 500
                         val safeAge = formState.ageOrNull                                 // nullable Int
                         val skill = formState.experience?.label           // "beginner|intermediate|advanced"
 
@@ -597,7 +598,7 @@ private fun CityAutocompleteField(
             expanded = expanded && shouldShowMenu,
             onDismissRequest = { expanded = false }
         ) {
-            suggestions.take(8).forEach { item ->
+            suggestions.take(Constants.DEFAULT_PAGE_SIZE / 2).forEach { item ->
                 DropdownMenuItem(
                     text = { Text(item) },
                     onClick = {

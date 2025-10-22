@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
-import { SKILL_LEVELS, SkillLevel } from '../constants/statics';
+import { SKILL_LEVELS, SkillLevel, MIN_AGE, MAX_AGE } from '../constants/statics';
 
 // User model
 // ------------------------------------------------------------
@@ -9,9 +9,10 @@ export interface IUser extends Document {
   googleId: string;
   email: string;
   name: string;
+  age?: number;
+  
   profilePicture?: string;
   bio?: string;
-  age?: number;
   location?: string;
   latitude?: number;
   longitude?: number;
@@ -26,9 +27,10 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   googleId: z.string().min(1),
+  age: z.number().int().positive().optional().refine(age => age !== undefined && age >= MIN_AGE && age <= MAX_AGE),
+  
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
-  age: z.number().min(0).optional(),
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -37,8 +39,9 @@ export const createUserSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
+  age: z.number().int().positive().optional(),
+  
   bio: z.string().max(500).optional(),
-  age: z.number().min(0).optional(),
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -64,4 +67,15 @@ export type GoogleUserInfo = {
   email: string;
   name: string;
   profilePicture?: string;
+};
+
+// Helper functions
+// ------------------------------------------------------------
+export const isUserReadyForBuddyMatching = (user: IUser): boolean => {
+  return (
+    user.age !== undefined &&
+    user.skillLevel !== undefined &&
+    user.longitude !== undefined &&
+    user.latitude !== undefined
+  );
 };

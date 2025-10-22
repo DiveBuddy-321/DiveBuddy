@@ -14,6 +14,7 @@ import com.cpen321.usermanagement.ui.theme.ProvideFontSizes
 import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
 import dagger.hilt.android.AndroidEntryPoint
+import android.util.Log
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -21,10 +22,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        if (!com.google.android.libraries.places.api.Places.isInitialized()) {
+        val mapsKey = BuildConfig.MAPS_API_KEY
+        if (mapsKey.isBlank()) {
+            Log.e("MainActivity", "MAPS_API_KEY is missing; skipping Places initialization")
+        } else if (!com.google.android.libraries.places.api.Places.isInitialized()) {
             com.google.android.libraries.places.api.Places.initialize(
                 applicationContext,
-                BuildConfig.MAPS_API_KEY
+                mapsKey
             )
         }
 

@@ -109,8 +109,10 @@ export class UserController {
   ) {
     try {
       const user = req.user!;
+      const updateData = { ...req.body };
 
-      const updatedUser = await userModel.update(user._id, req.body);
+
+      const updatedUser = await userModel.update(user._id, updateData);
 
       if (!updatedUser) {
         return res.status(404).json({
