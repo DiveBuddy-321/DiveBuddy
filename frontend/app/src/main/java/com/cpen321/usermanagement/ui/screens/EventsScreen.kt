@@ -121,7 +121,7 @@ private fun EventsContent(
                 Text(
                     text = "Refresh Events",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }

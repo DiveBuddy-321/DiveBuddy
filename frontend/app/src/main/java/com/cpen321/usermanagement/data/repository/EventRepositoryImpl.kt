@@ -13,8 +13,9 @@ class EventRepositoryImpl @Inject constructor(
     override suspend fun getAllEvents(): Result<List<Event>> {
         return try {
             val response = eventInterface.getAllEvents("") // Auth header is handled by interceptor
-            if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.events)
+            if (response.isSuccessful) {
+                response.body()?.data?.events?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Empty response body"))
             } else {
                 Result.failure(Exception("Failed to fetch events: ${response.code()}"))
             }
