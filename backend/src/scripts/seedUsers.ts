@@ -74,7 +74,6 @@ const bios = [
   'Movie buff and series binger.',
   'Board game enthusiast.',
   'Cyclist and marathon runner.',
-  'I\'m gay da ba dee da ba daa',
   'I\'m a software engineer and I love to code',
   'I like trains',
   'I am a weeb',

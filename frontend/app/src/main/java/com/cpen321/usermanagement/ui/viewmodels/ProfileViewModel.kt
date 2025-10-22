@@ -24,6 +24,7 @@ import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.PlacesClient
 import kotlinx.coroutines.suspendCancellableCoroutine
+import com.cpen321.usermanagement.common.Constants
 
 
 data class ProfileUiState(
@@ -267,7 +268,7 @@ class ProfileViewModel @Inject constructor(
 
             // Normalize before sending
             val safeName = name.trim()
-            val safeBio = bio?.take(500)?.trim()?.takeIf { it.isNotEmpty() }
+            val safeBio = bio?.take(Constants.MAX_BIO_LENGTH)?.trim()?.takeIf { it.isNotEmpty() }
             val safeLocation = location?.trim()?.takeIf { it.isNotEmpty() }
             val safeLat = latitude?.takeIf { !it.isNaN() }
             val safeLng = longitude?.takeIf { !it.isNaN() }

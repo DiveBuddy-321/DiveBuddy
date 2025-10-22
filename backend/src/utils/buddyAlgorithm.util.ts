@@ -1,5 +1,15 @@
 import { IUser, isUserReadyForBuddyMatching } from '../types/user.types';
-import { SKILL_LEVELS } from '../constants/statics';
+import { MAX_AGE, 
+    MIN_AGE, 
+    MAX_LEVEL, 
+    MIN_LEVEL, 
+    SKILL_LEVELS, 
+    EARTH_RADIUS, 
+    AGE_DIFF_WEIGHT, 
+    SKILL_DIFF_WEIGHT, 
+    SMALL_USER_COUNT_THRESHOLD, 
+    LARGE_USER_COUNT_THRESHOLD, 
+    MAX_USERS_TO_RETURN } from '../constants/statics';
 
 export const buddyAlgorithm = (
     long: number,
@@ -39,14 +49,14 @@ export const buddyAlgorithm = (
     const sortedDistanceUsers = Array.from(distanceUsers.entries()).sort((a, b) => a[1] - b[1]);
 
     //threshold for number of users to return based on filtered user counts
-    if (filteredUserCount < 10) {
+    if (filteredUserCount < SMALL_USER_COUNT_THRESHOLD) {
         return sortedDistanceUsers
     } else {
-        if (filteredUserCount < 200) {
-            const threshold = Math.min(Math.floor(filteredUserCount * 0.5), 10);
+        if (filteredUserCount < LARGE_USER_COUNT_THRESHOLD) {
+            const threshold = Math.min(Math.floor(filteredUserCount * 0.5), SMALL_USER_COUNT_THRESHOLD);
             return sortedDistanceUsers.slice(0, threshold);
         } else {
-            return sortedDistanceUsers.slice(0, 100);
+            return sortedDistanceUsers.slice(0, MAX_USERS_TO_RETURN);
         }
     }
 
@@ -69,10 +79,28 @@ function calculateDistance(
     if (long1 === undefined || lat1 === undefined || level1 === undefined || age1 === undefined || long2 === undefined || lat2 === undefined || level2 === undefined || age2 === undefined) {
         return Infinity;
     }
-    const adjustedAge1 = age1 / 5;
-    const adjustedAge2 = age2 / 5;
-    return Math.sqrt((Math.abs(long1 - long2)) ** 2 + (Math.abs(lat1 - lat2)) ** 2) + ((Math.abs(adjustedAge1 - adjustedAge2)) ** 2) + ((Math.abs(level1 - level2)) **2);
-}
+        // Calculate geographic distance in kilometers using Haversine formula
+        const geoDistance = haversineDistance(lat1, long1, lat2, long2); // in km
+        // Normalize age difference (assuming age range 13-100, so max diff = 87)
+        const ageDiff = Math.abs(age1 - age2) / (MAX_AGE - MIN_AGE);
+        // Normalize skill level difference (beginner = 1, intermediate = 2, expert = 3, so max diff = 2)
+        const skillDiff = Math.abs(level1 - level2) / (MAX_LEVEL - MIN_LEVEL);
+        // weighted sum of differences for age and skill level, adjust parameter in constants.ts as needed
+        return geoDistance + ageDiff * AGE_DIFF_WEIGHT + skillDiff * SKILL_DIFF_WEIGHT;
+    }
+    // Haversine formula to calculate distance between two lat/long points in km
+    function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+        const toRad = (value: number) => value * Math.PI / 180;
+        const R = EARTH_RADIUS; // Earth radius in km
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 
 function getNumericLevel(user: IUser): number | undefined {
     if (user.skillLevel !== undefined) {

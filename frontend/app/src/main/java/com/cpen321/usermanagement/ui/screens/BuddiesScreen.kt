@@ -29,6 +29,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
+import com.cpen321.usermanagement.common.Constants
 
 @Composable
 fun BuddiesScreen(
@@ -83,10 +84,10 @@ private fun BuddiesContent(
 ) {
     val spacing = LocalSpacing.current
 
-    var minLevel by remember { mutableStateOf(targetMinLevel ?: 1) }
-    var maxLevel by remember { mutableStateOf(targetMaxLevel ?: 3) }
-    var minAge by remember { mutableStateOf(targetMinAge ?: 13) }
-    var maxAge by remember { mutableStateOf(targetMaxAge ?: 100) }
+    var minLevel by remember { mutableStateOf(targetMinLevel ?: Constants.BEGINNER_LEVEL) }
+    var maxLevel by remember { mutableStateOf(targetMaxLevel ?: Constants.ADVANCED_LEVEL) }
+    var minAge by remember { mutableStateOf(targetMinAge ?: Constants.MIN_AGE) }
+    var maxAge by remember { mutableStateOf(targetMaxAge ?: Constants.MAX_AGE) }
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -119,13 +120,13 @@ private fun BuddiesContent(
                     RangeSlider(
                         value = minLevel.toFloat()..maxLevel.toFloat(),
                         onValueChange = { range ->
-                            val start = range.start.roundToInt().coerceIn(1, 3)
-                            val end = range.endInclusive.roundToInt().coerceIn(1, 3)
+                            val start = range.start.roundToInt().coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
+                            val end = range.endInclusive.roundToInt().coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
                             minLevel = minOf(start, end)
                             maxLevel = maxOf(start, end)
                             onFiltersChange(minLevel, maxLevel, minAge, maxAge)
                         },
-                        valueRange = 1f..3f,
+                        valueRange = Constants.BEGINNER_LEVEL.toFloat()..Constants.ADVANCED_LEVEL.toFloat(),
                         steps = 1,
                         modifier = Modifier.padding(horizontal = spacing.large)
                     )
@@ -135,13 +136,13 @@ private fun BuddiesContent(
                     RangeSlider(
                         value = minAge.toFloat()..maxAge.toFloat(),
                         onValueChange = { range ->
-                            val start = range.start.roundToInt().coerceIn(13, 100)
-                            val end = range.endInclusive.roundToInt().coerceIn(13, 100)
+                            val start = range.start.roundToInt().coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
+                            val end = range.endInclusive.roundToInt().coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
                             minAge = minOf(start, end)
                             maxAge = maxOf(start, end)
                             onFiltersChange(minLevel, maxLevel, minAge, maxAge)
                         },
-                        valueRange = 13f..100f,
+                        valueRange = Constants.MIN_AGE.toFloat()..Constants.MAX_AGE.toFloat(),
                         modifier = Modifier.padding(horizontal = spacing.large)
                     )
 

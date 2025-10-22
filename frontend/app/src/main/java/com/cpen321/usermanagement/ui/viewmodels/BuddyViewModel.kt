@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.cpen321.usermanagement.common.Constants
 
 data class BuddyUiState(
     val isLoading: Boolean = false,
@@ -84,14 +85,16 @@ class BuddyViewModel @Inject constructor(
         val minAge = s.targetMinAge
         val maxAge = s.targetMaxAge
 
-        if ((minLevel != null && (minLevel < 1 || minLevel > 3)) || (maxLevel != null && (maxLevel < 1 || maxLevel > 3))) {
-            return "Level must be between 1 and 3"
+        if ((minLevel != null && (minLevel < Constants.BEGINNER_LEVEL || minLevel > Constants.ADVANCED_LEVEL)) ||
+            (maxLevel != null && (maxLevel < Constants.BEGINNER_LEVEL || maxLevel > Constants.ADVANCED_LEVEL))) {
+            return "Level must be between ${Constants.BEGINNER_LEVEL} and ${Constants.ADVANCED_LEVEL}"
         }
         if (minLevel != null && maxLevel != null && minLevel > maxLevel) {
             return "Min level cannot exceed max level"
         }
-        if ((minAge != null && (minAge < 13 || minAge > 100)) || (maxAge != null && (maxAge < 13 || maxAge > 100))) {
-            return "Age must be between 13 and 100"
+        if ((minAge != null && (minAge < Constants.MIN_AGE || minAge > Constants.MAX_AGE)) ||
+            (maxAge != null && (maxAge < Constants.MIN_AGE || maxAge > Constants.MAX_AGE))) {
+            return "Age must be between ${Constants.MIN_AGE} and ${Constants.MAX_AGE}"
         }
         if (minAge != null && maxAge != null && minAge > maxAge) {
             return "Min age cannot exceed max age"
