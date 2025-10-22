@@ -248,12 +248,13 @@ fun ManageProfileScreen(
         }
     }
 
+    // ManageProfileScreen.kt
     val onCitySelect: (String) -> Unit = { label ->
         val match = profileViewModel.citySuggestions.value.firstOrNull { it.label == label }
         formState = formState.copy(
             selectedCity = label,
             selectedCityPlaceId = match?.placeId,
-            cityQuery = "" // collapse
+            cityQuery = label   // <-- was "", set to label so it shows immediately
         )
     }
     val onExperienceSelect: (ExperienceLevel) -> Unit = { lvl ->
@@ -683,8 +684,13 @@ private fun CityAutocompleteField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
-    val textValue = if (hasFocus) query else if (selectedCity != null && query.isBlank()) selectedCity else query
+    val textValue = when {
+        hasFocus && query.isNotEmpty() -> query         // typing → show what they type
+        !selectedCity.isNullOrEmpty() -> selectedCity   // idle → show selected city
+        else -> query                                   // fallback
+    }
     val showMenu = isEnabled && hasFocus && query.length >= 2 && suggestions.isNotEmpty()
+
 
     ExposedDropdownMenuBox(
         expanded = expanded && showMenu,
