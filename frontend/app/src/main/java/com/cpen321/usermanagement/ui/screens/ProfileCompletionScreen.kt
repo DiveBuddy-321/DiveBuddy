@@ -526,7 +526,7 @@ private fun AgeInputField(
 ) {
     OutlinedTextField(
         value = ageText,
-        onValueChange = { v -> if (v.length <= 3 && v.all(Char::isDigit)) onAgeChange(v) },
+        onValueChange = onAgeChange,
         label = { Text("Age") },
         placeholder = { Text("e.g., 22") },
         modifier = modifier.fillMaxWidth(),
