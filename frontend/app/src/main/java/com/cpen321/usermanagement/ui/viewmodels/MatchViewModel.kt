@@ -18,7 +18,7 @@ data class MatchUiState(
     val currentIndex: Int = 0,
     val name: String = "",
     val age: Int = 0,
-    val level: Int = 0,
+    val skillLevel: String = "",
     val bio: String = "",
     val profilePicture: String? = null,
     val location: String = "",
@@ -96,10 +96,10 @@ class MatchViewModel @Inject constructor(
                 currentIndex = currentIndex,
                 name = user.name,
                 age = user.age ?: 0,
-                level = user.level ?: 0,
+                skillLevel = user.skillLevel ?: "",
                 bio = user.bio ?: "",
                 profilePicture = user.profilePicture,
-                location = formatLocation(user.city, user.province, user.country, user.lat, user.long),
+                location = user.location ?: "",
                 distance = buddy.distance,
                 hasMoreProfiles = currentIndex < buddies.size - 1
             )
@@ -149,30 +149,5 @@ class MatchViewModel @Inject constructor(
         }
     }
 
-    private fun formatLocation(
-        city: String?,
-        province: String?,
-        country: String?,
-        lat: Double?,
-        long: Double?
-    ): String {
-        // Use geocoded location if available
-        val locationParts = listOfNotNull(
-            city?.takeIf { it.isNotBlank() },
-            province?.takeIf { it.isNotBlank() },
-            country?.takeIf { it.isNotBlank() }
-        )
-        
-        if (locationParts.isNotEmpty()) {
-            return locationParts.joinToString(", ")
-        }
-        
-        // Fallback to lat/long if geocoded location is not available
-        return if (lat != null && long != null) {
-            "%.2f, %.2f".format(lat, long)
-        } else {
-            "Unknown"
-        }
-    }
 }
 

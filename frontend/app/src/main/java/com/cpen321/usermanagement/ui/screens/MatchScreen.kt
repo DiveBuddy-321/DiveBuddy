@@ -46,7 +46,7 @@ fun MatchScreen(
         isLoading = uiState.isLoading,
         name = uiState.name,
         age = uiState.age,
-        level = uiState.level,
+        skillLevel = uiState.skillLevel,
         bio = uiState.bio,
         profilePicture = uiState.profilePicture,
         location = uiState.location,
@@ -64,7 +64,7 @@ private fun MatchContent(
     isLoading: Boolean = false,
     name: String = "",
     age: Int = 0,
-    level: Int = 0,
+    skillLevel: String = "",
     bio: String = "",
     profilePicture: String? = null,
     location: String = "",
@@ -156,7 +156,7 @@ private fun MatchContent(
                                 contentDescription = null
                             )
                             Text(
-                                text = "Level: $level",
+                                text = "Level: ${if (skillLevel.isNotBlank()) skillLevel else "-"}",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary

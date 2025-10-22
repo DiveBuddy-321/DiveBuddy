@@ -17,12 +17,10 @@ data class User(
     val bio: String?,
     val profilePicture: String?,
     val age: Int? = null,
-    val level: Int? = null,
-    val lat: Double? = null,
-    val long: Double? = null,
-    val city: String? = null,
-    val province: String? = null,
-    val country: String? = null,
+    val skillLevel: String? = null,
+    val location: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null
 )

@@ -6,32 +6,32 @@ config();
 
 interface CityLocation {
   name: string;
-  lat: number;
-  long: number;
+  latitude: number;
+  longitude: number;
   count: number;
 }
 
 const cities: CityLocation[] = [
-  { name: 'Vancouver', lat: 49.2827, long: -123.1207, count: 50 },
-  { name: 'Toronto', lat: 43.6532, long: -79.3832, count: 25 },
-  { name: 'Calgary', lat: 51.0447, long: -114.0719, count: 25 },
-  { name: 'Edmonton', lat: 53.5461, long: -113.4938, count: 15 },
-  { name: 'Seattle', lat: 47.6062, long: -122.3321, count: 20 },
-  { name: 'San Francisco', lat: 37.7749, long: -122.4194, count: 30 },
-  { name: 'Los Angeles', lat: 34.0522, long: -118.2437, count: 10 },
-  { name: 'Chicago', lat: 41.8781, long: -87.6298, count: 10 },
-  { name: 'Atlanta', lat: 33.7490, long: -84.3880, count: 15 },
-  { name: 'Dallas', lat: 32.7767, long: -96.7970, count: 20 },
-  { name: 'Houston', lat: 29.7604, long: -95.3698, count: 10 },
-  { name: 'Miami', lat: 25.7617, long: -80.1918, count: 5 },
-  { name: 'Tampa', lat: 27.9506, long: -82.4572, count: 25 },
-  { name: 'New York', lat: 40.7128, long: -74.0060, count: 40 },
-  { name: 'Boston', lat: 42.3601, long: -71.0589, count: 20 },
-  { name: 'Washington DC', lat: 38.9072, long: -77.0369, count: 20 },
-  { name: 'Montreal', lat: 45.5017, long: -73.5673, count: 30 },
-  { name: 'Ottawa', lat: 45.4215, long: -75.6972, count: 10 },
-  { name: 'Halifax', lat: 44.6488, long: -63.5752, count: 12 },
-  { name: 'St. Johns', lat: 47.5615, long: -52.7126, count: 10 },
+  { name: 'Vancouver', latitude: 49.2827, longitude: -123.1207, count: 50 },
+  { name: 'Toronto', latitude: 43.6532, longitude: -79.3832, count: 25 },
+  { name: 'Calgary', latitude: 51.0447, longitude: -114.0719, count: 25 },
+  { name: 'Edmonton', latitude: 53.5461, longitude: -113.4938, count: 15 },
+  { name: 'Seattle', latitude: 47.6062, longitude: -122.3321, count: 20 },
+  { name: 'San Francisco', latitude: 37.7749, longitude: -122.4194, count: 30 },
+  { name: 'Los Angeles', latitude: 34.0522, longitude: -118.2437, count: 10 },
+  { name: 'Chicago', latitude: 41.8781, longitude: -87.6298, count: 10 },
+  { name: 'Atlanta', latitude: 33.7490, longitude: -84.3880, count: 15 },
+  { name: 'Dallas', latitude: 32.7767, longitude: -96.7970, count: 20 },
+  { name: 'Houston', latitude: 29.7604, longitude: -95.3698, count: 10 },
+  { name: 'Miami', latitude: 25.7617, longitude: -80.1918, count: 5 },
+  { name: 'Tampa', latitude: 27.9506, longitude: -82.4572, count: 25 },
+  { name: 'New York', latitude: 40.7128, longitude: -74.0060, count: 40 },
+  { name: 'Boston', latitude: 42.3601, longitude: -71.0589, count: 20 },
+  { name: 'Washington DC', latitude: 38.9072, longitude: -77.0369, count: 20 },
+  { name: 'Montreal', latitude: 45.5017, longitude: -73.5673, count: 30 },
+  { name: 'Ottawa', latitude: 45.4215, longitude: -75.6972, count: 10 },
+  { name: 'Halifax', latitude: 44.6488, longitude: -63.5752, count: 12 },
+  { name: 'St. Johns', latitude: 47.5615, longitude: -52.7126, count: 10 },
 ];
 
 const firstNames = [
@@ -105,7 +105,7 @@ function addLocationNoise(coord: number, isLatitude: boolean): number {
   }
 }
 
-function generateUser(city: string, lat: number, long: number, index: number) {
+function generateUser(city: string, latitude: number, longitude: number, index: number) {
   const firstName = getRandomElement(firstNames);
   const lastName = getRandomElement(lastNames);
   const name = `${firstName} ${lastName}`;
@@ -117,22 +117,23 @@ function generateUser(city: string, lat: number, long: number, index: number) {
     email,
     name,
     age: getRandomInt(18, 50),
-    level: getRandomInt(1, 3),
-    lat: addLocationNoise(lat, true),
-    long: addLocationNoise(long, false),
+    skillLevel: getRandomElement(['Beginner','Intermediate','Expert'] as const),
+    location: city,
+    latitude: addLocationNoise(latitude, true),
+    longitude: addLocationNoise(longitude, false),
     bio: Math.random() > 0.3 ? getRandomElement(bios) : undefined,
     profilePicture: undefined,
   };
 }
 
-function generateRandomNorthAmericanLocation(): { lat: number; long: number } {
+function generateRandomNorthAmericanLocation(): { latitude: number; longitude: number; name: string } {
   // North America roughly spans:
   // Latitude: 15°N to 70°N
   // Longitude: -170°W to -50°W
-  return {
-    lat: getRandomFloat(25, 60), // Focus on mainland US and Canada
-    long: getRandomFloat(-130, -65),
-  };
+  const latitude = getRandomFloat(25, 60); // Focus on mainland US and Canada
+  const longitude = getRandomFloat(-130, -65);
+  const name = 'Random_NA';
+  return { latitude, longitude, name };
 }
 
 async function seedDatabase() {
@@ -153,7 +154,7 @@ async function seedDatabase() {
     for (const city of cities) {
       console.log(`   - Generating ${city.count} users for ${city.name}`);
       for (let i = 0; i < city.count; i++) {
-        const user = generateUser(city.name, city.lat, city.long, userIndex++);
+        const user = generateUser(city.name, city.latitude, city.longitude, userIndex++);
         usersToInsert.push(user);
       }
     }
@@ -161,8 +162,8 @@ async function seedDatabase() {
     // Generate random users across North America
     console.log('🌎 Generating 100 users across North America...');
     for (let i = 0; i < 100; i++) {
-      const location = generateRandomNorthAmericanLocation();
-      const user = generateUser('Random_NA', location.lat, location.long, userIndex++);
+      const loc = generateRandomNorthAmericanLocation();
+      const user = generateUser(loc.name, loc.latitude, loc.longitude, userIndex++);
       usersToInsert.push(user);
     }
 
