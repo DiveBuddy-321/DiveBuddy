@@ -19,6 +19,6 @@ app.use('*', notFoundHandler);
 app.use(errorHandler);
 
 connectDB();
-app.listen(PORT, () => {
+app.listen(PORT, () => { 
   console.log(`🚀 Server running on port ${PORT}`);
 });
