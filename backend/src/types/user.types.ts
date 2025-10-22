@@ -27,7 +27,7 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   googleId: z.string().min(1),
-  age: z.number().int().positive().optional().refine(age => age !== undefined && age >= MIN_AGE && age <= MAX_AGE),
+  age: z.number().int().positive().optional(),
   
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
