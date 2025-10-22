@@ -528,7 +528,6 @@ private fun ProfileForm(
             supportingText = { data.formState.ageError?.let { Text(it) } }
         )
 
-// NEW: City autocomplete (matches Complete Profile)
         CityAutocompleteField(
             query = data.formState.cityQuery,
             selectedCity = data.formState.selectedCity,
