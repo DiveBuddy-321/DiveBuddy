@@ -126,15 +126,22 @@ class BuddyViewModel @Inject constructor(
 
             if (result.isSuccess) {
                 val buddies = result.getOrNull()!!
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    buddies = buddies,
-                    successMessage = "Found ${buddies.size} buddies!",
-                    showMatches = buddies.isNotEmpty()
-                )
-                
-                // Immediately navigate to match screen if we have buddies
-                if (buddies.isNotEmpty()) {
+                if (buddies.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        buddies = emptyList(),
+                        errorMessage = "No buddies found",
+                        successMessage = null,
+                        showMatches = false
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        buddies = buddies,
+                        successMessage = "Found ${buddies.size} buddies!",
+                        showMatches = true
+                    )
+                    // Immediately navigate to match screen if we have buddies
                     onNavigateToMatch?.invoke()
                 }
             } else {

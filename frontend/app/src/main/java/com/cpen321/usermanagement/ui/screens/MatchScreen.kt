@@ -33,6 +33,13 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.MatchViewModel
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import com.cpen321.usermanagement.ui.components.MessageSnackbar
+import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 
 @Composable
 fun MatchScreen(
@@ -40,22 +47,44 @@ fun MatchScreen(
     viewModel: MatchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackBarHostState = remember { SnackbarHostState() }
+    val (errorMessage, setErrorMessage) = remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState.hasMoreProfiles, uiState.name) {
+        if (uiState.name.isEmpty()) {
+            setErrorMessage("No more matches")
+        }
+    }
     
-    MatchContent(
-        modifier = modifier,
-        isLoading = uiState.isLoading,
-        name = uiState.name,
-        age = uiState.age,
-        skillLevel = uiState.skillLevel,
-        bio = uiState.bio,
-        profilePicture = uiState.profilePicture,
-        location = uiState.location,
-        distance = uiState.distance,
-        hasMoreProfiles = uiState.hasMoreProfiles,
-        onChatClick = { viewModel.onChatClick() },
-        onBackClick = { viewModel.onBackClick() },
-        onRejectClick = { viewModel.onRejectClick() }
-    )
+    Scaffold(
+        snackbarHost = {
+            MessageSnackbar(
+                hostState = snackBarHostState,
+                messageState = MessageSnackbarState(
+                    successMessage = null,
+                    errorMessage = errorMessage,
+                    onSuccessMessageShown = {},
+                    onErrorMessageShown = { setErrorMessage(null) }
+                )
+            )
+        }
+    ) { padding ->
+        MatchContent(
+            modifier = modifier.padding(padding),
+            isLoading = uiState.isLoading,
+            name = uiState.name,
+            age = uiState.age,
+            skillLevel = uiState.skillLevel,
+            bio = uiState.bio,
+            profilePicture = uiState.profilePicture,
+            location = uiState.location,
+            distance = uiState.distance,
+            hasMoreProfiles = uiState.hasMoreProfiles,
+            onChatClick = { viewModel.onChatClick() },
+            onBackClick = { viewModel.onBackClick() },
+            onRejectClick = { viewModel.onRejectClick() }
+        )
+    }
 }
 
 @Composable

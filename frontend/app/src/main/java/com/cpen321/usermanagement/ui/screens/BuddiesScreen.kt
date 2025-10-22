@@ -25,6 +25,11 @@ import kotlin.math.roundToInt
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
 import Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import com.cpen321.usermanagement.ui.components.MessageSnackbar
+import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 
 @Composable
 fun BuddiesScreen(
@@ -32,22 +37,37 @@ fun BuddiesScreen(
     viewModel: BuddyViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
-    BuddiesContent(
-        modifier = modifier,
-        isLoading = uiState.isLoading,
-        errorMessage = uiState.errorMessage,
-        targetMinLevel = uiState.targetMinLevel,
-        targetMaxLevel = uiState.targetMaxLevel,
-        targetMinAge = uiState.targetMinAge,
-        targetMaxAge = uiState.targetMaxAge,
-        onMatchClick = { 
-            viewModel.fetchBuddies()
-        },
-        onFiltersChange = { minLevel, maxLevel, minAge, maxAge ->
-            viewModel.setFilters(minLevel, maxLevel, minAge, maxAge)
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    Scaffold(
+        snackbarHost = {
+            MessageSnackbar(
+                hostState = snackBarHostState,
+                messageState = MessageSnackbarState(
+                    successMessage = uiState.successMessage,
+                    errorMessage = uiState.errorMessage,
+                    onSuccessMessageShown = viewModel::clearSuccessMessage,
+                    onErrorMessageShown = viewModel::clearError
+                )
+            )
         }
-    )
+    ) { padding ->
+        BuddiesContent(
+            modifier = modifier.padding(padding),
+            isLoading = uiState.isLoading,
+            errorMessage = uiState.errorMessage,
+            targetMinLevel = uiState.targetMinLevel,
+            targetMaxLevel = uiState.targetMaxLevel,
+            targetMinAge = uiState.targetMinAge,
+            targetMaxAge = uiState.targetMaxAge,
+            onMatchClick = { 
+                viewModel.fetchBuddies()
+            },
+            onFiltersChange = { minLevel, maxLevel, minAge, maxAge ->
+                viewModel.setFilters(minLevel, maxLevel, minAge, maxAge)
+            }
+        )
+    }
 }
 
 @Composable
@@ -133,13 +153,6 @@ private fun BuddiesContent(
                         Text(text = "Match with Buddies")
                     }
                     
-                    errorMessage?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
                 }
             }
         }
