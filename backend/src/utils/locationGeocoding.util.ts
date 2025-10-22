@@ -22,7 +22,7 @@ export async function getCoordinatesFromLocation(location: string): Promise<Geoc
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`Geocoding request failed: HTTP ${res.status}`);
+      console.error(`Geocoding request failed for location "${location}": HTTP ${res.status}`);
       return null;
     }
     const data = (await res.json()) as GeocodeApiResponse;
