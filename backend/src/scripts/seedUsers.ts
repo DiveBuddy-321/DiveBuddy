@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
 import { userModel } from '../models/user.model';
+import { SKILL_LEVELS } from '../constants/statics';
 
 config();
 
@@ -80,7 +81,7 @@ const bios = [
   'I like biking to my crush\'s house and surprising them',
 ];
 
-function getRandomElement<T>(array: T[]): T {
+function getRandomElement<T>(array: readonly T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
@@ -117,7 +118,7 @@ function generateUser(city: string, latitude: number, longitude: number, index: 
     email,
     name,
     age: getRandomInt(18, 50),
-    skillLevel: getRandomElement(['Beginner','Intermediate','Expert'] as const),
+    skillLevel: getRandomElement(SKILL_LEVELS),
     location: city,
     latitude: addLocationNoise(latitude, true),
     longitude: addLocationNoise(longitude, false),

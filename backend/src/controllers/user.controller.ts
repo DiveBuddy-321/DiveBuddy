@@ -4,7 +4,6 @@ import { GetProfileResponse, UpdateProfileRequest } from '../types/user.types';
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { userModel } from '../models/user.model';
-// geocoding removed; location is provided directly by client
 
 export class UserController {
   async getAllProfiles(req: Request, res: Response<{ message: string; data?: { users: any[] } }>, next: NextFunction) {

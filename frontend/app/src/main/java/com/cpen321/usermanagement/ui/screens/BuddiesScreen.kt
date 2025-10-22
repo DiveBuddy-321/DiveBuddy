@@ -15,7 +15,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -160,13 +159,15 @@ private fun BuddiesContent(
 }
 
 private fun getLevelLabel(minLevel: Int, maxLevel: Int): String {
-    return when {
-        minLevel == 1 && maxLevel == 1 -> "Beginner only"
-        minLevel == 1 && maxLevel == 2 -> "Beginner and Intermediate"
-        minLevel == 1 && maxLevel == 3 -> "All levels"
-        minLevel == 2 && maxLevel == 2 -> "Intermediate only"
-        minLevel == 2 && maxLevel == 3 -> "Intermediate and Advanced"
-        minLevel == 3 && maxLevel == 3 -> "Advanced only"
-        else -> "Invalid level range"
+    val levelNames = listOf("Beginner", "Intermediate", "Advanced")
+    if (minLevel < 1 || maxLevel > 3 || minLevel > maxLevel) {
+        return "Invalid level range"
+    }
+    return if (minLevel == maxLevel) {
+        "${levelNames[minLevel - 1]} only"
+    } else if (minLevel == 1 && maxLevel == 3) {
+        "All levels"
+    } else {
+        levelNames.subList(minLevel - 1, maxLevel).joinToString(" and ")
     }
 }

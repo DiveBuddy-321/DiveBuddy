@@ -5,6 +5,7 @@ import { GetAllBuddiesResponse } from '../types/buddy.types';
 import { buddyAlgorithm } from '../utils/buddyAlgorithm.util';
 import { isUserReadyForBuddyMatching } from '../types/user.types';
 import { userModel } from '../models/user.model';
+import { SKILL_LEVELS } from '../constants/statics';
 
 export class BuddyController {
   async getAllBuddies(
@@ -39,7 +40,7 @@ export class BuddyController {
       const currentLat = currentUser.latitude;
       const currentLevel = ((): number | undefined => {
         if (currentUser.skillLevel !== undefined) {
-          const idx = ['Beginner','Intermediate','Expert'].indexOf(currentUser.skillLevel);
+          const idx = SKILL_LEVELS.indexOf(currentUser.skillLevel);
           return idx === -1 ? undefined : idx + 1;
         }
         return undefined;
