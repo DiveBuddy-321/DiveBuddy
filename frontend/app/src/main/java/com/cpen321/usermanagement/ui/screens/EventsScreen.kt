@@ -29,7 +29,6 @@ import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -105,13 +104,27 @@ private fun EventsContent(
             )
         }
 
-        Text(
-            text = "Upcoming Events",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = spacing.small)
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing.medium)
+        ) {
+            Text(
+                text = "Upcoming Events",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = spacing.small)
+            )
+            Button(
+                onClick = onRefresh
+            ) {
+                Text(
+                    text = "Refresh Events",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
         
         when {
             uiState.isLoading -> {
@@ -145,18 +158,33 @@ private fun EventsContent(
                 )
             }
             else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                    modifier = Modifier.padding(horizontal = spacing.large)
-                ) {
-                    items(uiState.events) { event ->
-                        EventCard(
-                            event = event,
-                            onClick = { onEventClick(event) }
-                        )
-                    }
-                }
+                EventsColumn(
+                    onEventClick = onEventClick,
+                    onRefresh = onRefresh,
+                    uiState = uiState
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun EventsColumn(
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit,
+    uiState: EventUiState
+) {
+    val spacing = LocalSpacing.current
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        modifier = Modifier.padding(horizontal = spacing.large)
+    ) {
+        items(uiState.events) { event ->
+            EventCard(
+                event = event,
+                onClick = { onEventClick(event) }
+            )
         }
     }
 }
@@ -168,7 +196,7 @@ private fun EventCard(
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
-    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US);
+    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     
     Card(
         modifier = modifier.clickable { onClick() },
