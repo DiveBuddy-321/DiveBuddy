@@ -124,17 +124,21 @@ class ProfileViewModel @Inject constructor(
             client.fetchPlace(request)
                 .addOnSuccessListener { r ->
                     val p = r.place
-                    val label = p.formattedAddress ?: p.displayName ?: "Unknown"
+                    val label = p.formattedAddress ?: p.displayName
                     val loc = p.location
-                    cont.resume(
-                        ResolvedCity(
-                            display = label,
-                            placeId = p.id ?: placeId,
-                            lat = loc?.latitude ?: 0.0,
-                            lng = loc?.longitude ?: 0.0
+                    if (label == null) {
+                        cont.resumeWithException(IllegalStateException("Could not resolve city label"))
+                    } else {
+                        cont.resume(
+                            ResolvedCity(
+                                display = label,
+                                placeId = p.id ?: placeId,
+                                lat = loc?.latitude ?: 0.0,
+                                lng = loc?.longitude ?: 0.0
+                            )
                         )
-                    )
-                    sessionToken = null // end autocomplete session after success
+                        sessionToken = null // end autocomplete session after success
+                    }
                 }
                 .addOnFailureListener { e ->
                     cont.resumeWithException(e)
