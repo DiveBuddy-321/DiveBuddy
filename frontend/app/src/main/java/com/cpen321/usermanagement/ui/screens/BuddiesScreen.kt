@@ -161,14 +161,14 @@ private fun BuddiesContent(
 
 private fun getLevelLabel(minLevel: Int, maxLevel: Int): String {
     val levelNames = listOf("Beginner", "Intermediate", "Advanced")
-    if (minLevel < 1 || maxLevel > 3 || minLevel > maxLevel) {
+    if (minLevel < Constants.BEGINNER_LEVEL || maxLevel > Constants.ADVANCED_LEVEL || minLevel > maxLevel) {
         return "Invalid level range"
     }
     return if (minLevel == maxLevel) {
-        "${levelNames[minLevel - 1]} only"
-    } else if (minLevel == 1 && maxLevel == 3) {
+        "${levelNames[minLevel - Constants.BEGINNER_LEVEL]} only"
+    } else if (minLevel == Constants.BEGINNER_LEVEL && maxLevel == Constants.ADVANCED_LEVEL) {
         "All levels"
     } else {
-        levelNames.subList(minLevel - 1, maxLevel).joinToString(" and ")
+        levelNames.subList(minLevel - Constants.BEGINNER_LEVEL, maxLevel - Constants.BEGINNER_LEVEL + 1).joinToString(" and ")
     }
 }
