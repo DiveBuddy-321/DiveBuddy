@@ -27,7 +27,10 @@ export const buddyAlgorithm = (
 
     //if user has specified a minimum and maximum level, limit users to those within the range
     if (targetMinLevel !== undefined && targetMaxLevel !== undefined) {
-        const filteredUsers = eligibleUsers.filter(user => getNumericLevel(user) !== undefined && (getNumericLevel(user) as number) >= targetMinLevel && (getNumericLevel(user) as number) <= targetMaxLevel);
+        const filteredUsers = eligibleUsers.filter(user => {
+            const numericLevel = getNumericLevel(user);
+            return numericLevel !== undefined && (numericLevel as number) >= targetMinLevel && (numericLevel as number) <= targetMaxLevel;
+        });
         eligibleUsers = filteredUsers;
     }
     //if user has specified a minimum and maximum age, filter eligible users to those within the range
