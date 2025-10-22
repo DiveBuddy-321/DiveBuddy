@@ -100,7 +100,7 @@ export class UserModel {
         throw new Error('Invalid update data');
       }
       console.error('Error creating user:', error);
-      throw error;
+      throw new Error(`Failed to create user: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
