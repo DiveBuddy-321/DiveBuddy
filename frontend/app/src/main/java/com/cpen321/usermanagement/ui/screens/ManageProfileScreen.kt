@@ -81,32 +81,39 @@ private data class ProfileFormState(
     val selectedCityPlaceId: String? = null,
     val experience: ExperienceLevel? = null,
     val bioText: String = "",
-    val showErrors: Boolean = false
+    val showErrors: Boolean = false,
+    val originalCityDisplay: String? = null
 ) {
+    private fun isEditingCity(): Boolean =
+        cityQuery.isNotBlank() || (selectedCity ?: "") != (originalCityDisplay ?: "")
+
+    private fun isCityValid(): Boolean =
+        if (!isEditingCity()) true else !selectedCityPlaceId.isNullOrBlank()
+
     private fun isNameValid() = name.isNotBlank()
     private fun isAgeValid(): Boolean {
         if (ageText.isBlank()) return true
         val a = ageText.toIntOrNull() ?: return false
         return a in 13..120
     }
-    private fun isCityValid() = !selectedCityPlaceId.isNullOrBlank()
-    private fun isExpValid() = experience != null
+    private fun isExpValid() = true
     private fun isBioValid() = bioText.length <= 500
 
     fun canSave(): Boolean =
         isNameValid() && isAgeValid() && isCityValid() && isExpValid() && isBioValid()
 
-    val ageOrNull: Int? get() = ageText.toIntOrNull()
-
-    // Keep existing SaveButton enable behavior with minimal changes:
-    // treat "has changes" as "form is valid" so the button enables only when ready to save.
-    fun hasChanges(): Boolean = canSave()
-
     val nameError: String? get() = if (!showErrors) null else if (!isNameValid()) "Required" else null
     val ageError: String? get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (13–120)" else null
-    val cityError: String? get() = if (!showErrors) null else if (!isCityValid()) "Pick a city from suggestions" else null
-    val expError: String? get() = if (!showErrors) null else if (!isExpValid()) "Select experience level" else null
+    val cityError: String?
+        get() = if (!showErrors) null
+        else if (isEditingCity() && selectedCityPlaceId.isNullOrBlank()) "Pick a city from suggestions" else null
+    val expError: String? get() = null
     val bioError: String? get() = if (!showErrors) null else if (!isBioValid()) "Max 500 characters" else null
+
+    val ageOrNull: Int? get() = ageText.toIntOrNull()
+
+    // Keep Save visible; the button enable can ignore this if you prefer
+    fun hasChanges(): Boolean = true
 }
 
 
@@ -203,10 +210,12 @@ fun ManageProfileScreen(
                 name = user.name,
                 email = user.email,
                 bioText = user.bio ?: "",
-                ageText = user.age?.toString() ?: "", // if your DTO differs, map here
+                ageText = user.age?.toString() ?: "",
+                // show existing city as the label, but no placeId (since we didn't resolve it)
                 selectedCity = user.location ?: "",
                 selectedCityPlaceId = null,
-                cityQuery = user.location ?: "",
+                cityQuery = "", // keep empty so the field shows `selectedCity`
+                originalCityDisplay = user.location, // NEW: remember original
                 experience = when ((user.skillLevel ?: "").lowercase()) {
                     "beginner" -> ExperienceLevel.BEGINNER
                     "intermediate" -> ExperienceLevel.INTERMEDIATE
@@ -215,7 +224,6 @@ fun ManageProfileScreen(
                 }
             )
         }
-
     }
 
     // NEW handlers (mirror Complete Profile)
@@ -231,15 +239,21 @@ fun ManageProfileScreen(
         cityJob?.cancel()
         cityJob = scope.launch {
             delay(200) // debounce
-            if (q.length >= 2) profileViewModel.queryCities(q) else profileViewModel.queryCities("")
+            if (q.length >= 2) {
+                profileViewModel.queryCities(q)
+            } else {
+                // Prefer clearing suggestions instead of querying ""
+                profileViewModel.queryCities("#~clear~#") // <-- add this in your VM (or see Note below)
+            }
         }
     }
+
     val onCitySelect: (String) -> Unit = { label ->
         val match = profileViewModel.citySuggestions.value.firstOrNull { it.label == label }
         formState = formState.copy(
             selectedCity = label,
             selectedCityPlaceId = match?.placeId,
-            cityQuery = "" // collapse menu
+            cityQuery = "" // collapse
         )
     }
     val onExperienceSelect: (ExperienceLevel) -> Unit = { lvl ->
@@ -257,14 +271,14 @@ fun ManageProfileScreen(
                 formState = formState.copy(showErrors = true)
                 return@ManageProfileScreenActions
             }
-            val pid = formState.selectedCityPlaceId
-            if (pid == null) {
-                formState = formState.copy(showErrors = true)
-                return@ManageProfileScreenActions
-            }
             scope.launch {
                 try {
-                    val resolved = profileViewModel.resolveCity(pid)
+                    val isEditingCity = formState.cityQuery.isNotBlank() ||
+                            (formState.selectedCity ?: "") != (formState.originalCityDisplay ?: "")
+
+                    val pid = formState.selectedCityPlaceId
+                    val resolved = if (isEditingCity && pid != null) profileViewModel.resolveCity(pid) else null
+
                     val safeName = formState.name.trim()
                     val safeBio = formState.bioText.trim()
                     val safeAge = formState.ageOrNull
@@ -272,16 +286,15 @@ fun ManageProfileScreen(
 
                     profileViewModel.updateProfileFull(
                         name = safeName,
-                        bio = safeBio,
+                        bio = safeBio.ifEmpty { null },
                         age = safeAge,
-                        location = resolved.display,
-                        latitude = resolved.lat,
-                        longitude = resolved.lng,
+                        // Only send city if user actually changed it *and* it was resolved
+                        location = resolved?.display,
+                        latitude = resolved?.lat,
+                        longitude = resolved?.lng,
                         skillLevel = skill
                     )
-                } catch (_: Exception) {
-                    // optionally: show snackbar
-                }
+                } catch (_: Exception) { /* snackbar if you want */ }
             }
         },
         onImagePickerDismiss = { showImagePickerDialog = false },
@@ -515,7 +528,7 @@ private fun ProfileForm(
 
         SaveButton(
             isSaving = data.isSavingProfile,
-            isEnabled = data.formState.hasChanges(),
+            isEnabled = !data.isSavingProfile,
             onClick = data.onSaveClick
         )
     }
@@ -670,8 +683,8 @@ private fun CityAutocompleteField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
-    val textValue = if (selectedCity != null && query.isBlank()) selectedCity else query
-    val showMenu = isEnabled && hasFocus && query.isNotBlank() && suggestions.isNotEmpty()
+    val textValue = if (hasFocus) query else if (selectedCity != null && query.isBlank()) selectedCity else query
+    val showMenu = isEnabled && hasFocus && query.length >= 2 && suggestions.isNotEmpty()
 
     ExposedDropdownMenuBox(
         expanded = expanded && showMenu,
@@ -705,7 +718,7 @@ private fun CityAutocompleteField(
                 .fillMaxWidth()
                 .onFocusChanged {
                     hasFocus = it.isFocused
-                    expanded = it.isFocused && query.isNotBlank() && suggestions.isNotEmpty()
+                    expanded = it.isFocused && query.length >= 2 && suggestions.isNotEmpty()
                 }
         )
         ExposedDropdownMenu(
