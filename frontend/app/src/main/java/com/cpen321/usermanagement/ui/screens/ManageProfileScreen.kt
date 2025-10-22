@@ -73,47 +73,72 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 
 private data class ProfileFormState(
+    // current values
     val name: String = "",
     val email: String = "",
     val ageText: String = "",
     val cityQuery: String = "",
-    val selectedCity: String? = null,
-    val selectedCityPlaceId: String? = null,
+    val selectedCity: String? = null,            // label currently shown
+    val selectedCityPlaceId: String? = null,     // null until user picks a suggestion
     val experience: ExperienceLevel? = null,
     val bioText: String = "",
     val showErrors: Boolean = false,
-    val originalCityDisplay: String? = null
-) {
-    private fun isEditingCity(): Boolean =
-        cityQuery.isNotBlank() || (selectedCity ?: "") != (originalCityDisplay ?: "")
 
-    private fun isCityValid(): Boolean =
-        if (!isEditingCity()) true else !selectedCityPlaceId.isNullOrBlank()
+    // ORIGINAL SNAPSHOT (from loaded user)
+    val originalName: String = "",
+    val originalAge: Int? = null,
+    val originalCityDisplay: String? = null,     // e.g., "Richmond, BC, Canada"
+    val originalExperience: ExperienceLevel? = null,
+    val originalBio: String = ""
+) {
+    // helpers
+    private fun String?.norm() = this?.trim().orEmpty()
+    private fun equalsNorm(a: String?, b: String?) = a.norm() == b.norm()
 
     private fun isNameValid() = name.isNotBlank()
+
     private fun isAgeValid(): Boolean {
         if (ageText.isBlank()) return true
         val a = ageText.toIntOrNull() ?: return false
         return a in 13..120
     }
+
+    // City is OPTIONAL. Valid unless the user is editing it, in which case a placeId is required.
+    private fun isEditingCity(): Boolean =
+        cityQuery.isNotBlank() || !equalsNorm(selectedCity, originalCityDisplay)
+
+    private fun isCityValid(): Boolean =
+        if (!isEditingCity()) true else !selectedCityPlaceId.isNullOrBlank()
+
+    // Experience OPTIONAL (no validation error)
     private fun isExpValid() = true
+
     private fun isBioValid() = bioText.length <= 500
 
     fun canSave(): Boolean =
         isNameValid() && isAgeValid() && isCityValid() && isExpValid() && isBioValid()
 
+    val ageOrNull: Int? get() = ageText.toIntOrNull()
+
     val nameError: String? get() = if (!showErrors) null else if (!isNameValid()) "Required" else null
-    val ageError: String? get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (13–120)" else null
+    val ageError: String?  get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (13–120)" else null
     val cityError: String?
         get() = if (!showErrors) null
         else if (isEditingCity() && selectedCityPlaceId.isNullOrBlank()) "Pick a city from suggestions" else null
-    val expError: String? get() = null
-    val bioError: String? get() = if (!showErrors) null else if (!isBioValid()) "Max 500 characters" else null
+    val expError: String?  get() = null
+    val bioError: String?  get() = if (!showErrors) null else if (!isBioValid()) "Max 500 characters" else null
 
-    val ageOrNull: Int? get() = ageText.toIntOrNull()
+    // 🔑 Correct, diff-based dirty check
+    fun hasChanges(): Boolean {
+        val nameChanged = !equalsNorm(name, originalName)
+        val ageChanged  = ageOrNull != originalAge
+        val bioChanged  = !equalsNorm(bioText, originalBio)
+        val expChanged  = experience != originalExperience
+        // City considered changed if user typed OR the selected label differs from original
+        val cityChanged = isEditingCity()
 
-    // Keep Save visible; the button enable can ignore this if you prefer
-    fun hasChanges(): Boolean = true
+        return nameChanged || ageChanged || bioChanged || expChanged || cityChanged
+    }
 }
 
 
@@ -206,25 +231,33 @@ fun ManageProfileScreen(
 
     LaunchedEffect(uiState.user) {
         uiState.user?.let { user ->
+            val originalExp = when ((user.skillLevel ?: "").lowercase()) {
+                "beginner" -> ExperienceLevel.BEGINNER
+                "intermediate" -> ExperienceLevel.INTERMEDIATE
+                "expert" -> ExperienceLevel.EXPERT
+                else -> null
+            }
             formState = ProfileFormState(
+                // current (editable) values
                 name = user.name,
                 email = user.email,
                 bioText = user.bio ?: "",
                 ageText = user.age?.toString() ?: "",
-                // show existing city as the label, but no placeId (since we didn't resolve it)
-                selectedCity = user.location ?: "",
-                selectedCityPlaceId = null,
-                cityQuery = "", // keep empty so the field shows `selectedCity`
-                originalCityDisplay = user.location, // NEW: remember original
-                experience = when ((user.skillLevel ?: "").lowercase()) {
-                    "beginner" -> ExperienceLevel.BEGINNER
-                    "intermediate" -> ExperienceLevel.INTERMEDIATE
-                    "expert" -> ExperienceLevel.EXPERT
-                    else -> null
-                }
+                selectedCity = user.location ?: "",     // show existing city label
+                selectedCityPlaceId = null,             // unknown until user reselects
+                cityQuery = "",                         // empty to avoid auto-search
+                experience = originalExp,
+
+                // originals (snapshot)
+                originalName = user.name,
+                originalAge = user.age,
+                originalCityDisplay = user.location,
+                originalExperience = originalExp,
+                originalBio = user.bio ?: ""
             )
         }
     }
+
 
     // NEW handlers (mirror Complete Profile)
     val onAgeChange: (String) -> Unit = { v ->
@@ -272,30 +305,30 @@ fun ManageProfileScreen(
                 formState = formState.copy(showErrors = true)
                 return@ManageProfileScreenActions
             }
+
             scope.launch {
                 try {
-                    val isEditingCity = formState.cityQuery.isNotBlank() ||
-                            (formState.selectedCity ?: "") != (formState.originalCityDisplay ?: "")
+                    val editingCity = formState.cityQuery.isNotBlank() ||
+                            formState.selectedCity?.trim() != formState.originalCityDisplay?.trim()
 
                     val pid = formState.selectedCityPlaceId
-                    val resolved = if (isEditingCity && pid != null) profileViewModel.resolveCity(pid) else null
+                    val resolved = if (editingCity && pid != null) profileViewModel.resolveCity(pid) else null
 
                     val safeName = formState.name.trim()
-                    val safeBio = formState.bioText.trim()
-                    val safeAge = formState.ageOrNull
-                    val skill = formState.experience?.label
+                    val safeBio  = formState.bioText.trim()
+                    val safeAge  = formState.ageOrNull
+                    val skill    = formState.experience?.label
 
                     profileViewModel.updateProfileFull(
                         name = safeName,
                         bio = safeBio.ifEmpty { null },
                         age = safeAge,
-                        // Only send city if user actually changed it *and* it was resolved
-                        location = resolved?.display,
-                        latitude = resolved?.lat,
+                        location  = resolved?.display,   // only when actually changed & resolved
+                        latitude  = resolved?.lat,
                         longitude = resolved?.lng,
                         skillLevel = skill
                     )
-                } catch (_: Exception) { /* snackbar if you want */ }
+                } catch (_: Exception) { /* snackbar, etc. */ }
             }
         },
         onImagePickerDismiss = { showImagePickerDialog = false },
@@ -529,7 +562,7 @@ private fun ProfileForm(
 
         SaveButton(
             isSaving = data.isSavingProfile,
-            isEnabled = !data.isSavingProfile,
+            isEnabled = !data.isSavingProfile && data.formState.hasChanges(),
             onClick = data.onSaveClick
         )
     }
