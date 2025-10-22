@@ -541,7 +541,6 @@ private fun ProfileForm(
             }
         )
 
-// NEW: Experience dropdown (matches Complete Profile)
         ExperienceDropdown(
             selected = data.formState.experience,
             isEnabled = !data.isSavingProfile,
