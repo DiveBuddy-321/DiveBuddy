@@ -147,6 +147,10 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun clearCitySuggestions() {
+        _citySuggestions.value = emptyList()
+    }
+
 
     fun loadProfile() {
         viewModelScope.launch {

@@ -1,4 +1,5 @@
 package com.cpen321.usermanagement.ui.screens
+import com.cpen321.usermanagement.ui.components.ExperienceLevel
 
 import Button
 import Icon
@@ -56,19 +57,90 @@ import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 import com.cpen321.usermanagement.ui.viewmodels.ProfileUiState
 import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
 
 private data class ProfileFormState(
+    // current values
     val name: String = "",
     val email: String = "",
-    val bio: String = "",
+    val ageText: String = "",
+    val cityQuery: String = "",
+    val selectedCity: String? = null,            // label currently shown
+    val selectedCityPlaceId: String? = null,     // null until user picks a suggestion
+    val experience: ExperienceLevel? = null,
+    val bioText: String = "",
+    val showErrors: Boolean = false,
+
+    // ORIGINAL SNAPSHOT (from loaded user)
     val originalName: String = "",
+    val originalAge: Int? = null,
+    val originalCityDisplay: String? = null,     // e.g., "Richmond, BC, Canada"
+    val originalExperience: ExperienceLevel? = null,
     val originalBio: String = ""
 ) {
+    // helpers
+    private fun String?.norm() = this?.trim().orEmpty()
+    private fun equalsNorm(a: String?, b: String?) = a.norm() == b.norm()
+
+    private fun isNameValid() = name.isNotBlank()
+
+    private fun isAgeValid(): Boolean {
+        if (ageText.isBlank()) return true
+        val a = ageText.toIntOrNull() ?: return false
+        return a in 13..120
+    }
+
+    // City is OPTIONAL. Valid unless the user is editing it, in which case a placeId is required.
+    private fun isEditingCity(): Boolean =
+        cityQuery.isNotBlank() || !equalsNorm(selectedCity, originalCityDisplay)
+
+    private fun isCityValid(): Boolean =
+        if (!isEditingCity()) true else !selectedCityPlaceId.isNullOrBlank()
+
+    // Experience OPTIONAL (no validation error)
+    private fun isExpValid() = true
+
+    private fun isBioValid() = bioText.length <= 500
+
+    fun canSave(): Boolean =
+        isNameValid() && isAgeValid() && isCityValid() && isExpValid() && isBioValid()
+
+    val ageOrNull: Int? get() = ageText.toIntOrNull()
+
+    val nameError: String? get() = if (!showErrors) null else if (!isNameValid()) "Required" else null
+    val ageError: String?  get() = if (!showErrors) null else if (!isAgeValid()) "Enter a valid age (13–120)" else null
+    val cityError: String?
+        get() = if (!showErrors) null
+        else if (isEditingCity() && selectedCityPlaceId.isNullOrBlank()) "Pick a city from suggestions" else null
+    val expError: String?  get() = null
+    val bioError: String?  get() = if (!showErrors) null else if (!isBioValid()) "Max 500 characters" else null
+
+    // 🔑 Correct, diff-based dirty check
     fun hasChanges(): Boolean {
-        return (name.isNotBlank() && name != originalName) ||
-                (bio != originalBio && bio.isNotBlank())
+        val nameChanged = !equalsNorm(name, originalName)
+        val ageChanged  = ageOrNull != originalAge
+        val bioChanged  = !equalsNorm(bioText, originalBio)
+        val expChanged  = experience != originalExperience
+        // City considered changed if user typed OR the selected label differs from original
+        val cityChanged = isEditingCity()
+
+        return nameChanged || ageChanged || bioChanged || expChanged || cityChanged
     }
 }
+
 
 private data class ManageProfileScreenActions(
     val onBackClick: () -> Unit,
@@ -92,8 +164,14 @@ private data class ProfileFormData(
     val onBioChange: (String) -> Unit,
     val onEditPictureClick: () -> Unit,
     val onSaveClick: () -> Unit,
-    val onLoadingPhotoChange: (Boolean) -> Unit
+    val onLoadingPhotoChange: (Boolean) -> Unit,
+    val citySuggestions: List<String>,
+    val onAgeChange: (String) -> Unit,
+    val onCityQueryChange: (String) -> Unit,
+    val onCitySelect: (String) -> Unit,
+    val onExperienceSelect: (ExperienceLevel) -> Unit
 )
+
 
 private data class ProfileBodyData(
     val uiState: ProfileUiState,
@@ -102,9 +180,13 @@ private data class ProfileBodyData(
     val onBioChange: (String) -> Unit,
     val onEditPictureClick: () -> Unit,
     val onSaveClick: () -> Unit,
-    val onLoadingPhotoChange: (Boolean) -> Unit
+    val onLoadingPhotoChange: (Boolean) -> Unit,
+    val citySuggestions: List<String>,
+    val onAgeChange: (String) -> Unit,
+    val onCityQueryChange: (String) -> Unit,
+    val onCitySelect: (String) -> Unit,
+    val onExperienceSelect: (ExperienceLevel) -> Unit
 )
-
 private data class ProfileFieldsData(
     val name: String,
     val email: String,
@@ -121,17 +203,24 @@ fun ManageProfileScreen(
     val uiState by profileViewModel.uiState.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
 
+    val suggestions by profileViewModel.citySuggestions.collectAsState()
+    val scope = rememberCoroutineScope()
+    var cityJob by remember { mutableStateOf<Job?>(null) }
+
+    val context = LocalContext.current
+    val placesClient = remember { com.google.android.libraries.places.api.Places.createClient(context) }
+
+
     var showImagePickerDialog by remember { mutableStateOf(false) }
 
-    // Form state
     var formState by remember {
         mutableStateOf(ProfileFormState())
     }
 
-    // Side effects
     LaunchedEffect(Unit) {
         profileViewModel.clearSuccessMessage()
         profileViewModel.clearError()
+        profileViewModel.attachPlacesClient(placesClient)
         if (uiState.user == null) {
             profileViewModel.loadProfile()
         }
@@ -139,23 +228,102 @@ fun ManageProfileScreen(
 
     LaunchedEffect(uiState.user) {
         uiState.user?.let { user ->
+            val originalExp = when ((user.skillLevel ?: "").lowercase()) {
+                "beginner" -> ExperienceLevel.BEGINNER
+                "intermediate" -> ExperienceLevel.INTERMEDIATE
+                "expert" -> ExperienceLevel.EXPERT
+                else -> null
+            }
             formState = ProfileFormState(
+                // current (editable) values
                 name = user.name,
                 email = user.email,
-                bio = user.bio ?: "",
+                bioText = user.bio ?: "",
+                ageText = user.age?.toString() ?: "",
+                selectedCity = user.location ?: "",
+                selectedCityPlaceId = null,
+                cityQuery = "",
+                experience = originalExp,
+
+                // originals (snapshot)
                 originalName = user.name,
+                originalAge = user.age,
+                originalCityDisplay = user.location,
+                originalExperience = originalExp,
                 originalBio = user.bio ?: ""
             )
         }
     }
 
+    val onAgeChange: (String) -> Unit = { v ->
+        if (v.length <= 3 && v.all(Char::isDigit)) formState = formState.copy(ageText = v)
+    }
+    val onCityQueryChange: (String) -> Unit = { q ->
+        formState = formState.copy(
+            cityQuery = q,
+            selectedCity = null,
+            selectedCityPlaceId = null
+        )
+        cityJob?.cancel()
+        cityJob = scope.launch {
+            delay(200)
+            if (q.length >= 2) {
+                profileViewModel.queryCities(q)
+            } else {
+                profileViewModel.clearCitySuggestions()
+            }
+        }
+    }
+
+    val onCitySelect: (String) -> Unit = { label ->
+        val match = profileViewModel.citySuggestions.value.firstOrNull { it.label == label }
+        formState = formState.copy(
+            selectedCity = label,
+            selectedCityPlaceId = match?.placeId,
+            cityQuery = label
+        )
+        profileViewModel.clearCitySuggestions()
+    }
+    val onExperienceSelect: (ExperienceLevel) -> Unit = { lvl ->
+        formState = formState.copy(experience = lvl)
+    }
+
+
     val actions = ManageProfileScreenActions(
         onBackClick = onBackClick,
         onNameChange = { formState = formState.copy(name = it) },
-        onBioChange = { formState = formState.copy(bio = it) },
+        onBioChange = { formState = formState.copy(bioText = it) },
         onEditPictureClick = { showImagePickerDialog = true },
         onSaveClick = {
-            profileViewModel.updateProfile(formState.name, formState.bio)
+            if (!formState.canSave()) {
+                formState = formState.copy(showErrors = true)
+                return@ManageProfileScreenActions
+            }
+
+            scope.launch {
+                try {
+                    val editingCity = formState.cityQuery.isNotBlank() ||
+                            formState.selectedCity?.trim() != formState.originalCityDisplay?.trim()
+
+                    val pid = formState.selectedCityPlaceId
+                    val resolved = if (editingCity && pid != null) profileViewModel.resolveCity(pid) else null
+
+                    val safeName = formState.name.trim()
+                    val safeBio  = formState.bioText.trim()
+                    val safeAge  = formState.ageOrNull
+                    val skill    = formState.experience?.label
+
+                    profileViewModel.updateProfileFull(
+                        name = safeName,
+                        bio = safeBio.ifEmpty { null },
+                        age = safeAge,
+                        location  = resolved?.display,   // only when actually changed & resolved
+                        latitude  = resolved?.lat,
+                        longitude = resolved?.lng,
+                        skillLevel = skill
+                    )
+                } catch (_: Exception) { /* snackbar, etc. */ }
+            }
         },
         onImagePickerDismiss = { showImagePickerDialog = false },
         onImageSelected = { uri ->
@@ -167,12 +335,18 @@ fun ManageProfileScreen(
         onErrorMessageShown = profileViewModel::clearError
     )
 
+
     ManageProfileContent(
         uiState = uiState,
         formState = formState,
         snackBarHostState = snackBarHostState,
         showImagePickerDialog = showImagePickerDialog,
-        actions = actions
+        actions = actions,
+        citySuggestions = suggestions.map { it.label },
+        onAgeChange = onAgeChange,
+        onCityQueryChange = onCityQueryChange,
+        onCitySelect = onCitySelect,
+        onExperienceSelect = onExperienceSelect
     )
 }
 
@@ -184,6 +358,11 @@ private fun ManageProfileContent(
     snackBarHostState: SnackbarHostState,
     showImagePickerDialog: Boolean,
     actions: ManageProfileScreenActions,
+    citySuggestions: List<String>,
+    onAgeChange: (String) -> Unit,
+    onCityQueryChange: (String) -> Unit,
+    onCitySelect: (String) -> Unit,
+    onExperienceSelect: (ExperienceLevel) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -212,9 +391,15 @@ private fun ManageProfileContent(
                 onBioChange = actions.onBioChange,
                 onEditPictureClick = actions.onEditPictureClick,
                 onSaveClick = actions.onSaveClick,
-                onLoadingPhotoChange = actions.onLoadingPhotoChange
+                onLoadingPhotoChange = actions.onLoadingPhotoChange,
+                citySuggestions = citySuggestions,
+                onAgeChange = onAgeChange,
+                onCityQueryChange = onCityQueryChange,
+                onCitySelect = onCitySelect,
+                onExperienceSelect = onExperienceSelect
             )
         )
+
     }
 
     if (showImagePickerDialog) {
@@ -281,7 +466,12 @@ private fun ProfileBody(
                         onBioChange = data.onBioChange,
                         onEditPictureClick = data.onEditPictureClick,
                         onSaveClick = data.onSaveClick,
-                        onLoadingPhotoChange = data.onLoadingPhotoChange
+                        onLoadingPhotoChange = data.onLoadingPhotoChange,
+                        citySuggestions = data.citySuggestions,
+                        onAgeChange = data.onAgeChange,
+                        onCityQueryChange = data.onCityQueryChange,
+                        onCitySelect = data.onCitySelect,
+                        onExperienceSelect = data.onExperienceSelect
                     )
                 )
             }
@@ -312,19 +502,59 @@ private fun ProfileForm(
             onLoadingChange = data.onLoadingPhotoChange
         )
 
-        ProfileFields(
-            data = ProfileFieldsData(
-                name = data.formState.name,
-                email = data.user.email,
-                bio = data.formState.bio,
-                onNameChange = data.onNameChange,
-                onBioChange = data.onBioChange
-            )
+        OutlinedTextField(
+            value = data.formState.name,
+            onValueChange = data.onNameChange,
+            label = { Text(stringResource(R.string.name)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        // NEW: Age (matches Complete Profile)
+        OutlinedTextField(
+            value = data.formState.ageText,
+            onValueChange = data.onAgeChange,
+            label = { Text("Age") },
+            placeholder = { Text("e.g., 22") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            isError = data.formState.ageError != null,
+            supportingText = { data.formState.ageError?.let { Text(it) } }
+        )
+
+        CityAutocompleteField(
+            query = data.formState.cityQuery,
+            selectedCity = data.formState.selectedCity,
+            suggestions = data.citySuggestions,
+            isEnabled = !data.isSavingProfile,
+            error = data.formState.cityError,
+            onQueryChange = data.onCityQueryChange,
+            onSelect = data.onCitySelect,
+            onClearSelection = {
+                data.onCityQueryChange("")
+            }
+        )
+
+        ExperienceDropdown(
+            selected = data.formState.experience,
+            isEnabled = !data.isSavingProfile,
+            error = data.formState.expError,
+            onSelect = data.onExperienceSelect
+        )
+
+        OutlinedTextField(
+            value = data.formState.bioText,
+            onValueChange = data.onBioChange,
+            label = { Text(stringResource(R.string.bio)) },
+            placeholder = { Text(stringResource(R.string.bio_placeholder)) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            maxLines = 5,
         )
 
         SaveButton(
             isSaving = data.isSavingProfile,
-            isEnabled = data.formState.hasChanges(),
+            isEnabled = !data.isSavingProfile && data.formState.hasChanges(),
             onClick = data.onSaveClick
         )
     }
@@ -437,44 +667,6 @@ private fun ProfilePictureWithEdit(
 }
 
 @Composable
-private fun ProfileFields(
-    data: ProfileFieldsData,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        OutlinedTextField(
-            value = data.name,
-            onValueChange = data.onNameChange,
-            label = { Text(stringResource(R.string.name)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = data.email,
-            onValueChange = { /* Read-only */ },
-            label = { Text(stringResource(R.string.email)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = false
-        )
-
-        OutlinedTextField(
-            value = data.bio,
-            onValueChange = data.onBioChange,
-            label = { Text(stringResource(R.string.bio)) },
-            placeholder = { Text(stringResource(R.string.bio_placeholder)) },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3,
-            maxLines = 5,
-        )
-    }
-}
-
-@Composable
 private fun SaveButton(
     isSaving: Boolean,
     isEnabled: Boolean,
@@ -499,5 +691,131 @@ private fun SaveButton(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CityAutocompleteField(
+    query: String,
+    selectedCity: String?,
+    suggestions: List<String>,
+    isEnabled: Boolean,
+    error: String?,
+    onQueryChange: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    onClearSelection: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var hasFocus by remember { mutableStateOf(false) }
+    val textValue = when {
+        hasFocus && query.isNotEmpty() -> query
+        !selectedCity.isNullOrEmpty() -> selectedCity
+        else -> query
+    }
+    val showMenu = isEnabled && hasFocus && query.length >= 2 && suggestions.isNotEmpty()
+
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && showMenu,
+        onExpandedChange = { if (isEnabled) expanded = it && hasFocus },
+        modifier = modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = textValue,
+            onValueChange = {
+                if (selectedCity != null) onClearSelection()
+                onQueryChange(it)
+                expanded = true
+            },
+            label = { Text("City") },
+            placeholder = { Text("Start typing…") },
+            singleLine = true,
+            isError = error != null,
+            enabled = isEnabled,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrectEnabled = false),
+            trailingIcon = {
+                when {
+                    selectedCity != null -> IconButton(onClick = {
+                        onClearSelection()
+                        expanded = hasFocus && query.isNotBlank()
+                    }) { Icon(Icons.Default.Close, contentDescription = "Clear") }
+                    showMenu -> ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                }
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+                .onFocusChanged {
+                    hasFocus = it.isFocused
+                    expanded = it.isFocused && query.length >= 2 && suggestions.isNotEmpty()
+                }
+        )
+        ExposedDropdownMenu(
+            expanded = expanded && showMenu,
+            onDismissRequest = { expanded = false }
+        ) {
+            suggestions.take(8).forEach { s ->
+                DropdownMenuItem(
+                    text = { Text(s) },
+                    onClick = {
+                        onSelect(s)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+
+    if (error != null) {
+        Text(
+            text = error,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExperienceDropdown(
+    selected: ExperienceLevel?,
+    isEnabled: Boolean,
+    error: String?,
+    onSelect: (ExperienceLevel) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val label = selected?.label ?: "Select experience"
+
+    Column(modifier) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { if (isEnabled) expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = label,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Experience Level") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                isError = error != null,
+                enabled = isEnabled,
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                ExperienceLevel.values().forEach { level ->
+                    DropdownMenuItem(
+                        text = { Text(level.label) },
+                        onClick = { if (isEnabled) onSelect(level) }
+                    )
+                }
+            }
+        }
+        if (error != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
