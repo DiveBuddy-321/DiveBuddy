@@ -203,19 +203,16 @@ fun ManageProfileScreen(
     val uiState by profileViewModel.uiState.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
 
-    // NEW: suggestions & debounce like Complete Profile
     val suggestions by profileViewModel.citySuggestions.collectAsState()
     val scope = rememberCoroutineScope()
     var cityJob by remember { mutableStateOf<Job?>(null) }
 
-    // Places client
     val context = LocalContext.current
     val placesClient = remember { com.google.android.libraries.places.api.Places.createClient(context) }
 
 
     var showImagePickerDialog by remember { mutableStateOf(false) }
 
-    // Form state
     var formState by remember {
         mutableStateOf(ProfileFormState())
     }
@@ -243,9 +240,9 @@ fun ManageProfileScreen(
                 email = user.email,
                 bioText = user.bio ?: "",
                 ageText = user.age?.toString() ?: "",
-                selectedCity = user.location ?: "",     // show existing city label
-                selectedCityPlaceId = null,             // unknown until user reselects
-                cityQuery = "",                         // empty to avoid auto-search
+                selectedCity = user.location ?: "",
+                selectedCityPlaceId = null,
+                cityQuery = "",
                 experience = originalExp,
 
                 // originals (snapshot)
@@ -258,8 +255,6 @@ fun ManageProfileScreen(
         }
     }
 
-
-    // NEW handlers (mirror Complete Profile)
     val onAgeChange: (String) -> Unit = { v ->
         if (v.length <= 3 && v.all(Char::isDigit)) formState = formState.copy(ageText = v)
     }
@@ -271,24 +266,23 @@ fun ManageProfileScreen(
         )
         cityJob?.cancel()
         cityJob = scope.launch {
-            delay(200) // debounce
+            delay(200)
             if (q.length >= 2) {
                 profileViewModel.queryCities(q)
             } else {
-                // Prefer clearing suggestions instead of querying ""
-                profileViewModel.queryCities("#~clear~#") // <-- add this in your VM (or see Note below)
+                profileViewModel.clearCitySuggestions()
             }
         }
     }
 
-    // ManageProfileScreen.kt
     val onCitySelect: (String) -> Unit = { label ->
         val match = profileViewModel.citySuggestions.value.firstOrNull { it.label == label }
         formState = formState.copy(
             selectedCity = label,
             selectedCityPlaceId = match?.placeId,
-            cityQuery = label   // <-- was "", set to label so it shows immediately
+            cityQuery = label
         )
+        profileViewModel.clearCitySuggestions()
     }
     val onExperienceSelect: (ExperienceLevel) -> Unit = { lvl ->
         formState = formState.copy(experience = lvl)
@@ -538,7 +532,7 @@ private fun ProfileForm(
             onQueryChange = data.onCityQueryChange,
             onSelect = data.onCitySelect,
             onClearSelection = {
-                data.onCityQueryChange("") // clear field & suggestions
+                data.onCityQueryChange("")
             }
         )
 
@@ -718,9 +712,9 @@ private fun CityAutocompleteField(
     var expanded by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
     val textValue = when {
-        hasFocus && query.isNotEmpty() -> query         // typing → show what they type
-        !selectedCity.isNullOrEmpty() -> selectedCity   // idle → show selected city
-        else -> query                                   // fallback
+        hasFocus && query.isNotEmpty() -> query
+        !selectedCity.isNullOrEmpty() -> selectedCity
+        else -> query
     }
     val showMenu = isEnabled && hasFocus && query.length >= 2 && suggestions.isNotEmpty()
 
