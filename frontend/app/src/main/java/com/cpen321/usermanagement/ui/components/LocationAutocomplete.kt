@@ -78,7 +78,7 @@ fun LocationAutocomplete(
         readOnly = true,
         trailingIcon = {
             TextButton(onClick = { showLocationDialog = true }) {
-                Text("Search")
+                Text(stringResource(R.string.search))
             }
         }
     )
@@ -147,14 +147,14 @@ private fun LocationSearchDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Search Location")
+            Text(stringResource(R.string.search_location))
         },
         text = {
             Column {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("Enter location") },
+                    label = { Text(stringResource(R.string.type_location)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = {
@@ -167,7 +167,7 @@ private fun LocationSearchDialog(
             
                 if (isLoading) {
                     Text(
-                        text = "Searching...",
+                        text = stringResource(R.string.searching),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -199,7 +199,7 @@ private fun LocationSearchDialog(
                     }
                 } else if (searchQuery.length >= 2) {
                     Text(
-                        text = "No locations found",
+                        text = stringResource(R.string.no_results),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -209,7 +209,7 @@ private fun LocationSearchDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
