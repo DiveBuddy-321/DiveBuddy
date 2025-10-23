@@ -1,0 +1,33 @@
+version: '3'
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo_instance
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  app:
+    build:
+      context: backend/
+      dockerfile: Dockerfile
+      args:
+        - PORT=${PORT}
+    restart: always
+    container_name: cpen321_app
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - PORT=${PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GEOCODING_API=${GEOCODING_API}
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - mongo
+    command: npm run start
+    
+volumes:
+  mongo_data:
