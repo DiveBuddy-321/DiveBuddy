@@ -63,6 +63,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import com.cpen321.usermanagement.common.Constants
+import com.google.android.libraries.places.api.Places
 
 private enum class ExperienceLevel(val label: String) {
     BEGINNER("Beginner"), INTERMEDIATE("Intermediate"), EXPERT("Expert")
@@ -180,7 +181,7 @@ fun ProfileCompletionScreen(
     var cityJob by remember { mutableStateOf<Job?>(null) }
 
     val context = LocalContext.current
-    val placesClient = remember { com.google.android.libraries.places.api.Places.createClient(context) }
+    val placesClient = remember { Places.createClient(context) }
 
     LaunchedEffect(Unit) {
         profileViewModel.attachPlacesClient(placesClient)

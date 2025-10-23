@@ -15,6 +15,7 @@ import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
 import dagger.hilt.android.AndroidEntryPoint
 import android.util.Log
+import com.google.android.libraries.places.api.Places
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -22,14 +23,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val mapsKey = BuildConfig.MAPS_API_KEY
+        val mapsKey = BuildConfig.GOOGLE_MAPS_API_KEY
         if (mapsKey.isBlank()) {
-            Log.e("MainActivity", "MAPS_API_KEY is missing; skipping Places initialization")
-        } else if (!com.google.android.libraries.places.api.Places.isInitialized()) {
-            com.google.android.libraries.places.api.Places.initialize(
-                applicationContext,
-                mapsKey
-            )
+            Log.e("MainActivity", "GOOGLE_MAPS_API_KEY is missing; skipping Places initialization")
+        } else if (!Places.isInitialized()) {
+            Places.initialize(applicationContext, mapsKey)
         }
 
         setContent {

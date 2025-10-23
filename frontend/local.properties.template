@@ -1,7 +1,7 @@
 # This is a template file for local.properties
 # Copy this file to local.properties and add your actual API keys
 
-sdk.dir=sdk.dir=C\:\\Users\\<username>\\AppData\\Local\\Android\\Sdk
+sdk.dir=C\:\\Users\\<username>\\AppData\\Local\\Android\\Sdk
 API_BASE_URL="http://10.0.2.2:3000/api/"
 IMAGE_BASE_URL="http://10.0.2.2:3000/"
 GOOGLE_CLIENT_ID="xxxxxxx.apps.googleusercontent.com"
