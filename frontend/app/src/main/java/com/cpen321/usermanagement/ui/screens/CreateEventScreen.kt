@@ -296,7 +296,7 @@ fun TimePickerModal(
         },
         confirmButton = {
             Button(
-                onClick = {onTimeSelected(timePickerState.hour, timePickerState.minute)}
+                onClick = { onTimeSelected(timePickerState.hour, timePickerState.minute) }
             ) {
                 Text(stringResource(R.string.confirm))
             }
