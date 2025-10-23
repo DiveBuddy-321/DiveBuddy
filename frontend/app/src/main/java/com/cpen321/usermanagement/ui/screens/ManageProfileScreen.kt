@@ -220,7 +220,7 @@ fun ManageProfileScreen(
     LaunchedEffect(Unit) {
         profileViewModel.clearSuccessMessage()
         profileViewModel.clearError()
-        profileViewModel.attachPlacesClient(placesClient) // NEW
+        profileViewModel.attachPlacesClient(placesClient)
         if (uiState.user == null) {
             profileViewModel.loadProfile()
         }
@@ -522,7 +522,6 @@ private fun ProfileForm(
             supportingText = { data.formState.ageError?.let { Text(it) } }
         )
 
-// NEW: City autocomplete (matches Complete Profile)
         CityAutocompleteField(
             query = data.formState.cityQuery,
             selectedCity = data.formState.selectedCity,
@@ -536,7 +535,6 @@ private fun ProfileForm(
             }
         )
 
-// NEW: Experience dropdown (matches Complete Profile)
         ExperienceDropdown(
             selected = data.formState.experience,
             isEnabled = !data.isSavingProfile,
