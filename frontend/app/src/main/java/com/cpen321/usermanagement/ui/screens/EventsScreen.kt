@@ -44,7 +44,8 @@ fun EventsScreen(
         CreateEventScreen(
             onDismiss = {
                 showCreateEventForm = false
-            }
+            },
+            eventViewModel = eventViewModel
         )
     } else if (selectedEvent != null) {
         SingleEventScreen(

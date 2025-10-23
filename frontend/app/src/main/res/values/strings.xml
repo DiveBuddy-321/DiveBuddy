@@ -43,7 +43,7 @@
     <string name="min_exp_level">Minimum Experience Level</string>
     <string name="beginner">Beginner</string>
     <string name="intermediate">Intermediate</string>
-    <string name="advanced">Advanced</string>
+    <string name="expert">Expert</string>
     <string name="select_date">Select Date</string>
     <string name="select_time">Select Time</string>
     <string name="search_location">Search Location</string>

@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -29,6 +31,8 @@ import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,23 +42,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.data.remote.dto.CreateEventRequest
 import com.cpen321.usermanagement.ui.components.LocationAutocomplete
 import com.cpen321.usermanagement.ui.components.LocationResult
 import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
+import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
 import java.util.Calendar
 import java.time.format.DateTimeFormatter
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    eventViewModel: EventViewModel = hiltViewModel()
 ) {
     var eventTitle by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
@@ -72,10 +81,21 @@ fun CreateEventScreen(
     val levelOptions = listOf(
         stringResource(R.string.beginner),
         stringResource(R.string.intermediate),
-        stringResource(R.string.advanced)
+        stringResource(R.string.expert)
     )
     
     val spacing = LocalSpacing.current
+    
+    // Collect ViewModel state
+    val uiState by eventViewModel.uiState.collectAsState()
+    
+    // Handle successful event creation
+    LaunchedEffect(uiState.eventCreated) {
+        if (uiState.eventCreated) {
+            onDismiss()
+            eventViewModel.clearCreateEventState()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -202,6 +222,16 @@ fun CreateEventScreen(
         )
 
         // TODO: Add image upload field
+        
+        // Error message display
+        if (uiState.createEventError != null) {
+            Text(
+                text = uiState.createEventError!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(vertical = spacing.small)
+            )
+        }
 
         // Action Buttons
         Row(
@@ -222,27 +252,46 @@ fun CreateEventScreen(
 
             Button(
                 onClick = {
-                    // TODO: Handle event creation logic here
-                    Log.d("CreateEventScreen", "Event Title: $eventTitle; " +
-                            "\nEvent Description: $eventDescription; " +
-                            "\nEvent Location: $eventLocation " +
-                            "\nSelected Location: $selectedLocation " +
-                            "\nEvent Date: $selectedDate " +
-                            "\nEvent Time: $selectedTime " +
-                            "\nRequired Level: $requiredLevel " +
-                            "\nMax Participants: $maxParticipants")
+                    if (selectedDate != null && selectedTime != null) {
+                        // Combine date and time into a single Date object
+                        val dateTime = selectedDate!!.atTime(selectedTime!!)
+                        val eventDate = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant())
+                        
+                        val createEventRequest = CreateEventRequest(
+                            title = eventTitle,
+                            description = eventDescription,
+                            date = eventDate,
+                            capacity = maxParticipants.toIntOrNull() ?: 1,
+                            skillLevel = requiredLevel,
+                            location = eventLocation.takeIf { it.isNotBlank() },
+                            latitude = selectedLocation?.coordinates?.latitude,
+                            longitude = selectedLocation?.coordinates?.longitude,
+                            attendees = emptyList(),
+                            photo = null
+                        )
+                        
+                        eventViewModel.createEvent(createEventRequest)
+                    }
                 },
                 modifier = Modifier.weight(1f),
                 enabled = eventTitle.isNotBlank() &&
                          eventDescription.isNotBlank() &&
                          eventLocation.isNotBlank() &&
                          selectedDate != null &&
-                         selectedTime != null
+                         selectedTime != null &&
+                         !uiState.isCreatingEvent
             ) {
-                Text(
-                    text = stringResource(R.string.create_event),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                if (uiState.isCreatingEvent) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(8.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.create_event),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }

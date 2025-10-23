@@ -22,3 +22,20 @@ data class Event(
 data class EventData(
     val events: List<Event>
 )
+
+data class CreateEventRequest(
+    val title: String,
+    val description: String,
+    val date: Date,
+    val capacity: Int,
+    val skillLevel: String? = null,
+    val location: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val attendees: List<String> = emptyList(),
+    val photo: String? = null
+)
+
+data class CreateEventResponse(
+    val event: Event
+)
