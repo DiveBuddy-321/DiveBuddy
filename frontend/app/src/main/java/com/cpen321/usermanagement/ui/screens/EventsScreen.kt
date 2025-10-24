@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,11 +42,11 @@ fun EventsScreen(
     val uiState by eventViewModel.uiState.collectAsState()
 
     if (showCreateEventForm) {
-        Text(
-            text = "Create Event",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+        CreateEventScreen(
+            onDismiss = {
+                showCreateEventForm = false
+            },
+            eventViewModel = eventViewModel
         )
     } else if (selectedEvent != null) {
         SingleEventScreen(
@@ -160,7 +161,6 @@ private fun EventsContent(
             else -> {
                 EventsColumn(
                     onEventClick = onEventClick,
-                    onRefresh = onRefresh,
                     uiState = uiState
                 )
             }
@@ -171,7 +171,6 @@ private fun EventsContent(
 @Composable
 private fun EventsColumn(
     onEventClick: (Event) -> Unit,
-    onRefresh: () -> Unit,
     uiState: EventUiState
 ) {
     val spacing = LocalSpacing.current
@@ -180,7 +179,7 @@ private fun EventsColumn(
         verticalArrangement = Arrangement.spacedBy(spacing.medium),
         modifier = Modifier.padding(horizontal = spacing.large)
     ) {
-        items(uiState.events) { event ->
+        items(uiState.events.reversed()) { event ->
             EventCard(
                 event = event,
                 onClick = { onEventClick(event) }
@@ -199,7 +198,9 @@ private fun EventCard(
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     
     Card(
-        modifier = modifier.clickable { onClick() },
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
     ) {
         Column(
             modifier = Modifier.padding(spacing.medium),
@@ -210,12 +211,6 @@ private fun EventCard(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
-            )
-            
-            Text(
-                text = event.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
             )
             
             if (event.location != null) {
@@ -240,14 +235,14 @@ private fun EventCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-            
-            if (event.skillLevel != null) {
-                Text(
-                    text = "🤿 Level: ${event.skillLevel}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                if (event.skillLevel != null) {
+                    Text(
+                        text = "🤿 Level: ${event.skillLevel}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

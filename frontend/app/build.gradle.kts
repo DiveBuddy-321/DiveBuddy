@@ -69,13 +69,15 @@ dependencies {
     
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.ui.text)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
     
     // Google Sign-In
     implementation(libs.play.services.auth)
+    
+    // Google Maps and Places
+    implementation(libs.play.services.maps)
+    implementation(libs.places)
     
     // HTTP client
     implementation(libs.retrofit)
@@ -103,9 +105,6 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
-
-    //Google Maps
-    implementation("com.google.android.libraries.places:places:5.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
