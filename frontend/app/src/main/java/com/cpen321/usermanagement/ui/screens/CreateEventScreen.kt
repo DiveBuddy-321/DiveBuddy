@@ -52,6 +52,7 @@ import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Calendar
 import java.time.format.DateTimeFormatter
@@ -254,15 +255,15 @@ fun CreateEventScreen(
                     if (selectedDate != null && selectedTime != null) {
                         // Combine date and time into a single Date object
                         val dateTime = selectedDate!!.atTime(selectedTime!!)
-                        val eventDate = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant())
+                        val eventDate = Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant())
                         
                         val createEventRequest = CreateEventRequest(
                             title = eventTitle,
                             description = eventDescription,
                             date = eventDate,
                             capacity = maxParticipants.toIntOrNull() ?: 1,
-                            skillLevel = requiredLevel,
-                            location = eventLocation.takeIf { it.isNotBlank() },
+                            skillLevel = requiredLevel.takeIf { it.isNotBlank() },
+                            location = eventLocation,
                             latitude = selectedLocation?.coordinates?.latitude,
                             longitude = selectedLocation?.coordinates?.longitude,
                             attendees = emptyList(),
