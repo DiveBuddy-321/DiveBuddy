@@ -18,4 +18,8 @@ router.use('/users', authenticateToken, usersRoutes);
 
 router.use('/media', authenticateToken, mediaRoutes);
 
+router.use('/events', authenticateToken, eventsRoutes);
+
+router.use("/chat", chatRoutes);
+
 export default router;
