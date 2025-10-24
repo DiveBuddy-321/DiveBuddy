@@ -8,8 +8,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    
+
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- usesCleartextTraffic="true" is only for local testing. Remove in production -->
@@ -45,11 +44,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        
-        <!-- Google Maps API Key -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${GOOGLE_MAPS_API_KEY}" />
     </application>
 
 </manifest>

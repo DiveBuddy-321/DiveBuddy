@@ -23,9 +23,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val mapsKey = BuildConfig.GOOGLE_MAPS_API_KEY
+        val mapsKey = BuildConfig.MAPS_API_KEY
         if (mapsKey.isBlank()) {
-            Log.e("MainActivity", "GOOGLE_MAPS_API_KEY is missing; skipping Places initialization")
+            Log.e("MainActivity", "MAPS_API_KEY is missing; skipping Places initialization")
         } else if (!Places.isInitialized()) {
             Places.initialize(applicationContext, mapsKey)
         }
