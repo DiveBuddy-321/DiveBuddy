@@ -1,5 +1,6 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
 import type { IChat } from "../types/chat.types";
+import { Message } from "./message.model";
 
 /**
  * Your IChat extends Document in chat.types.ts, which conflicts with Mongoose's Document _id.
@@ -62,8 +63,22 @@ chatSchema.statics.listForUser = function (userId: mongoose.Types.ObjectId) {
 
 // 2) One room by id; optionally enforce membership (document)
 chatSchema.statics.getForUser = function (chatId: string, userId?: mongoose.Types.ObjectId) {
+  // Validate chatId format
+  if (!mongoose.isValidObjectId(chatId)) {
+    throw new Error("Invalid chat ID format");
+  }
+  
   const query: any = { _id: chatId };
-  if (userId) query.participants = userId;
+  
+  // If userId is provided, ensure user is a participant
+  // Convert to ObjectId for proper comparison
+  if (userId) {
+    const userObjectId = typeof userId === 'string' 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+    query.participants = userObjectId;
+  }
+  
   return this.findOne(query).exec();
 };
 
@@ -82,16 +97,7 @@ chatSchema.statics.createPair = function (
   } as any);
 };
 
-// 4) Latest N messages (newest→oldest); assumes Message model exists
-chatSchema.statics.getLastConversation = function (chatId: string, limit: number = 50) {
-  const Message: any = mongoose.model("Message");
-  return Message.find({ chat: chatId })
-    .sort({ createdAt: -1 })
-    .limit(Math.max(1, Math.min(200, limit)))
-    .populate("sender", "name avatar")
-    .lean()
-    .exec();
-};
+// Note: Message queries are handled by Message model for better separation of concerns
 
 // 5) Leave a chat; delete if it becomes empty
 chatSchema.statics.leave = async function (

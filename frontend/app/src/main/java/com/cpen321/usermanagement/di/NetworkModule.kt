@@ -1,7 +1,8 @@
 package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.remote.api.AuthInterface
-import com.cpen321.usermanagement.data.remote.api.HobbyInterface
+import com.cpen321.usermanagement.data.remote.api.EventInterface
+import com.cpen321.usermanagement.data.remote.api.BuddyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.UserInterface
@@ -35,7 +36,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideHobbyService(): HobbyInterface {
-        return RetrofitClient.hobbyInterface
+    fun provideBuddyService(): BuddyInterface {
+        return RetrofitClient.buddyInterface
     }
+
+    @Provides
+    @Singleton
+    fun provideEventService(): EventInterface {
+        return RetrofitClient.eventInterface
+    }
+
 }

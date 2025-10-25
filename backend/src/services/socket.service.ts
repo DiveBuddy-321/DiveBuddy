@@ -144,24 +144,32 @@ export class SocketService {
       }
 
       // Verify user is a participant
-      const chat = await Chat.getForUser(chatId, socket.user?._id as mongoose.Types.ObjectId);
+      const userId = socket.user?._id as mongoose.Types.ObjectId;
+      console.log(`Checking chat access: chatId=${chatId}, userId=${userId}`);
+      
+      const chat = await Chat.getForUser(chatId, userId);
       
       if (!chat) {
+        console.error(`Chat not found or user ${userId} not a participant in chat ${chatId}`);
         socket.emit("error", { message: "Chat not found or access denied" });
         return;
       }
+      
+      console.log(`Chat found: ${chat._id}, participants: ${chat.participants.length}`);
 
-      // Create the message
+      // Create the message - pass string IDs as expected by the new model
       const message = await Message.createMessage(
         chatId,
-        socket.user?._id as mongoose.Types.ObjectId,
+        String(socket.user?._id),
         content.trim()
       );
 
-      // Populate sender info
-      const populatedMessage = await Message.findById(message._id)
-        .populate("sender", "name avatar email")
-        .lean();
+      // Get populated message using the new getMessageById method
+      const populatedMessage = await Message.getMessageById(String(message._id));
+
+      if (!populatedMessage) {
+        throw new Error("Failed to retrieve created message");
+      }
 
       // Emit to all users in the chat room
       this.io.to(`chat:${chatId}`).emit("new_message", {
@@ -169,16 +177,32 @@ export class SocketService {
         message: populatedMessage,
       });
 
-      // Notify other participants (who might not be in the room)
+      // Notify other participants who are NOT currently in the room
+      // Get all sockets in the chat room
+      const socketsInRoom = await this.io.in(`chat:${chatId}`).allSockets();
+      const userIdsInRoom = new Set<string>();
+      
+      // Get user IDs of all connected sockets in the room
+      for (const socketId of socketsInRoom) {
+        const socket = this.io.sockets.sockets.get(socketId) as AuthSocket;
+        if (socket?.user?._id) {
+          userIdsInRoom.add(String(socket.user._id));
+        }
+      }
+
+      // Send chat_updated only to participants NOT in the room
       const otherParticipants = chat.participants.filter(
         (p) => String(p) !== String(socket.user?._id)
       );
 
       for (const participantId of otherParticipants) {
-        this.io.to(`user:${participantId}`).emit("chat_updated", {
-          chatId,
-          lastMessage: populatedMessage,
-        });
+        // Only send if user is not in the chat room
+        if (!userIdsInRoom.has(String(participantId))) {
+          this.io.to(`user:${participantId}`).emit("chat_updated", {
+            chatId,
+            lastMessage: populatedMessage,
+          });
+        }
       }
 
       console.log(`Message sent in chat ${chatId} by user ${socket.user?._id}`);

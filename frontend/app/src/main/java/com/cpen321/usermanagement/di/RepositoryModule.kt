@@ -2,6 +2,10 @@ package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.AuthRepositoryImpl
+import com.cpen321.usermanagement.data.repository.BuddyRepository
+import com.cpen321.usermanagement.data.repository.BuddyRepositoryImpl
+import com.cpen321.usermanagement.data.repository.EventRepository
+import com.cpen321.usermanagement.data.repository.EventRepositoryImpl
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepositoryImpl
 import dagger.Module
@@ -28,5 +32,21 @@ object RepositoryModule {
         profileRepositoryImpl: ProfileRepositoryImpl
     ): ProfileRepository {
         return profileRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideBuddyRepository(
+        buddyRepositoryImpl: BuddyRepositoryImpl
+    ): BuddyRepository {
+        return buddyRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideEventRepository(
+        eventRepositoryImpl: EventRepositoryImpl
+    ): EventRepository {
+        return eventRepositoryImpl
     }
 }

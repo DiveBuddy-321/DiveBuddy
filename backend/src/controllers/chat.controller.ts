@@ -66,29 +66,45 @@ export class ChatController {
 
   /** DELETE /:chatId */
 
-  /** GET /:chatId/messages?limit=50 */
+  /** GET /:chatId/messages?limit=20&before=<timestamp> */
   async getMessages(req: AuthedRequest, res: Response) {
     try {
       const user = req.user;
       if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
       
       const { chatId } = req.params;
-      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
 
       if (!isValidId(chatId)) return res.status(400).json({ error: "Invalid chatId" });
 
-      // Verify user is a participant
+      // Verify user is a participant in the chat
       const chat = await Chat.getForUser(chatId, asObjectId(user._id));
-      if (!chat) return res.status(404).json({ error: "Chat not found" });
+      if (!chat) return res.status(404).json({ error: "Chat not found or access denied" });
 
-      // Get messages
-      const messages = await Message.find({ chat: chatId })
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .populate("sender", "name profilePicture email")
-        .lean();
+      // Parse query parameters
+      const limit = parseInt(req.query.limit as string) || 20;
+      const before = req.query.before as string;
 
-      return res.json({ messages: messages.reverse() }); // Return oldest to newest
+      // Validate limit
+      const validLimit = Math.max(1, Math.min(200, limit));
+
+      // Get messages using the Message model
+      let beforeDate: Date | undefined;
+      if (before) {
+        beforeDate = new Date(before);
+        if (isNaN(beforeDate.getTime())) {
+          return res.status(400).json({ error: "Invalid 'before' timestamp format" });
+        }
+      }
+
+      const messages = await Message.getMessagesForChat(chatId, validLimit, beforeDate);
+
+      return res.json({
+        messages,
+        chatId,
+        limit: validLimit,
+        count: messages.length,
+        hasMore: messages.length === validLimit
+      });
     } catch (err: any) {
       return res.status(500).json({ error: err?.message ?? "Failed to fetch messages" });
     }

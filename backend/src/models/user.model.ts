@@ -1,13 +1,14 @@
 import mongoose, { Schema } from 'mongoose';
 import { z } from 'zod';
 
-import { HOBBIES } from '../constants/hobbies';
 import {
   createUserSchema,
   GoogleUserInfo,
   IUser,
   updateProfileSchema,
   } from '../types/user.types';
+import { SKILL_LEVELS } from '../constants/statics';
+import { getCoordinatesFromLocation } from '../utils/locationGeocoding.util';
 import logger from '../utils/logger.util';
 
 const userSchema = new Schema<IUser>(
@@ -30,6 +31,10 @@ const userSchema = new Schema<IUser>(
       required: true,
       trim: true,
     },
+    age: {
+      type: Number,
+      required: false,
+    },
     profilePicture: {
       type: String,
       required: false,
@@ -41,19 +46,24 @@ const userSchema = new Schema<IUser>(
       trim: true,
       maxlength: 500,
     },
-    hobbies: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (hobbies: string[]) {
-          return (
-            hobbies.length === 0 ||
-            hobbies.every(hobby => HOBBIES.includes(hobby))
-          );
-        },
-        message:
-          'Hobbies must be non-empty strings and must be in the available hobbies list',
-      },
+    location: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    latitude: {
+      type: Number,
+      required: false,
+    },
+    longitude: {
+      type: Number,
+      required: false,
+    },
+    skillLevel: {
+      type: String,
+      enum: SKILL_LEVELS,
+      required: false,
+      trim: true,
     },
   },
   {
@@ -71,15 +81,26 @@ export class UserModel {
   async create(userInfo: GoogleUserInfo): Promise<IUser> {
     try {
       const validatedData = createUserSchema.parse(userInfo);
-
+      // If client provided a location but no coordinates, try to geocode
+      if (validatedData.location && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
+        const coords = await getCoordinatesFromLocation(validatedData.location);
+        if (coords) {
+          validatedData.latitude = coords.latitude;
+          validatedData.longitude = coords.longitude;
+          console.log(`Geocoded location for new user: ${validatedData.location} -> (${coords.latitude}, ${coords.longitude})`);
+        } else {
+          //geolocation success is mandatory for user creation to succeed.
+          throw new Error('Failed to geocode location');
+        }
+      }
       return await this.user.create(validatedData);
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error('Validation error:', error.issues);
         throw new Error('Invalid update data');
       }
-      console.error('Error updating user:', error);
-      throw new Error('Failed to update user');
+      console.error('Error creating user:', error);
+      throw new Error(`Failed to create user: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -89,6 +110,15 @@ export class UserModel {
   ): Promise<IUser | null> {
     try {
       const validatedData = updateProfileSchema.parse(user);
+      // If client updated location but did not provide coordinates, try to geocode
+      if (validatedData.location && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
+        const coords = await getCoordinatesFromLocation(validatedData.location);
+        if (coords) {
+          validatedData.latitude = coords.latitude;
+          validatedData.longitude = coords.longitude;
+          console.log(`Geocoded location for update: ${validatedData.location} -> (${coords.latitude}, ${coords.longitude})`);
+        }
+      }
 
       const updatedUser = await this.user.findByIdAndUpdate(
         userId,
@@ -140,6 +170,15 @@ export class UserModel {
     } catch (error) {
       console.error('Error finding user by Google ID:', error);
       throw new Error('Failed to find user');
+    }
+  }
+
+  async findAll(): Promise<IUser[]> {
+    try {
+      return await this.user.find().sort({ createdAt: -1 }).exec();
+    } catch (error) {
+      logger.error('Error fetching all users:', error);
+      throw new Error('Failed to fetch users');
     }
   }
 }

@@ -21,6 +21,8 @@ android {
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
+        //Google MAP API KEY
+        buildConfigField("String", "MAPS_API_KEY", "\"${project.properties["MAPS_API_KEY"] ?: ""}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -72,6 +74,10 @@ dependencies {
     
     // Google Sign-In
     implementation(libs.play.services.auth)
+    
+    // Google Maps and Places
+    implementation(libs.play.services.maps)
+    implementation(libs.places)
     
     // HTTP client
     implementation(libs.retrofit)

@@ -1,63 +1,103 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
+import type { IMessage, IMessageWithSender } from "../types/chat.types";
 
-export interface IMessage {
-  _id?: mongoose.Types.ObjectId | string;
-  chat: mongoose.Types.ObjectId | string;
-  sender: mongoose.Types.ObjectId | string;
-  content: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface IMessageDocument extends Omit<IMessage, "_id">, Document {
+/**
+ * Message document interface extending the base IMessage
+ */
+export interface IMessageDocument extends IMessage, Document {
   _id: mongoose.Types.ObjectId;
 }
 
 export interface IMessageModel extends Model<IMessageDocument> {
-  createMessage(
-    chatId: string | mongoose.Types.ObjectId,
-    senderId: string | mongoose.Types.ObjectId,
-    content: string
-  ): Promise<IMessageDocument>;
+  createMessage(chatId: string, senderId: string, content: string): Promise<IMessageDocument>;
+  getMessagesForChat(chatId: string, limit?: number, before?: Date): Promise<any[]>;
+  getMessageById(messageId: string): Promise<any | null>;
 }
 
 const messageSchema = new Schema<IMessageDocument, IMessageModel>(
   {
-    chat: { type: Schema.Types.ObjectId, ref: "Chat", required: true, index: true },
-    sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    content: { type: String, required: true, trim: true },
+    chat: { 
+      type: Schema.Types.ObjectId, 
+      ref: "Chat", 
+      required: true,
+      index: true 
+    },
+    sender: { 
+      type: Schema.Types.ObjectId, 
+      ref: "User", 
+      required: true,
+      index: true 
+    },
+    content: { 
+      type: String, 
+      required: true, 
+      trim: true,
+      maxlength: 2000 // reasonable limit for text messages
+    },
   },
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
-// Index for efficient querying of messages by chat
-messageSchema.index({ chat: 1, createdAt: -1 });
+/* Indexes for performance */
+messageSchema.index({ chat: 1, createdAt: -1 }); // For getting messages by chat, newest first
+messageSchema.index({ sender: 1, createdAt: -1 }); // For getting messages by sender
 
-// Static method to create a message and update the chat
-messageSchema.statics.createMessage = async function (
-  chatId: string | mongoose.Types.ObjectId,
-  senderId: string | mongoose.Types.ObjectId,
+/* Statics */
+
+// Create a new message
+messageSchema.statics.createMessage = function (
+  chatId: string, 
+  senderId: string, 
   content: string
-) {
-  const Chat = mongoose.model("Chat");
+): Promise<IMessageDocument> {
+  if (!content.trim()) {
+    throw new Error("Message content cannot be empty");
+  }
   
-  // Create the message
-  const message = await this.create({
-    chat: chatId,
-    sender: senderId,
-    content,
+  return this.create({
+    chat: new mongoose.Types.ObjectId(chatId),
+    sender: new mongoose.Types.ObjectId(senderId),
+    content: content.trim(),
   });
+};
 
-  // Update the chat's lastMessage and lastMessageAt
-  await Chat.findByIdAndUpdate(chatId, {
-    lastMessage: message._id,
-    lastMessageAt: message.createdAt,
-  });
+// Get messages for a chat with pagination
+messageSchema.statics.getMessagesForChat = function (
+  chatId: string, 
+  limit: number = 50, 
+  before?: Date
+): Promise<any[]> {
+  // Validate chatId format
+  if (!mongoose.isValidObjectId(chatId)) {
+    throw new Error("Invalid chatId format");
+  }
+  
+  const query: any = { chat: chatId };
+  
+  if (before) {
+    query.createdAt = { $lt: before };
+  }
+  
+  return this.find(query)
+    .sort({ createdAt: -1 })
+    .limit(Math.max(1, Math.min(200, limit)))
+    .populate("sender", "name avatar")
+    .lean()
+    .exec();
+};
 
-  return message;
+// Get a specific message by ID
+messageSchema.statics.getMessageById = function (messageId: string): Promise<any | null> {
+  return this.findById(messageId)
+    .populate("sender", "name avatar")
+    .lean()
+    .exec();
 };
 
 export const Message = mongoose.model<IMessageDocument, IMessageModel>("Message", messageSchema);
+

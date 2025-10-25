@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
-import { HOBBIES } from '../constants/hobbies';
+import { SKILL_LEVELS, SkillLevel, MIN_AGE, MAX_AGE } from '../constants/statics';
 
 // User model
 // ------------------------------------------------------------
@@ -9,9 +9,14 @@ export interface IUser extends Document {
   googleId: string;
   email: string;
   name: string;
+  age?: number;
+  
   profilePicture?: string;
   bio?: string;
-  hobbies: string[];
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  skillLevel?: SkillLevel;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,21 +27,26 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   googleId: z.string().min(1),
+  age: z.number().int().positive().optional(),
+  
   profilePicture: z.string().optional(),
   bio: z.string().max(500).optional(),
-  hobbies: z.array(z.string()).default([]),
+  location: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  skillLevel: z.enum(SKILL_LEVELS).optional()
 });
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
+  age: z.number().int().positive().optional(),
+  
   bio: z.string().max(500).optional(),
-  hobbies: z
-    .array(z.string())
-    .refine(val => val.length === 0 || val.every(v => HOBBIES.includes(v)), {
-      message: 'Hobby must be in the available hobbies list',
-    })
-    .optional(),
-  profilePicture: z.string().min(1).optional(),
+  location: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  profilePicture: z.string().optional(),
+  skillLevel: z.enum(SKILL_LEVELS).optional()
 });
 
 // Request types
@@ -57,4 +67,15 @@ export type GoogleUserInfo = {
   email: string;
   name: string;
   profilePicture?: string;
+};
+
+// Helper functions
+// ------------------------------------------------------------
+export const isUserReadyForBuddyMatching = (user: IUser): boolean => {
+  return (
+    user.age !== undefined &&
+    user.skillLevel !== undefined &&
+    user.longitude !== undefined &&
+    user.latitude !== undefined
+  );
 };

@@ -15,19 +15,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.components.BottomNavigationBar
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
+import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainUiState
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
+import com.cpen321.usermanagement.ui.viewmodels.MatchViewModel
 import com.cpen321.usermanagement.ui.theme.LocalFontSizes
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
@@ -44,7 +47,9 @@ fun MainScreen(
         snackBarHostState = snackBarHostState,
         onProfileClick = onProfileClick,
         onSuccessMessageShown = mainViewModel::clearSuccessMessage,
-        onBottomNavItemClick = mainViewModel::setCurrentScreen
+        onBottomNavItemClick = mainViewModel::setCurrentScreen,
+        onNavigateToMatch = mainViewModel::navigateToMatchScreen,
+        onNavigateBackFromMatch = mainViewModel::navigateBackFromMatchScreen
     )
 }
 
@@ -55,6 +60,8 @@ private fun MainContent(
     onProfileClick: () -> Unit,
     onSuccessMessageShown: () -> Unit,
     onBottomNavItemClick: (String) -> Unit,
+    onNavigateToMatch: () -> Unit,
+    onNavigateBackFromMatch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -78,7 +85,10 @@ private fun MainContent(
     ) { paddingValues ->
         MainBody(
             paddingValues = paddingValues,
-            currentScreen = uiState.currentScreen
+            currentScreen = uiState.currentScreen,
+            showMatchScreen = uiState.showMatchScreen,
+            onNavigateToMatch = onNavigateToMatch,
+            onNavigateBackFromMatch = onNavigateBackFromMatch
         )
     }
 }
@@ -161,18 +171,52 @@ private fun MainSnackbarHost(
 private fun MainBody(
     paddingValues: PaddingValues,
     currentScreen: String,
+    showMatchScreen: Boolean,
+    onNavigateToMatch: () -> Unit,
+    onNavigateBackFromMatch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val buddyViewModel: BuddyViewModel = hiltViewModel()
+    val matchViewModel: MatchViewModel = hiltViewModel()
+    
+    // Set up callbacks
+    LaunchedEffect(Unit) {
+        buddyViewModel.onNavigateToMatch = onNavigateToMatch
+        matchViewModel.onNavigateBack = {
+            // Clear states when going back
+            buddyViewModel.clearState()
+            matchViewModel.clearState()
+            onNavigateBackFromMatch()
+        }
+    }
+    
+    // When navigating to match screen, initialize MatchViewModel with buddies
+    LaunchedEffect(showMatchScreen) {
+        if (showMatchScreen) {
+            val buddies = buddyViewModel.uiState.value.buddies
+            matchViewModel.initializeWithBuddies(buddies)
+        }
+    }
+    
     Box(
         modifier = modifier
             .fillMaxSize()
             .padding(paddingValues)
     ) {
-        when (currentScreen) {
-            "events" -> EventsScreen()
-            "buddies" -> BuddiesScreen()
-            "chat" -> ChatScreen()
-            else -> EventsScreen()
+        if (showMatchScreen) {
+            MatchScreen(
+                modifier = Modifier.fillMaxSize(),
+                viewModel = matchViewModel
+            )
+        } else {
+            when (currentScreen) {
+                "events" -> EventsScreen()
+                "buddies" -> BuddiesScreen(
+                    viewModel = buddyViewModel
+                )
+                "chat" -> ChatScreen()
+                else -> EventsScreen()
+            }
         }
     }
 }

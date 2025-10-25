@@ -36,6 +36,7 @@ app.use('*', notFoundHandler);
 app.use(errorHandler);
 
 connectDB();
+
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔌 WebSocket server ready`);
