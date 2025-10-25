@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Chat } from "../models/chat.model";
+import { Message } from "../models/message.model";
 import type { Id } from "../types/chat.types";
 import type { IUser } from "../types/user.types";
 
@@ -66,7 +67,31 @@ export class ChatController {
   /** DELETE /:chatId */
 
   /** GET /:chatId/messages?limit=50 */
+  async getMessages(req: AuthedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
+      
+      const { chatId } = req.params;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+
+      if (!isValidId(chatId)) return res.status(400).json({ error: "Invalid chatId" });
+
+      // Verify user is a participant
+      const chat = await Chat.getForUser(chatId, asObjectId(user._id));
+      if (!chat) return res.status(404).json({ error: "Chat not found" });
+
+      // Get messages
+      const messages = await Message.find({ chat: chatId })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate("sender", "name profilePicture email")
+        .lean();
+
+      return res.json({ messages: messages.reverse() }); // Return oldest to newest
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message ?? "Failed to fetch messages" });
+    }
+  }
   
 }
-
-// If you prefer a singleton in the router: export default new ChatController();
