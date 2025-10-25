@@ -1,6 +1,5 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
-import type { IChat } from "../types/chat.types";
-import { Message } from "./message.model";
+import type { IChat, IChatWithLastMessage } from "../types/chat.types";
 
 /**
  * Your IChat extends Document in chat.types.ts, which conflicts with Mongoose's Document _id.
@@ -13,8 +12,8 @@ export interface IChatDocument extends Omit<IChat, "_id" | "isGroup">, Document 
 }
 
 export interface IChatModel extends Model<IChatDocument> {
-  listForUser(userId: mongoose.Types.ObjectId): Promise<IChat[]>; // lean objects
-  getForUser(chatId: string, userId?: mongoose.Types.ObjectId): Promise<IChatDocument | null>; // document
+  listForUser(userId: mongoose.Types.ObjectId): Promise<IChatWithLastMessage[]>; // populated objects
+  getForUser(chatId: string, userId?: mongoose.Types.ObjectId): Promise<IChatDocument | null>; // document (will be populated)
   createPair(a: mongoose.Types.ObjectId, b: mongoose.Types.ObjectId, name?: string | null): Promise<IChatDocument>;
   getLastConversation(chatId: string, limit?: number): Promise<any[]>; // messages (lean)
   leave(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;

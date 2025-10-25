@@ -6,10 +6,24 @@ export interface IChat {
   isGroup: boolean;
   name?: string | null;
   participants: Id[];                 // keep ids here; populate type separately if needed
-  lastMessage?: Id | null;
+  lastMessage?: Id | null;            // unpopulated - just the message ID
   lastMessageAt?: Date | null;        // include to match model & sorting
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+// Chat with populated lastMessage
+export interface IChatWithLastMessage extends Omit<IChat, 'lastMessage'> {
+  lastMessage?: {
+    _id: Id;
+    content: string;
+    sender: {
+      _id: Id;
+      name: string;
+      avatar?: string;
+    };
+    createdAt: Date;
+  } | null;
 }
 
 // Message types for chat functionality (MVP - text only)
