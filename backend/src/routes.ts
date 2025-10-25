@@ -20,6 +20,6 @@ router.use('/media', authenticateToken, mediaRoutes);
 
 router.use('/events', authenticateToken, eventsRoutes);
 
-router.use("/chat", chatRoutes);
+router.use("/chats", authenticateToken, chatRoutes);
 
 export default router;

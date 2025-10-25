@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { authenticateToken } from "../middleware/auth.middleware";
 import { ChatController } from "../controllers/chat.controller";
 
 const router = Router();
 const chatController = new ChatController();
 
-router.get("/rooms", authenticateToken, (req, res) => chatController.listChats(req, res));
-router.get("/:chatId", authenticateToken, (req, res) => chatController.getChat(req, res));
-router.get("/messages/:chatId", authenticateToken, (req, res) => chatController.getMessages(req, res));
-router.post("/newChat", authenticateToken, (req, res) => chatController.createChat(req, res));
+router.get("/", (req, res) => chatController.listChats(req, res));
+router.post("/", (req, res) => chatController.createChat(req, res));
+router.get("/:chatId", (req, res) => chatController.getChat(req, res));
+router.get("/messages/:chatId", (req, res) => chatController.getMessages(req, res));
+
 export default router;
