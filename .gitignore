@@ -1,4 +1,9 @@
 .idea/
+**/.DS_Store
+node_modules/
+QUICK_TEST.md
+TESTING_WEBSOCKET.md
+WEBSOCKET_USAGE.md
 .vscode/
 # macOS system files
 .DS_Store
