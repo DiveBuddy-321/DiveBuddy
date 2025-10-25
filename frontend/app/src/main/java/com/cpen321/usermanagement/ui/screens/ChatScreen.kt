@@ -7,9 +7,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,8 +37,11 @@ fun ChatScreen(
 private fun ChatContent(
     modifier: Modifier = Modifier
 ) {
+    var selectedChat by remember { mutableStateOf<Chat?>(null) }
+    var showSelectedChat by remember { mutableStateOf(false) }
+
     val spacing = LocalSpacing.current
-    
+
     // Dummy data for chats
     val dummyChats = listOf(
         Chat(
@@ -71,18 +79,30 @@ private fun ChatContent(
         )
     )
 
-    // Chat list
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(spacing.small)
-    ) {
-        items(dummyChats) { chat ->
-            ChatCard(
-                chat = chat,
-                onClick = { /* Handle chat click */ }
-            )
-        }
+    if (showSelectedChat) {
+        SingleChatScreen(
+            chat = selectedChat!!,
+            onBack = {
+                showSelectedChat = false
+            }
+        )
+    } else {
+        // Chat list
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.small)
+        ) {
+            items(dummyChats) { chat ->
+                ChatCard(
+                    chat = chat,
+                    onClick = { 
+                        selectedChat = chat
+                        showSelectedChat = true
+                    }
+                )
+            }
+        }   
     }
 }
 
@@ -154,6 +174,160 @@ private fun ChatCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun SingleChatScreen(
+    chat: Chat,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
+    
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back to chats"
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Direct message",
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.width(spacing.small))
+            Text(
+                text = chat.name ?: "Unknown Chat",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        // Chat info section
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(spacing.medium),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(spacing.medium)
+            ) {
+                // Chat type and name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Direct message",
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(spacing.medium))
+                    Column {
+                        Text(
+                            text = "Direct Message",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = chat.name ?: "Unknown Chat",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(spacing.medium))
+                
+                // Participants info
+                Text(
+                    text = "Participants: ${chat.participants.size}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                if (chat.createdBy != null) {
+                    Text(
+                        text = "Created by: ${chat.createdBy}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                if (chat.lastMessage != null) {
+                    Spacer(modifier = Modifier.height(spacing.small))
+                    Text(
+                        text = "Last message:",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = chat.lastMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                if (chat.lastMessageAt != null) {
+                    Spacer(modifier = Modifier.height(spacing.small))
+                    Text(
+                        text = "Last activity: ${formatLastMessageTime(chat.lastMessageAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                if (chat.createdAt != null) {
+                    Text(
+                        text = "Created: ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(chat.createdAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        
+        // Placeholder for future chat messages
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(spacing.medium),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(spacing.small)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Chat icon",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Chat messages will appear here",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "This is where the chat UI will be implemented",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
