@@ -25,7 +25,6 @@ const chatSchema = new Schema<IChatDocument, IChatModel>(
     // We DO NOT persist isGroup; it's derived from participants.length via virtuals
     name: { type: String, default: null, trim: true },
     participants: [{ type: Schema.Types.ObjectId, ref: "User", required: true}],
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     lastMessage: { type: Schema.Types.ObjectId, ref: "Message", default: null },
     lastMessageAt: { type: Date, default: null, index: true },
   },
@@ -56,7 +55,15 @@ chatSchema.index({ updatedAt: -1 });
 chatSchema.statics.listForUser = function (userId: mongoose.Types.ObjectId) {
   return this.find({ participants: userId })
     .sort({ updatedAt: -1 })
-    .select("_id name participants createdBy lastMessage lastMessageAt createdAt updatedAt")
+    .select("_id name participants lastMessage lastMessageAt createdAt updatedAt")
+    .populate({
+      path: 'lastMessage',
+      select: 'content sender createdAt',
+      populate: {
+        path: 'sender',
+        select: 'name avatar'
+      }
+    })
     .lean({ virtuals: true })
     .exec();
 };
@@ -79,7 +86,16 @@ chatSchema.statics.getForUser = function (chatId: string, userId?: mongoose.Type
     query.participants = userObjectId;
   }
   
-  return this.findOne(query).exec();
+  return this.findOne(query)
+    .populate({
+      path: 'lastMessage',
+      select: 'content sender createdAt',
+      populate: {
+        path: 'sender',
+        select: 'name avatar'
+      }
+    })
+    .exec();
 };
 
 // 3) Create a 2-person (direct-like) room (document)

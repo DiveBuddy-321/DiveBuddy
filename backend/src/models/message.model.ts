@@ -50,7 +50,7 @@ messageSchema.index({ sender: 1, createdAt: -1 }); // For getting messages by se
 /* Statics */
 
 // Create a new message
-messageSchema.statics.createMessage = function (
+messageSchema.statics.createMessage = async function (
   chatId: string, 
   senderId: string, 
   content: string
@@ -59,11 +59,21 @@ messageSchema.statics.createMessage = function (
     throw new Error("Message content cannot be empty");
   }
   
-  return this.create({
+  // Create the message
+  const message = await this.create({
     chat: new mongoose.Types.ObjectId(chatId),
     sender: new mongoose.Types.ObjectId(senderId),
     content: content.trim(),
   });
+  
+  // Update the chat's lastMessage and lastMessageAt fields
+  const Chat = mongoose.model("Chat");
+  await Chat.findByIdAndUpdate(chatId, {
+    lastMessage: message._id,
+    lastMessageAt: message.createdAt,
+  });
+  
+  return message;
 };
 
 // Get messages for a chat with pagination
