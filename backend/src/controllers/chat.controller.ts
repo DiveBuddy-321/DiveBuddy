@@ -57,6 +57,12 @@ export class ChatController {
         return res.status(400).json({ error: "Cannot create a direct chat with yourself" });
       }
 
+      // If a direct chat between these two already exists, return it instead of creating a duplicate
+      const existing = await Chat.findDirectPair(asObjectId(user._id), asObjectId(peerId));
+      if (existing) {
+        return res.status(200).json(existing);
+      }
+
       const chat = await Chat.createPair(asObjectId(user._id), asObjectId(peerId), name ?? null);
       return res.status(201).json(chat);
     } catch (err: any) {
