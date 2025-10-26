@@ -9,8 +9,11 @@
     "seed": "ts-node src/scripts/seedUsers.ts",
     "db": "ts-node src/scripts/viewAllUsers.ts",
     "update-user": "ts-node src/scripts/updateUserProfile.ts",
+    "db:chats": "ts-node src/scripts/viewChats.ts",
+    "seed:chat-messages": "ts-node src/scripts/seedChatMessages.ts",
     "format": "prettier --check \"src/**/*.{ts,js,json}\"",
-    "format:fix": "prettier --write \"src/**/*.{ts,js,json}\""
+    "format:fix": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "db:clear-chats": "ts-node src/scripts/clearChats.ts"
   },
   "author": "",
   "license": "ISC",

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.Buddy
 import com.cpen321.usermanagement.data.repository.BuddyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.cpen321.usermanagement.data.repository.ChatRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,7 @@ data class MatchUiState(
 @HiltViewModel
 class MatchViewModel @Inject constructor(
     private val buddyRepository: BuddyRepository,
+    private val chatRepository: ChatRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -142,12 +144,21 @@ class MatchViewModel @Inject constructor(
     fun onChatClick() {
         val currentIndex = _uiState.value.currentIndex
         if (currentIndex < buddies.size) {
-            val userId = buddies[currentIndex].user._id
-            onNavigateToChat?.invoke(userId)
-            // For now, just log since chat is not implemented
-            Log.d(TAG, "Chat clicked for user: $userId")
+            val peerId = buddies[currentIndex].user._id
+            viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val result = chatRepository.createChat(peerId = peerId, name = null)
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                result.onSuccess { chatId ->
+                    navigateToChat(chatId)
+                }.onFailure {
+                    // fall back to navigate by userId if backend failed
+                    navigateToChat(peerId)
+                }
+            }
         }
     }
-
+    fun navigateToChat(userId: String) {
+        onNavigateToChat?.invoke(userId)
+    }
 }
-

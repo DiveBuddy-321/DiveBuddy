@@ -15,6 +15,7 @@ export interface IChatModel extends Model<IChatDocument> {
   listForUser(userId: mongoose.Types.ObjectId): Promise<IChatWithLastMessage[]>; // populated objects
   getForUser(chatId: string, userId?: mongoose.Types.ObjectId): Promise<IChatDocument | null>; // document (will be populated)
   createPair(a: mongoose.Types.ObjectId, b: mongoose.Types.ObjectId, name?: string | null): Promise<IChatDocument>;
+  findDirectPair(a: mongoose.Types.ObjectId, b: mongoose.Types.ObjectId): Promise<IChatDocument | null>;
   getLastConversation(chatId: string, limit?: number): Promise<any[]>; // messages (lean)
   leave(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;
 }
@@ -60,7 +61,7 @@ chatSchema.statics.listForUser = function (userId: mongoose.Types.ObjectId) {
       select: 'content sender createdAt',
       populate: {
         path: 'sender',
-        select: 'name avatar'
+        select: 'name profilePicture'
       }
     })
     .lean({ virtuals: true })
@@ -91,7 +92,7 @@ chatSchema.statics.getForUser = function (chatId: string, userId?: mongoose.Type
       select: 'content sender createdAt',
       populate: {
         path: 'sender',
-        select: 'name avatar'
+        select: 'name profilePicture'
       }
     })
     .exec();
@@ -110,6 +111,19 @@ chatSchema.statics.createPair = function (
     name: name?.trim() || null,
     participants: dedup,
   } as any);
+};
+
+// 4) Find existing direct chat between two users (participants exactly those two)
+chatSchema.statics.findDirectPair = function (
+  a: mongoose.Types.ObjectId,
+  b: mongoose.Types.ObjectId
+) {
+  if (!a || !b) return Promise.resolve(null);
+  const [aId, bId] = [new mongoose.Types.ObjectId(a), new mongoose.Types.ObjectId(b)];
+  return this.findOne({
+    participants: { $all: [aId, bId] },
+    $expr: { $eq: [{ $size: "$participants" }, 2] },
+  }).exec();
 };
 
 // Note: Message queries are handled by Message model for better separation of concerns

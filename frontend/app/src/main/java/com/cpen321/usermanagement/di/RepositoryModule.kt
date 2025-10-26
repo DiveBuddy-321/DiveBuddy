@@ -6,6 +6,8 @@ import com.cpen321.usermanagement.data.repository.BuddyRepository
 import com.cpen321.usermanagement.data.repository.BuddyRepositoryImpl
 import com.cpen321.usermanagement.data.repository.EventRepository
 import com.cpen321.usermanagement.data.repository.EventRepositoryImpl
+import com.cpen321.usermanagement.data.repository.ChatRepository
+import com.cpen321.usermanagement.data.repository.ChatRepositoryImpl
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepositoryImpl
 import dagger.Module
@@ -48,5 +50,13 @@ object RepositoryModule {
         eventRepositoryImpl: EventRepositoryImpl
     ): EventRepository {
         return eventRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        chatRepositoryImpl: ChatRepositoryImpl
+    ): ChatRepository {
+        return chatRepositoryImpl
     }
 }

@@ -10,7 +10,8 @@ import javax.inject.Inject
 data class MainUiState(
     val successMessage: String? = null,
     val currentScreen: String = "events",
-    val showMatchScreen: Boolean = false
+    val showMatchScreen: Boolean = false,
+    val selectedChatId: String? = null
 )
 
 @HiltViewModel
@@ -40,5 +41,13 @@ class MainViewModel @Inject constructor() : ViewModel() {
 
     fun navigateBackFromMatchScreen() {
         _uiState.value = _uiState.value.copy(showMatchScreen = false)
+    }
+
+    fun openChat(chatId: String) {
+        _uiState.value = _uiState.value.copy(
+            currentScreen = "chat",
+            showMatchScreen = false,
+            selectedChatId = chatId
+        )
     }
 }
