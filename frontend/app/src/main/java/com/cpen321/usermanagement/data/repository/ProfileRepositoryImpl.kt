@@ -59,6 +59,35 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getProfileById(userId: String): Result<User> {
+        return try {
+            val response = userInterface.getProfileById("", userId)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!.user)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(
+                    errorBodyString,
+                    "Failed to fetch user profile"
+                )
+                Log.e(TAG, "Failed to get user by id: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while getting user by id", e)
+            Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while getting user by id", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while getting user by id", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            Log.e(TAG, "HTTP error while getting user by id: ${e.code()}", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateProfile(name: String, bio: String): Result<User> {
         return updateProfileFull(
             name = name,

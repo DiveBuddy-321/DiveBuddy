@@ -5,6 +5,7 @@ import com.cpen321.usermanagement.data.remote.dto.User
 
 interface ProfileRepository {
     suspend fun getProfile(): Result<User>
+    suspend fun getProfileById(userId: String): Result<User>
     suspend fun updateProfile(name: String, bio: String): Result<User>
     suspend fun updateProfileFull(
         name: String? = null,

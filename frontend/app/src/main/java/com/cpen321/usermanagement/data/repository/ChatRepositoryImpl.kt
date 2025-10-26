@@ -4,6 +4,7 @@ import android.util.Log
 import com.cpen321.usermanagement.data.remote.api.ChatInterface
 import com.cpen321.usermanagement.data.remote.dto.CreateChatRequest
 import com.cpen321.usermanagement.data.remote.dto.Chat
+import com.cpen321.usermanagement.utils.JsonUtils.parseErrorMessage
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,6 +12,11 @@ import javax.inject.Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val chatInterface: ChatInterface
 ) : ChatRepository {
+
+    companion object {
+        private const val TAG = "ChatRepositoryImpl"
+    }
+
     override suspend fun listChats(): Result<List<Chat>> {
         return try {
             val response = chatInterface.getChats(authHeader = "") // handled by interceptor
@@ -18,18 +24,14 @@ class ChatRepositoryImpl @Inject constructor(
                 Result.success(response.body() ?: emptyList())
             } else {
                 val err = response.errorBody()?.string()
-                Log.e(TAG, "Failed to list chats: ${'$'}err")
-                Result.failure(IllegalStateException("Failed to list chats"))
+                val errorMessage = parseErrorMessage(err, "Failed to list chats")
+                Log.e(TAG, "Failed to list chats: $errorMessage")
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error listing chats", e)
             Result.failure(e)
         }
-    }
-
-
-    companion object {
-        private const val TAG = "ChatRepositoryImpl"
     }
 
     override suspend fun createChat(peerId: String, name: String?): Result<String> {
@@ -49,7 +51,7 @@ class ChatRepositoryImpl @Inject constructor(
                 }
             } else {
                 val errorText = response.errorBody()?.string()
-                Log.e(TAG, "Failed to create chat: ${'$'}errorText")
+                Log.e(TAG, "Failed to create chat: $errorText")
                 Result.failure(IllegalStateException("Failed to create chat"))
             }
         } catch (e: Exception) {
