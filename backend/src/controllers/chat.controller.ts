@@ -115,5 +115,36 @@ export class ChatController {
       return res.status(500).json({ error: err?.message ?? "Failed to fetch messages" });
     }
   }
+
+  /** POST /:chatId/messages  Body: { content: string } */
+  async sendMessage(req: AuthedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
+      
+      const { chatId } = req.params;
+      const { content } = req.body as { content?: string };
+
+      if (!isValidId(chatId)) return res.status(400).json({ error: "Invalid chatId" });
+      
+      if (!content || typeof content !== "string" || !content.trim()) {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+
+      // Verify user is a participant in the chat
+      const chat = await Chat.getForUser(chatId, asObjectId(user._id));
+      if (!chat) return res.status(404).json({ error: "Chat not found or access denied" });
+
+      // Create the message
+      const message = await Message.createMessage(chatId, String(user._id), content.trim());
+
+      // Return the populated message
+      const populatedMessage = await Message.getMessageById(String(message._id));
+
+      return res.status(201).json(populatedMessage);
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message ?? "Failed to send message" });
+    }
+  }
   
 }

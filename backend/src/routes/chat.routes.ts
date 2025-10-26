@@ -8,5 +8,6 @@ router.get("/", (req, res) => chatController.listChats(req, res));
 router.post("/", (req, res) => chatController.createChat(req, res));
 router.get("/:chatId", (req, res) => chatController.getChat(req, res));
 router.get("/messages/:chatId", (req, res) => chatController.getMessages(req, res));
+router.post("/:chatId/messages", (req, res) => chatController.sendMessage(req, res));
 
 export default router;
