@@ -230,7 +230,7 @@ private fun MatchContent(
                             onClick = onChatClick,
                             fullWidth = false
                         ) {
-                            Text(text = "Chat")
+                            Text(text = "Match")
                         }
                         Button(
                             onClick = onBackClick,

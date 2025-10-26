@@ -37,6 +37,7 @@ object RetrofitClient {
 
     val authInterface: AuthInterface = retrofit.create(AuthInterface::class.java)
     val imageInterface: ImageInterface = retrofit.create(ImageInterface::class.java)
+    val chatInterface: ChatInterface = retrofit.create(ChatInterface::class.java)
     val userInterface: UserInterface = retrofit.create(UserInterface::class.java)
     val buddyInterface: BuddyInterface = retrofit.create(BuddyInterface::class.java)
     val eventInterface: EventInterface = retrofit.create(EventInterface::class.java)

@@ -49,7 +49,8 @@ fun MainScreen(
         onSuccessMessageShown = mainViewModel::clearSuccessMessage,
         onBottomNavItemClick = mainViewModel::setCurrentScreen,
         onNavigateToMatch = mainViewModel::navigateToMatchScreen,
-        onNavigateBackFromMatch = mainViewModel::navigateBackFromMatchScreen
+        onNavigateBackFromMatch = mainViewModel::navigateBackFromMatchScreen,
+        onOpenChat = mainViewModel::openChat
     )
 }
 
@@ -62,6 +63,7 @@ private fun MainContent(
     onBottomNavItemClick: (String) -> Unit,
     onNavigateToMatch: () -> Unit,
     onNavigateBackFromMatch: () -> Unit,
+    onOpenChat: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -87,8 +89,10 @@ private fun MainContent(
             paddingValues = paddingValues,
             currentScreen = uiState.currentScreen,
             showMatchScreen = uiState.showMatchScreen,
+            selectedChatId = uiState.selectedChatId,
             onNavigateToMatch = onNavigateToMatch,
-            onNavigateBackFromMatch = onNavigateBackFromMatch
+            onNavigateBackFromMatch = onNavigateBackFromMatch,
+            onOpenChat = onOpenChat
         )
     }
 }
@@ -172,8 +176,10 @@ private fun MainBody(
     paddingValues: PaddingValues,
     currentScreen: String,
     showMatchScreen: Boolean,
+    selectedChatId: String?,
     onNavigateToMatch: () -> Unit,
     onNavigateBackFromMatch: () -> Unit,
+    onOpenChat: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val buddyViewModel: BuddyViewModel = hiltViewModel()
@@ -187,6 +193,9 @@ private fun MainBody(
             buddyViewModel.clearState()
             matchViewModel.clearState()
             onNavigateBackFromMatch()
+        }
+        matchViewModel.onNavigateToChat = { chatId ->
+            onOpenChat(chatId)
         }
     }
     
@@ -214,7 +223,10 @@ private fun MainBody(
                 "buddies" -> BuddiesScreen(
                     viewModel = buddyViewModel
                 )
-                "chat" -> ChatScreen()
+                "chat" -> ChatScreen(
+                    modifier = Modifier,
+                    chatId = selectedChatId
+                )
                 else -> EventsScreen()
             }
         }

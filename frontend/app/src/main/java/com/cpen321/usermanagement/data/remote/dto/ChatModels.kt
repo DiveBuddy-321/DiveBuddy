@@ -17,3 +17,8 @@ data class Chat(
 data class ChatListData(
     val chats: List<Chat>
 )
+
+data class CreateChatRequest(
+    val peerId: String,
+    val name: String? = null
+)
