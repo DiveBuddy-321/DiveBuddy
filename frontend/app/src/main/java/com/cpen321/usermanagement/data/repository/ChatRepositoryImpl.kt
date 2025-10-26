@@ -3,6 +3,7 @@ package com.cpen321.usermanagement.data.repository
 import android.util.Log
 import com.cpen321.usermanagement.data.remote.api.ChatInterface
 import com.cpen321.usermanagement.data.remote.dto.CreateChatRequest
+import com.cpen321.usermanagement.data.remote.dto.Chat
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,6 +11,22 @@ import javax.inject.Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val chatInterface: ChatInterface
 ) : ChatRepository {
+    override suspend fun listChats(): Result<List<Chat>> {
+        return try {
+            val response = chatInterface.getChats(authHeader = "") // handled by interceptor
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                val err = response.errorBody()?.string()
+                Log.e(TAG, "Failed to list chats: ${'$'}err")
+                Result.failure(IllegalStateException("Failed to list chats"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error listing chats", e)
+            Result.failure(e)
+        }
+    }
+
 
     companion object {
         private const val TAG = "ChatRepositoryImpl"
