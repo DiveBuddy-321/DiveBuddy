@@ -57,6 +57,21 @@ class ChatViewModel @Inject constructor(
             }
         }
     }
+
+    fun sendMessage(chatId: String, content: String) {
+        viewModelScope.launch {
+            val result = chatRepository.sendMessage(chatId, content)
+            result.onSuccess { message ->
+                // Add the new message to the front of the list (backend returns messages newest first)
+                val updated = _uiState.value.messagesByChat.toMutableMap()
+                val existing = updated[chatId] ?: emptyList()
+                updated[chatId] = listOf(message) + existing
+                _uiState.value = _uiState.value.copy(messagesByChat = updated)
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
 }
 
 

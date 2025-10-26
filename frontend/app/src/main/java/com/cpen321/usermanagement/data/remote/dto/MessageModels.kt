@@ -24,4 +24,7 @@ data class MessagesResponse(
     val hasMore: Boolean
 )
 
+data class SendMessageRequest(
+    val content: String
+)
 

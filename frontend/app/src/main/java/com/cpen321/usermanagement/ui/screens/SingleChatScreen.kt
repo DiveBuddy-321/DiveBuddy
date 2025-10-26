@@ -20,12 +20,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +66,7 @@ fun SingleChatScreen(
     val messages = remember { mutableStateOf<List<Message>>(emptyList()) }
     val listState = rememberLazyListState()
     val isLoadingMore = remember { mutableStateOf(false) }
+    val messageText = remember { mutableStateOf("") }
 
     LaunchedEffect(chat._id) {
         chat._id?.let { id -> chatVm.loadMessages(id, limit = 20) }
@@ -232,7 +235,7 @@ fun SingleChatScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.Companion
-                .fillMaxSize()
+                .weight(1f)
                 .padding(spacing.medium),
             verticalArrangement = Arrangement.spacedBy(spacing.small),
             reverseLayout = true
@@ -292,6 +295,45 @@ fun SingleChatScreen(
                     }
                 }
                 }
+            }
+        }
+
+        // Message input field
+        Row(
+            modifier = Modifier.Companion
+                .fillMaxWidth()
+                .padding(spacing.medium),
+            verticalAlignment = Alignment.Companion.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = messageText.value,
+                onValueChange = { messageText.value = it },
+                placeholder = { Text("Type a message...") },
+                modifier = Modifier.Companion
+                    .weight(1f)
+                    .padding(end = spacing.small),
+                shape = RoundedCornerShape(24.dp),
+                maxLines = 4
+            )
+            IconButton(
+                onClick = {
+                    if (messageText.value.trim().isNotEmpty()) {
+                        chat._id?.let { chatId ->
+                            chatVm.sendMessage(chatId, messageText.value.trim())
+                            messageText.value = ""
+                        }
+                    }
+                },
+                enabled = messageText.value.trim().isNotEmpty()
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Send message",
+                    tint = if (messageText.value.trim().isNotEmpty()) 
+                        MaterialTheme.colorScheme.primary 
+                    else 
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                )
             }
         }
     }

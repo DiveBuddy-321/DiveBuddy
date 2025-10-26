@@ -74,6 +74,26 @@ class ChatRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun sendMessage(chatId: String, content: String): Result<com.cpen321.usermanagement.data.remote.dto.Message> {
+        return try {
+            val response = chatInterface.sendMessage(
+                authHeader = "",
+                chatId = chatId,
+                request = com.cpen321.usermanagement.data.remote.dto.SendMessageRequest(content = content)
+            )
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val err = response.errorBody()?.string()
+                Log.e(TAG, "Failed to send message: ${'$'}err")
+                Result.failure(IllegalStateException("Failed to send message"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending message", e)
+            Result.failure(e)
+        }
+    }
 }
 
 
