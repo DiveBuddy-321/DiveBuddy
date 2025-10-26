@@ -22,6 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.remote.dto.Chat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import java.text.SimpleDateFormat
 import java.util.*
@@ -31,54 +35,26 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
     chatId: String? = null
 ) {
-    ChatContent(modifier = modifier)
+    val vm: ChatViewModel = hiltViewModel()
+    val uiState = vm.uiState.collectAsState()
+    LaunchedEffect(Unit) { vm.loadChats() }
+    ChatContent(
+        modifier = modifier,
+        isLoading = uiState.value.isLoading,
+        chats = uiState.value.chats
+    )
 }
 
 @Composable
 private fun ChatContent(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    chats: List<Chat> = emptyList()
 ) {
     var selectedChat by remember { mutableStateOf<Chat?>(null) }
     var showSelectedChat by remember { mutableStateOf(false) }
 
     val spacing = LocalSpacing.current
-
-    // Dummy data for chats
-    val dummyChats = listOf(
-        Chat(
-            _id = "1",
-            isGroup = false,
-            name = "John Doe",
-            participants = listOf("user1", "user2"),
-            createdBy = "user1",
-            lastMessage = "Hey! How's your tennis game going?",
-            lastMessageAt = Date(System.currentTimeMillis() - 1000 * 60 * 30), // 30 minutes ago
-            createdAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24), // 1 day ago
-            updatedAt = Date(System.currentTimeMillis() - 1000 * 60 * 30)
-        ),
-        Chat(
-            _id = "3",
-            isGroup = false,
-            name = "Sarah Wilson",
-            participants = listOf("user1", "user5"),
-            createdBy = "user1",
-            lastMessage = "Thanks for the great match yesterday!",
-            lastMessageAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24), // 1 day ago
-            createdAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 7), // 1 week ago
-            updatedAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24)
-        ),
-        Chat(
-            _id = "4",
-            isGroup = false,
-            name = "Mike Chen",
-            participants = listOf("user1", "user6"),
-            createdBy = "user1",
-            lastMessage = "Let's schedule another practice session",
-            lastMessageAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-            createdAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 14), // 2 weeks ago
-            updatedAt = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 2)
-        )
-    )
 
     if (showSelectedChat) {
         SingleChatScreen(
@@ -88,22 +64,27 @@ private fun ChatContent(
             }
         )
     } else {
-        // Chat list
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(spacing.small)
-        ) {
-            items(dummyChats) { chat ->
-                ChatCard(
-                    chat = chat,
-                    onClick = { 
-                        selectedChat = chat
-                        showSelectedChat = true
-                    }
-                )
+        if (isLoading) {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-        }   
+        } else {
+            LazyColumn(
+                modifier = modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(spacing.small)
+            ) {
+                items(chats) { chat ->
+                    ChatCard(
+                        chat = chat,
+                        onClick = { 
+                            selectedChat = chat
+                            showSelectedChat = true
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
