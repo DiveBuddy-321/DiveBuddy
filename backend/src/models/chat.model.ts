@@ -61,7 +61,7 @@ chatSchema.statics.listForUser = function (userId: mongoose.Types.ObjectId) {
       select: 'content sender createdAt',
       populate: {
         path: 'sender',
-        select: 'name avatar'
+        select: 'name profilePicture'
       }
     })
     .lean({ virtuals: true })
@@ -92,7 +92,7 @@ chatSchema.statics.getForUser = function (chatId: string, userId?: mongoose.Type
       select: 'content sender createdAt',
       populate: {
         path: 'sender',
-        select: 'name avatar'
+        select: 'name profilePicture'
       }
     })
     .exec();

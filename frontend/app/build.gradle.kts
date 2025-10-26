@@ -96,6 +96,9 @@ dependencies {
     
     // Shared Preferences
     implementation(libs.androidx.datastore.preferences)
+    
+    // Socket.IO for real-time chat
+    implementation(libs.socket.io.client)
 
     // Material Design Components
     implementation(libs.material)

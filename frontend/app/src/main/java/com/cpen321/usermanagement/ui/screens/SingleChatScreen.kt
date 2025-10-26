@@ -69,10 +69,23 @@ fun SingleChatScreen(
     val messageText = remember { mutableStateOf("") }
 
     LaunchedEffect(chat._id) {
-        chat._id?.let { id -> chatVm.loadMessages(id, limit = 20) }
+        chat._id?.let { id ->
+            // Load initial messages
+            chatVm.loadMessages(id, limit = 20)
+            // Join the chat room for real-time updates
+            chatVm.joinChatRoom(id)
+        }
     }
+    
     LaunchedEffect(uiState.messagesByChat[chat._id]) {
         messages.value = uiState.messagesByChat[chat._id] ?: emptyList()
+    }
+    
+    // Leave chat room when screen is disposed
+    androidx.compose.runtime.DisposableEffect(chat._id) {
+        onDispose {
+            chat._id?.let { id -> chatVm.leaveChatRoom(id) }
+        }
     }
 
     // Detect when user scrolls near the top to load more older messages
