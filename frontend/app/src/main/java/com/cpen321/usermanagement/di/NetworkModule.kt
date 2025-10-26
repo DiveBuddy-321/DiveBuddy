@@ -4,6 +4,7 @@ import com.cpen321.usermanagement.data.remote.api.AuthInterface
 import com.cpen321.usermanagement.data.remote.api.EventInterface
 import com.cpen321.usermanagement.data.remote.api.BuddyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
+import com.cpen321.usermanagement.data.remote.api.ChatInterface
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.UserInterface
 import dagger.Module
@@ -44,6 +45,12 @@ object NetworkModule {
     @Singleton
     fun provideEventService(): EventInterface {
         return RetrofitClient.eventInterface
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatService(): ChatInterface {
+        return RetrofitClient.chatInterface
     }
 
 }

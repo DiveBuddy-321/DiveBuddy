@@ -28,7 +28,8 @@ import java.util.*
 
 @Composable
 fun ChatScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    chatId: String? = null
 ) {
     ChatContent(modifier = modifier)
 }
