@@ -5,21 +5,50 @@ import { Message } from '../models/message.model';
 
 config();
 
-const HEAVY_CHAT_COUNT = 1000;
+const HEAVY_CHAT_COUNT = 400;
 const LIGHT_MIN = 1;
 const LIGHT_MAX = 10;
 
 const SAMPLE_TEXTS = [
-  'Hey! How\'s it going?',
-  'Up for a practice later?',
-  'Nice rally last time!',
-  'Let\'s schedule another match.',
-  'Working on my backhand today.',
-  'Any tips for my serve?',
-  'That was a great session!',
-  'See you at the courts!',
-  'Can you do Saturday morning?',
-  'Let\'s try a new drill next time.'
+  'Tanish',
+  'Alex',
+  'Albert',
+  'Chau',
+  'Matthew',
+  'Derek',
+  'Lia',
+  'Kevin',
+  'Maya',
+  'Erin',
+  'Clara',
+  'Cindy',
+  'Jasmine',
+  'Jessica',
+  'Jade',
+  'Kate',
+  'Katie',
+  'Arevik',
+  'Carter',
+  'Jackson',
+  'Catherine',
+  'Caitlin',
+  'Dionne',
+  'Colleen',
+  'Josh',
+  'John',
+  'Taylor',
+  'Samantha',
+  'Michelle',
+  'Kyra',
+  'Kathy',
+  'Brenda',
+  'Bobby',
+  'Sarah',
+  'Sam',
+  'Ryan',
+  'Tyler',
+  'Melissa',
+  'Christine'
 ];
 
 function randomInt(min: number, max: number) {
@@ -73,9 +102,9 @@ async function seed() {
         const content = `${pick(SAMPLE_TEXTS)} (${i + 1}/${targetCount})`;
         await Message.createMessage(String(chat._id), senderId, content);
         totalCreated++;
-        // Optional: throttle a bit for very heavy inserts
-        if (isHeavy && i % 200 === 0 && i > 0) {
-          await new Promise(r => setTimeout(r, 50));
+        // Optional: throttle a bit for very heavy inserts. Space each message by 100ms to enforce message order
+        if (isHeavy && i > 0) {
+          await new Promise(r => setTimeout(r, 100));
         }
       }
     }
@@ -91,5 +120,6 @@ seed().catch(err => {
   console.error('❌ Seed failed:', err);
   process.exit(1);
 });
+
 
 
