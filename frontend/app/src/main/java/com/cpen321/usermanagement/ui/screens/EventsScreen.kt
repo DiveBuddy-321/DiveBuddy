@@ -14,8 +14,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,39 +44,58 @@ fun EventsScreen(
     var selectedEvent by remember { mutableStateOf<Event?>(null) }
     var showCreateEventForm by remember { mutableStateOf(false) }
     val uiState by eventViewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Handle success messages
+    LaunchedEffect(uiState.joinSuccessMessage) {
+        uiState.joinSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            // Clear only the success message, not the entire state
+            eventViewModel.clearJoinEventState()
+        }
+    }
+    
+    LaunchedEffect(uiState.leaveSuccessMessage) {
+        uiState.leaveSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            // Clear only the success message, not the entire state
+            eventViewModel.clearLeaveEventState()
+        }
+    }
 
-    if (showCreateEventForm) {
-        CreateEventScreen(
-            onDismiss = {
-                showCreateEventForm = false
-            },
-            eventViewModel = eventViewModel
-        )
-    } else if (selectedEvent != null) {
-        SingleEventScreen(
-            event = selectedEvent!!,
-            onBack = {
-                selectedEvent = null
-            },
-            onRegister = {
-                // TODO: Implement registration logic
-                selectedEvent = null
-            }
-        )
-    } else {
-        EventsContent(
-            modifier = modifier,
-            uiState = uiState,
-            onCreateEventClick = {
-                showCreateEventForm = true
-            },
-            onEventClick = { event ->
-                selectedEvent = event
-            },
-            onRefresh = {
-                eventViewModel.refreshEvents()
-            }
-        )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        if (showCreateEventForm) {
+            CreateEventScreen(
+                onDismiss = {
+                    showCreateEventForm = false
+                },
+                eventViewModel = eventViewModel
+            )
+        } else if (selectedEvent != null) {
+            SingleEventScreen(
+                event = selectedEvent!!,
+                onBack = {
+                    selectedEvent = null
+                },
+                eventViewModel = eventViewModel
+            )
+        } else {
+            EventsContent(
+                modifier = modifier.padding(paddingValues),
+                uiState = uiState,
+                onCreateEventClick = {
+                    showCreateEventForm = true
+                },
+                onEventClick = { event ->
+                    selectedEvent = event
+                },
+                onRefresh = {
+                    eventViewModel.refreshEvents()
+                }
+            )
+        }
     }
 }
 

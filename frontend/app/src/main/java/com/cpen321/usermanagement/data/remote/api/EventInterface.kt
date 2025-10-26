@@ -9,6 +9,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 
 interface EventInterface {
     @GET("events/")
@@ -20,5 +22,17 @@ interface EventInterface {
     suspend fun createEvent(
         @Header("Authorization") authHeader: String,
         @Body request: CreateEventRequest
+    ): Response<ApiResponse<CreateEventResponse>>
+    
+    @PUT("events/join/{eventId}")
+    suspend fun joinEvent(
+        @Header("Authorization") authHeader: String,
+        @Path("eventId") eventId: String
+    ): Response<ApiResponse<CreateEventResponse>>
+    
+    @PUT("events/leave/{eventId}")
+    suspend fun leaveEvent(
+        @Header("Authorization") authHeader: String,
+        @Path("eventId") eventId: String
     ): Response<ApiResponse<CreateEventResponse>>
 }
