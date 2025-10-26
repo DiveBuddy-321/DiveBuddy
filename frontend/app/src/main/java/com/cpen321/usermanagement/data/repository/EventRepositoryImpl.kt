@@ -56,4 +56,56 @@ class EventRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun joinEvent(eventId: String): Result<Event> {
+        return try {
+            val response = eventInterface.joinEvent("", eventId) // Auth header is handled by interceptor
+            if (response.isSuccessful && response.body()?.data?.event != null) {
+                Result.success(response.body()!!.data!!.event)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to join event.")
+                Log.e(TAG, "Failed to join event: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while joining event", e)
+            Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while joining event", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while joining event", e)
+            Result.failure(e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error while joining event", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun leaveEvent(eventId: String): Result<Event> {
+        return try {
+            val response = eventInterface.leaveEvent("", eventId) // Auth header is handled by interceptor
+            if (response.isSuccessful && response.body()?.data?.event != null) {
+                Result.success(response.body()!!.data!!.event)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to leave event.")
+                Log.e(TAG, "Failed to leave event: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while leaving event", e)
+            Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while leaving event", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while leaving event", e)
+            Result.failure(e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error while leaving event", e)
+            Result.failure(e)
+        }
+    }
 }

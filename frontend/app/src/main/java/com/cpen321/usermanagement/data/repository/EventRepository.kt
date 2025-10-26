@@ -6,4 +6,6 @@ import com.cpen321.usermanagement.data.remote.dto.CreateEventRequest
 interface EventRepository {
     suspend fun getAllEvents(): Result<List<Event>>
     suspend fun createEvent(request: CreateEventRequest): Result<Event>
+    suspend fun joinEvent(eventId: String): Result<Event>
+    suspend fun leaveEvent(eventId: String): Result<Event>
 }
