@@ -55,6 +55,9 @@ class EventViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
+            // Load current user first to ensure we have the latest user info
+            loadCurrentUser()
+            
             eventRepository.getAllEvents()
                 .onSuccess { events ->
                     _uiState.value = _uiState.value.copy(
@@ -75,6 +78,7 @@ class EventViewModel @Inject constructor(
 
     fun refreshEvents() {
         loadEvents()
+        loadCurrentUser() // Refresh current user when refreshing events
     }
 
     private fun loadCurrentUser() {
@@ -90,7 +94,14 @@ class EventViewModel @Inject constructor(
 
     fun isUserAttendingEvent(event: Event): Boolean {
         val currentUser = _uiState.value.currentUser
-        return currentUser != null && event.attendees.contains(currentUser._id)
+        val isAttending = currentUser != null && event.attendees.contains(currentUser._id)
+        
+        Log.d(TAG, "Checking attendance for event ${event.title}:")
+        Log.d(TAG, "  Current user: ${currentUser?._id}")
+        Log.d(TAG, "  Event attendees: ${event.attendees}")
+        Log.d(TAG, "  Is attending: $isAttending")
+        
+        return isAttending
     }
 
     fun createEvent(request: CreateEventRequest) {
@@ -222,5 +233,9 @@ class EventViewModel @Inject constructor(
             leaveEventError = null,
             eventLeft = false
         )
+    }
+
+    fun refreshCurrentUser() {
+        loadCurrentUser()
     }
 }

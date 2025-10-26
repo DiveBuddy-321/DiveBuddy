@@ -113,6 +113,10 @@ export class EventController {
         return res.status(400).json({ message: 'User already joined the event' });
       }
 
+      if (existing.attendees.length >= existing.capacity) {
+        return res.status(400).json({ message: 'Event is at full capacity' });
+      }
+
       existing.attendees.push(requester._id);
 
       const { __v, createdAt, updatedAt, createdBy, _id, ...rest } = existing.toObject();
