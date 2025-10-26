@@ -72,7 +72,9 @@ fun SingleChatScreen(
         messages.value = uiState.messagesByChat[chat._id] ?: emptyList()
     }
 
-    // Detect when user scrolls near the end to load more messages
+    // Detect when user scrolls near the top to load more older messages
+    // With reverseLayout, index 0 is at bottom (newest), high indices are at top (oldest)
+    // Backend returns messages sorted newest first, so lastOrNull() gives us the oldest
     LaunchedEffect(listState) {
         snapshotFlow { 
             val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
@@ -88,6 +90,7 @@ fun SingleChatScreen(
                     messages.value.isNotEmpty()) {
                     
                     isLoadingMore.value = true
+                    // Backend returns messages newest first, so last item is the oldest
                     val oldestMessage = messages.value.lastOrNull()
                     val beforeTimestamp = oldestMessage?.createdAt?.let {
                         java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
@@ -99,7 +102,6 @@ fun SingleChatScreen(
                         chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
                     }
                     
-                    // Reset loading flag after a delay
                     kotlinx.coroutines.delay(1000)
                     isLoadingMore.value = false
                 }
@@ -226,12 +228,14 @@ fun SingleChatScreen(
         }
 
         // Messages list
+        // Backend returns messages newest first, reverseLayout puts index 0 (newest) at bottom
         LazyColumn(
             state = listState,
             modifier = Modifier.Companion
                 .fillMaxSize()
                 .padding(spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(spacing.small)
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+            reverseLayout = true
         ) {
             items(messages.value) { msg ->
                 val isMine = uiState.currentUserId != null && msg.sender?._id == uiState.currentUserId
