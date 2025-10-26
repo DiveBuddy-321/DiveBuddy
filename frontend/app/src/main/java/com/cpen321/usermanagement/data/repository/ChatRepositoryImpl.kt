@@ -4,6 +4,7 @@ import android.util.Log
 import com.cpen321.usermanagement.data.remote.api.ChatInterface
 import com.cpen321.usermanagement.data.remote.dto.CreateChatRequest
 import com.cpen321.usermanagement.data.remote.dto.Chat
+import com.cpen321.usermanagement.data.remote.dto.MessagesResponse
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +24,22 @@ class ChatRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error listing chats", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getMessages(chatId: String, limit: Int?, before: String?): Result<MessagesResponse> {
+        return try {
+            val response = chatInterface.getMessages(authHeader = "", chatId = chatId, limit = limit, before = before)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val err = response.errorBody()?.string()
+                Log.e(TAG, "Failed to get messages: ${'$'}err")
+                Result.failure(IllegalStateException("Failed to get messages"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting messages", e)
             Result.failure(e)
         }
     }

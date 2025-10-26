@@ -1,7 +1,13 @@
 package com.cpen321.usermanagement.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,15 +28,29 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
 import com.cpen321.usermanagement.data.remote.dto.Chat
+import com.cpen321.usermanagement.data.remote.dto.Message
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
+import coil.compose.AsyncImage
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.shape.CircleShape
+import com.cpen321.usermanagement.R
 
 @Composable
 fun SingleChatScreen(
@@ -39,6 +59,52 @@ fun SingleChatScreen(
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
+    val chatVm: ChatViewModel = hiltViewModel()
+    val uiState by chatVm.uiState.collectAsState()
+    val messages = remember { mutableStateOf<List<Message>>(emptyList()) }
+    val listState = rememberLazyListState()
+    val isLoadingMore = remember { mutableStateOf(false) }
+
+    LaunchedEffect(chat._id) {
+        chat._id?.let { id -> chatVm.loadMessages(id, limit = 20) }
+    }
+    LaunchedEffect(uiState.messagesByChat[chat._id]) {
+        messages.value = uiState.messagesByChat[chat._id] ?: emptyList()
+    }
+
+    // Detect when user scrolls near the end to load more messages
+    LaunchedEffect(listState) {
+        snapshotFlow { 
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            val total = listState.layoutInfo.totalItemsCount
+            Pair(lastVisible, total)
+        }
+            .distinctUntilChanged()
+            .collect { (lastVisibleIndex, totalItems) ->
+                if (lastVisibleIndex != null && 
+                    totalItems > 0 && 
+                    lastVisibleIndex >= totalItems - 3 && 
+                    !isLoadingMore.value && 
+                    messages.value.isNotEmpty()) {
+                    
+                    isLoadingMore.value = true
+                    val oldestMessage = messages.value.lastOrNull()
+                    val beforeTimestamp = oldestMessage?.createdAt?.let {
+                        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                            timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        }.format(it)
+                    }
+                    
+                    chat._id?.let { id ->
+                        chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
+                    }
+                    
+                    // Reset loading flag after a delay
+                    kotlinx.coroutines.delay(1000)
+                    isLoadingMore.value = false
+                }
+            }
+    }
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -129,7 +195,7 @@ fun SingleChatScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = chat.lastMessage,
+                        text = chat.lastMessage?.content ?: "No messages yet",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -159,33 +225,69 @@ fun SingleChatScreen(
             }
         }
 
-        // Placeholder for future chat messages
-        Box(
+        // Messages list
+        LazyColumn(
+            state = listState,
             modifier = Modifier.Companion
                 .fillMaxSize()
                 .padding(spacing.medium),
-            contentAlignment = Alignment.Companion.Center
+            verticalArrangement = Arrangement.spacedBy(spacing.small)
         ) {
-            Column(
-                horizontalAlignment = Alignment.Companion.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(spacing.small)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Chat icon",
-                    modifier = Modifier.Companion.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Chat messages will appear here",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "This is where the chat UI will be implemented",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            items(messages.value) { msg ->
+                val isMine = uiState.currentUserId != null && msg.sender?._id == uiState.currentUserId
+                if (isMine) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    if (msg.sender?.avatar != null) {
+                        AsyncImage(
+                            model = RetrofitClient.getPictureUri(msg.sender.avatar),
+                            contentDescription = stringResource(R.string.profile_picture),
+                            modifier = Modifier.size(12.dp).clip(CircleShape)
+                            )
+                        }
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary 
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(0.75f)
+                    ) {
+                        Text(
+                            text = msg.content,
+                            modifier = Modifier.Companion.padding(horizontal = spacing.medium, vertical = spacing.small)
+                        )
+                    }
+                }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        if (msg.sender?.avatar != null) {
+                        AsyncImage(
+                            model = RetrofitClient.getPictureUri(msg.sender.avatar),
+                            contentDescription = stringResource(R.string.profile_picture),
+                            modifier = Modifier.size(12.dp).clip(CircleShape)
+                            )
+                        }
+                        Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor =  MaterialTheme.colorScheme.onSurface
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(0.75f)
+                    ) {
+                        Text(
+                            text = msg.content,
+                            modifier = Modifier.Companion.padding(horizontal = spacing.medium, vertical = spacing.small)
+                        )
+                    }
+                }
+                }
             }
         }
     }

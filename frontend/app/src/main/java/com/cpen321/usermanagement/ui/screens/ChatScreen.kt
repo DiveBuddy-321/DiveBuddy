@@ -139,7 +139,7 @@ private fun ChatCard(
                 
                 // Last message
                 Text(
-                    text = chat.lastMessage ?: "No messages yet",
+                    text = chat.lastMessage?.content ?: "No messages yet",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
