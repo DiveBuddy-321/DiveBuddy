@@ -44,13 +44,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.CreateEventRequest
+import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.ui.components.LocationAutocomplete
 import com.cpen321.usermanagement.ui.components.LocationResult
 import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -63,16 +63,25 @@ import java.util.Date
 fun CreateEventScreen(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    eventViewModel: EventViewModel = hiltViewModel()
+    eventViewModel: EventViewModel = hiltViewModel(),
+    event: Event? = null // Optional event for editing
 ) {
-    var eventTitle by remember { mutableStateOf("") }
-    var eventDescription by remember { mutableStateOf("") }
-    var eventLocation by remember { mutableStateOf("") }
+    val isEditing = event != null
+    
+    // Initialize form fields with event data if editing, empty if creating
+    var eventTitle by remember { mutableStateOf(event?.title ?: "") }
+    var eventDescription by remember { mutableStateOf(event?.description ?: "") }
+    var eventLocation by remember { mutableStateOf(event?.location ?: "") }
     var selectedLocation by remember { mutableStateOf<LocationResult?>(null) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
-    var requiredLevel by remember { mutableStateOf("") }
-    var maxParticipants by remember { mutableStateOf("") }
+    
+    // Parse event date to LocalDate and LocalTime if editing
+    val eventDate = event?.date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+    val eventTime = event?.date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalTime()
+    
+    var selectedDate by remember { mutableStateOf(eventDate) }
+    var selectedTime by remember { mutableStateOf(eventTime) }
+    var requiredLevel by remember { mutableStateOf(event?.skillLevel ?: "") }
+    var maxParticipants by remember { mutableStateOf(event?.capacity?.toString() ?: "") }
     
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -89,11 +98,15 @@ fun CreateEventScreen(
     // Collect ViewModel state
     val uiState by eventViewModel.uiState.collectAsState()
     
-    // Handle successful event creation
-    LaunchedEffect(uiState.eventCreated) {
-        if (uiState.eventCreated) {
+    // Handle successful event creation/update
+    LaunchedEffect(uiState.eventCreated, uiState.eventUpdated) {
+        if (uiState.eventCreated || uiState.eventUpdated) {
             onDismiss()
-            eventViewModel.clearCreateEventState()
+            if (isEditing) {
+                eventViewModel.clearUpdateEventState()
+            } else {
+                eventViewModel.clearCreateEventState()
+            }
         }
     }
 
@@ -113,7 +126,7 @@ fun CreateEventScreen(
                 Icon(name = R.drawable.ic_arrow_back)
             }
             Text(
-                text = stringResource(R.string.create_event),
+                text = if (isEditing) "Edit Event" else stringResource(R.string.create_event),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -224,9 +237,10 @@ fun CreateEventScreen(
         // TODO: Add image upload field
         
         // Error message display
-        if (uiState.createEventError != null) {
+        val errorMessage = if (isEditing) uiState.updateEventError else uiState.createEventError
+        if (errorMessage != null) {
             Text(
-                text = uiState.createEventError!!,
+                text = errorMessage,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(vertical = spacing.small)
@@ -257,7 +271,7 @@ fun CreateEventScreen(
                         val dateTime = selectedDate!!.atTime(selectedTime!!)
                         val eventDate = Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant())
                         
-                        val createEventRequest = CreateEventRequest(
+                        val eventRequest = CreateEventRequest(
                             title = eventTitle,
                             description = eventDescription,
                             date = eventDate,
@@ -266,11 +280,15 @@ fun CreateEventScreen(
                             location = eventLocation,
                             latitude = selectedLocation?.coordinates?.latitude,
                             longitude = selectedLocation?.coordinates?.longitude,
-                            attendees = emptyList(),
-                            photo = null
+                            attendees = if (isEditing) event.attendees else emptyList(), // Keep existing attendees when editing
+                            photo = if (isEditing) event.photo else null // Keep existing photo when editing
                         )
                         
-                        eventViewModel.createEvent(createEventRequest)
+                        if (isEditing) {
+                            eventViewModel.updateEvent(event._id, eventRequest)
+                        } else {
+                            eventViewModel.createEvent(eventRequest)
+                        }
                     }
                 },
                 modifier = Modifier.weight(1f),
@@ -279,16 +297,17 @@ fun CreateEventScreen(
                          eventLocation.isNotBlank() &&
                          selectedDate != null &&
                          selectedTime != null &&
-                         !uiState.isCreatingEvent
+                         (!uiState.isCreatingEvent && !uiState.isUpdatingEvent)
             ) {
-                if (uiState.isCreatingEvent) {
+                val isLoading = if (isEditing) uiState.isUpdatingEvent else uiState.isCreatingEvent
+                if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.padding(8.dp),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
                     Text(
-                        text = stringResource(R.string.create_event),
+                        text = if (isEditing) "Update Event" else stringResource(R.string.create_event),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }

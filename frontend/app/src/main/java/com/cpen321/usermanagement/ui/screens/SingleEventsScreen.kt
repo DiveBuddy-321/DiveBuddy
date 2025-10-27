@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults.buttonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +45,7 @@ import java.util.Locale
 fun SingleEventScreen(
     event: Event,
     onBack: () -> Unit,
+    onEditEvent: (Event) -> Unit,
     eventViewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -46,9 +56,7 @@ fun SingleEventScreen(
     // Handle join event success/error
     LaunchedEffect(uiState.eventJoined) {
         if (uiState.eventJoined) {
-            // Navigate back immediately, success message will be shown in EventsScreen
             onBack()
-            // Clear only the flags to prevent re-triggering, keep success message
             eventViewModel.clearJoinEventFlags()
         }
     }
@@ -56,15 +64,27 @@ fun SingleEventScreen(
     // Handle leave event success/error
     LaunchedEffect(uiState.eventLeft) {
         if (uiState.eventLeft) {
-            // Navigate back immediately, success message will be shown in EventsScreen
             onBack()
-            // Clear only the flags to prevent re-triggering, keep success message
             eventViewModel.clearLeaveEventFlags()
         }
     }
     
+    // Handle delete event success/error
+    LaunchedEffect(uiState.eventDeleted) {
+        if (uiState.eventDeleted) {
+            onBack()
+            eventViewModel.clearDeleteEventFlags()
+        }
+    }
+    
+    // Get the updated event from the ViewModel if it exists, otherwise use the original event
+    val updatedEvent = uiState.events.find { it._id == event._id } ?: event
+    
     // Check if user is attending the event
     val isUserAttending = eventViewModel.isUserAttendingEvent(event)
+    
+    // Check if user is the creator of the event
+    val isUserCreator = eventViewModel.isUserEventCreator(event)
 
     Column(
         modifier = modifier
@@ -72,33 +92,52 @@ fun SingleEventScreen(
             .padding(spacing.large),
         verticalArrangement = Arrangement.spacedBy(spacing.large)
     ) {
-        Row (
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = onBack) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back to events screen",
                 )
             }
 
-            // Event title
             Text(
-                text = event.title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                text = "Event Details",
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
+
+            if (isUserCreator) {
+                OptionsMenu(
+                    event = updatedEvent,
+                    eventViewModel = eventViewModel,
+                    onEditEvent = onEditEvent,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
+            }
         }
+
+        // Event title
+        Text(
+            text = updatedEvent.title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
 
         // Event description
         Card(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = event.description,
+                text = updatedEvent.description,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(spacing.medium)
@@ -129,7 +168,7 @@ fun SingleEventScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = dateFormatter.format(event.date),
+                            text = dateFormatter.format(updatedEvent.date),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -138,7 +177,7 @@ fun SingleEventScreen(
                 }
 
                 // Location
-                if (event.location != null) {
+                if (updatedEvent.location != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -154,7 +193,7 @@ fun SingleEventScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = event.location,
+                                text = updatedEvent.location,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -179,7 +218,7 @@ fun SingleEventScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${event.attendees.size} / ${event.capacity} people",
+                            text = "${updatedEvent.attendees.size} / ${updatedEvent.capacity} people",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -188,7 +227,7 @@ fun SingleEventScreen(
                 }
 
                 // Skill level
-                if (event.skillLevel != null) {
+                if (updatedEvent.skillLevel != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -204,7 +243,7 @@ fun SingleEventScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = event.skillLevel,
+                                text = updatedEvent.skillLevel,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -221,9 +260,9 @@ fun SingleEventScreen(
         Button(
             onClick = { 
                 if (isUserAttending) {
-                    eventViewModel.leaveEvent(event._id)
+                    eventViewModel.leaveEvent(updatedEvent._id)
                 } else {
-                    eventViewModel.joinEvent(event._id)
+                    eventViewModel.joinEvent(updatedEvent._id)
                 }
             },
             enabled = !uiState.isJoiningEvent && !uiState.isLeavingEvent,
@@ -264,5 +303,102 @@ fun SingleEventScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
+    }
+}
+
+@Composable
+private fun OptionsMenu(
+    event: Event,
+    eventViewModel: EventViewModel,
+    onEditEvent: (Event) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showOptionMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val spacing = LocalSpacing.current
+    val uiState by eventViewModel.uiState.collectAsState()
+
+    Box(
+        modifier = modifier.padding(spacing.medium)
+    ) {
+        IconButton(onClick = { showOptionMenu = !showOptionMenu }) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "More options",
+            )
+        }
+        DropdownMenu(
+            expanded = showOptionMenu,
+            onDismissRequest = { showOptionMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                onClick = { 
+                    showOptionMenu = false
+                    onEditEvent(event)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                onClick = { 
+                    showOptionMenu = false
+                    showDeleteDialog = true
+                }
+            )
+        }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Event") },
+            text = { Text("Are you sure you want to delete \"${event.title}\"? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        eventViewModel.deleteEvent(event._id)
+                    },
+                    enabled = !uiState.isDeletingEvent,
+                    colors = buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    if (uiState.isDeletingEvent) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.width(16.dp).height(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Delete")
+                    }
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showDeleteDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Show error message if delete failed
+    if (uiState.deleteEventError != null) {
+        AlertDialog(
+            onDismissRequest = { eventViewModel.clearDeleteEventState() },
+            title = { Text("Error") },
+            text = { Text(uiState.deleteEventError!!) },
+            confirmButton = {
+                Button(
+                    onClick = { eventViewModel.clearDeleteEventState() }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }

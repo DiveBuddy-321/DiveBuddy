@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
+import com.cpen321.usermanagement.ui.screens.CreateEventScreen
+import com.cpen321.usermanagement.ui.screens.SingleEventScreen
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.EventUiState
@@ -43,6 +45,7 @@ fun EventsScreen(
 ) {
     var selectedEvent by remember { mutableStateOf<Event?>(null) }
     var showCreateEventForm by remember { mutableStateOf(false) }
+    var showEditEventForm by remember { mutableStateOf<Event?>(null) }
     val uiState by eventViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -62,39 +65,71 @@ fun EventsScreen(
             eventViewModel.clearLeaveEventState()
         }
     }
+    
+    LaunchedEffect(uiState.updateSuccessMessage) {
+        uiState.updateSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            // Clear only the success message, not the entire state
+            eventViewModel.clearUpdateEventState()
+        }
+    }
+    
+    LaunchedEffect(uiState.deleteSuccessMessage) {
+        uiState.deleteSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            // Clear only the success message, not the entire state
+            eventViewModel.clearDeleteEventState()
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        if (showCreateEventForm) {
-            CreateEventScreen(
-                onDismiss = {
-                    showCreateEventForm = false
-                },
-                eventViewModel = eventViewModel
-            )
-        } else if (selectedEvent != null) {
-            SingleEventScreen(
-                event = selectedEvent!!,
-                onBack = {
-                    selectedEvent = null
-                },
-                eventViewModel = eventViewModel
-            )
-        } else {
-            EventsContent(
-                modifier = modifier.padding(paddingValues),
-                uiState = uiState,
-                onCreateEventClick = {
-                    showCreateEventForm = true
-                },
-                onEventClick = { event ->
-                    selectedEvent = event
-                },
-                onRefresh = {
-                    eventViewModel.refreshEvents()
-                }
-            )
+        when {
+            showCreateEventForm -> {
+                CreateEventScreen(
+                    onDismiss = {
+                        showCreateEventForm = false
+                    },
+                    eventViewModel = eventViewModel
+                )
+            }
+            showEditEventForm != null -> {
+                CreateEventScreen(
+                    event = showEditEventForm!!,
+                    onDismiss = {
+                        showEditEventForm = null
+                    },
+                    eventViewModel = eventViewModel
+                )
+            }
+            selectedEvent != null -> {
+                SingleEventScreen(
+                    event = selectedEvent!!,
+                    onBack = {
+                        selectedEvent = null
+                    },
+                    onEditEvent = { event ->
+                        showEditEventForm = event
+                    },
+                    eventViewModel = eventViewModel
+                )
+            }
+            else -> {
+                EventsContent(
+                    modifier = modifier.padding(paddingValues),
+                    uiState = uiState,
+                    onCreateEventClick = {
+                        showCreateEventForm = true
+                    },
+                    onEventClick = { event ->
+                        selectedEvent = event
+                    },
+                    onRefresh = {
+                        eventViewModel.refreshEvents()
+                    }
+                )
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ package com.cpen321.usermanagement.data.repository
 
 import android.util.Log
 import com.cpen321.usermanagement.data.remote.api.EventInterface
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.data.remote.dto.CreateEventRequest
 import com.cpen321.usermanagement.utils.JsonUtils.parseErrorMessage
@@ -57,6 +58,32 @@ class EventRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateEvent(eventId: String, request: CreateEventRequest): Result<Event> {
+        return try {
+            val response = eventInterface.updateEvent("", eventId, request) // Auth header is handled by interceptor
+            if (response.isSuccessful && response.body()?.data?.event != null) {
+                Result.success(response.body()!!.data!!.event)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to update event.")
+                Log.e(TAG, "Failed to update event: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while updating event", e)
+            Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while updating event", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while updating event", e)
+            Result.failure(e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error while updating event", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun joinEvent(eventId: String): Result<Event> {
         return try {
             val response = eventInterface.joinEvent("", eventId) // Auth header is handled by interceptor
@@ -105,6 +132,22 @@ class EventRepositoryImpl @Inject constructor(
             Result.failure(e)
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error while leaving event", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteEvent(eventId: String): Result<Unit> {
+        return try {
+            val response = eventInterface.deleteEvent("", eventId) // Auth header is handled by interceptor
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to delete event.")
+                Log.e(TAG, "Failed to delete event: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

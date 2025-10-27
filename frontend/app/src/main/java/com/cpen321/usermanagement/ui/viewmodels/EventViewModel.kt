@@ -22,15 +22,23 @@ data class EventUiState(
     val isCreatingEvent: Boolean = false,
     val createEventError: String? = null,
     val eventCreated: Boolean = false,
+    val isUpdatingEvent: Boolean = false,
+    val updateEventError: String? = null,
+    val eventUpdated: Boolean = false,
     val isJoiningEvent: Boolean = false,
     val joinEventError: String? = null,
     val eventJoined: Boolean = false,
     val isLeavingEvent: Boolean = false,
     val leaveEventError: String? = null,
     val eventLeft: Boolean = false,
+    val isDeletingEvent: Boolean = false,
+    val deleteEventError: String? = null,
+    val eventDeleted: Boolean = false,
     val currentUser: User? = null,
     val joinSuccessMessage: String? = null,
-    val leaveSuccessMessage: String? = null
+    val leaveSuccessMessage: String? = null,
+    val deleteSuccessMessage: String? = null,
+    val updateSuccessMessage: String? = null
 )
 
 @HiltViewModel
@@ -141,6 +149,53 @@ class EventViewModel @Inject constructor(
         )
     }
 
+    fun updateEvent(eventId: String, request: CreateEventRequest) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isUpdatingEvent = true,
+                updateEventError = null,
+                eventUpdated = false
+            )
+            
+            eventRepository.updateEvent(eventId, request)
+                .onSuccess { event ->
+                    Log.d(TAG, "Event updated successfully: ${event.title}")
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingEvent = false,
+                        eventUpdated = true,
+                        updateEventError = null,
+                        updateSuccessMessage = "Event updated successfully!"
+                    )
+                    // Refresh the events list to show updated event
+                    loadEvents()
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "Failed to update event", error)
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingEvent = false,
+                        updateEventError = error.message ?: "Failed to update event"
+                    )
+                }
+        }
+    }
+
+    fun clearUpdateEventState() {
+        _uiState.value = _uiState.value.copy(
+            isUpdatingEvent = false,
+            updateEventError = null,
+            eventUpdated = false,
+            updateSuccessMessage = null
+        )
+    }
+
+    fun clearUpdateEventFlags() {
+        _uiState.value = _uiState.value.copy(
+            isUpdatingEvent = false,
+            updateEventError = null,
+            eventUpdated = false
+        )
+    }
+
     fun joinEvent(eventId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -237,5 +292,57 @@ class EventViewModel @Inject constructor(
 
     fun refreshCurrentUser() {
         loadCurrentUser()
+    }
+
+    fun deleteEvent(eventId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isDeletingEvent = true,
+                deleteEventError = null,
+                eventDeleted = false
+            )
+            
+            eventRepository.deleteEvent(eventId)
+                .onSuccess {
+                    Log.d(TAG, "Successfully deleted event")
+                    _uiState.value = _uiState.value.copy(
+                        isDeletingEvent = false,
+                        eventDeleted = true,
+                        deleteEventError = null,
+                        deleteSuccessMessage = "Event deleted successfully!"
+                    )
+                    // Refresh the events list to remove the deleted event
+                    loadEvents()
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "Failed to delete event", error)
+                    _uiState.value = _uiState.value.copy(
+                        isDeletingEvent = false,
+                        deleteEventError = error.message ?: "Failed to delete event"
+                    )
+                }
+        }
+    }
+
+    fun clearDeleteEventState() {
+        _uiState.value = _uiState.value.copy(
+            isDeletingEvent = false,
+            deleteEventError = null,
+            eventDeleted = false,
+            deleteSuccessMessage = null
+        )
+    }
+
+    fun clearDeleteEventFlags() {
+        _uiState.value = _uiState.value.copy(
+            isDeletingEvent = false,
+            deleteEventError = null,
+            eventDeleted = false
+        )
+    }
+
+    fun isUserEventCreator(event: Event): Boolean {
+        val currentUser = _uiState.value.currentUser
+        return currentUser != null && event.createdBy == currentUser._id
     }
 }
