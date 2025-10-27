@@ -77,6 +77,9 @@ fun SingleEventScreen(
         }
     }
     
+    // Get the updated event from the ViewModel if it exists, otherwise use the original event
+    val updatedEvent = uiState.events.find { it._id == event._id } ?: event
+    
     // Check if user is attending the event
     val isUserAttending = eventViewModel.isUserAttendingEvent(event)
     
@@ -113,7 +116,7 @@ fun SingleEventScreen(
 
             if (isUserCreator) {
                 OptionsMenu(
-                    event = event,
+                    event = updatedEvent,
                     eventViewModel = eventViewModel,
                     onEditEvent = onEditEvent,
                     modifier = Modifier.align(Alignment.CenterEnd)
@@ -123,7 +126,7 @@ fun SingleEventScreen(
 
         // Event title
         Text(
-            text = event.title,
+            text = updatedEvent.title,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -134,7 +137,7 @@ fun SingleEventScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = event.description,
+                text = updatedEvent.description,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(spacing.medium)
@@ -165,7 +168,7 @@ fun SingleEventScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = dateFormatter.format(event.date),
+                            text = dateFormatter.format(updatedEvent.date),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -174,7 +177,7 @@ fun SingleEventScreen(
                 }
 
                 // Location
-                if (event.location != null) {
+                if (updatedEvent.location != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -190,7 +193,7 @@ fun SingleEventScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = event.location,
+                                text = updatedEvent.location,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -215,7 +218,7 @@ fun SingleEventScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${event.attendees.size} / ${event.capacity} people",
+                            text = "${updatedEvent.attendees.size} / ${updatedEvent.capacity} people",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -224,7 +227,7 @@ fun SingleEventScreen(
                 }
 
                 // Skill level
-                if (event.skillLevel != null) {
+                if (updatedEvent.skillLevel != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -240,7 +243,7 @@ fun SingleEventScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = event.skillLevel,
+                                text = updatedEvent.skillLevel,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -257,9 +260,9 @@ fun SingleEventScreen(
         Button(
             onClick = { 
                 if (isUserAttending) {
-                    eventViewModel.leaveEvent(event._id)
+                    eventViewModel.leaveEvent(updatedEvent._id)
                 } else {
-                    eventViewModel.joinEvent(event._id)
+                    eventViewModel.joinEvent(updatedEvent._id)
                 }
             },
             enabled = !uiState.isJoiningEvent && !uiState.isLeavingEvent,
