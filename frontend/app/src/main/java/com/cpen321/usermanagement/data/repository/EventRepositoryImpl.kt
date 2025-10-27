@@ -2,6 +2,7 @@ package com.cpen321.usermanagement.data.repository
 
 import android.util.Log
 import com.cpen321.usermanagement.data.remote.api.EventInterface
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.data.remote.dto.CreateEventRequest
 import com.cpen321.usermanagement.utils.JsonUtils.parseErrorMessage
@@ -105,6 +106,22 @@ class EventRepositoryImpl @Inject constructor(
             Result.failure(e)
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error while leaving event", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteEvent(eventId: String): Result<Unit> {
+        return try {
+            val response = eventInterface.deleteEvent("", eventId) // Auth header is handled by interceptor
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to delete event.")
+                Log.e(TAG, "Failed to delete event: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

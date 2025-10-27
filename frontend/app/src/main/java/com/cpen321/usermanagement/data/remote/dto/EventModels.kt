@@ -36,6 +36,6 @@ data class CreateEventRequest(
     val photo: String? = null
 )
 
-data class CreateEventResponse(
+data class EventResponse(
     val event: Event
 )

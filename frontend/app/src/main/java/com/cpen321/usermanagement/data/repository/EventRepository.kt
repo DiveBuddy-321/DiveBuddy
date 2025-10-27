@@ -8,4 +8,5 @@ interface EventRepository {
     suspend fun createEvent(request: CreateEventRequest): Result<Event>
     suspend fun joinEvent(eventId: String): Result<Event>
     suspend fun leaveEvent(eventId: String): Result<Event>
+    suspend fun deleteEvent(eventId: String): Result<Unit>
 }
