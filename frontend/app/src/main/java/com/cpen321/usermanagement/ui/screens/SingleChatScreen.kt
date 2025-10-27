@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.foundation.layout.Column
@@ -52,6 +50,7 @@ import coil.compose.AsyncImage
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.DisposableEffect
 import com.cpen321.usermanagement.R
 
 @Composable
@@ -68,6 +67,8 @@ fun SingleChatScreen(
     val isLoadingMore = remember { mutableStateOf(false) }
     val messageText = remember { mutableStateOf("") }
 
+    val otherUserName = chatVm.getOtherUserName(chat)
+
     LaunchedEffect(chat._id) {
         chat._id?.let { id ->
             // Load initial messages
@@ -82,7 +83,7 @@ fun SingleChatScreen(
     }
     
     // Leave chat room when screen is disposed
-    androidx.compose.runtime.DisposableEffect(chat._id) {
+    DisposableEffect(chat._id) {
         onDispose {
             chat._id?.let { id -> chatVm.leaveChatRoom(id) }
         }
@@ -109,7 +110,7 @@ fun SingleChatScreen(
                     // Backend returns messages newest first, so last item is the oldest
                     val oldestMessage = messages.value.lastOrNull()
                     val beforeTimestamp = oldestMessage?.createdAt?.let {
-                        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
                             timeZone = java.util.TimeZone.getTimeZone("UTC")
                         }.format(it)
                     }
@@ -145,7 +146,7 @@ fun SingleChatScreen(
             )
             Spacer(modifier = Modifier.Companion.width(spacing.small))
             Text(
-                text = chat.name ?: "Unknown Chat",
+                text = otherUserName,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Companion.SemiBold
             )
@@ -180,7 +181,7 @@ fun SingleChatScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = chat.name ?: "Unknown Chat",
+                            text = otherUserName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Companion.SemiBold
                         )
@@ -213,7 +214,7 @@ fun SingleChatScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = chat.lastMessage?.content ?: "No messages yet",
+                        text = chat.lastMessage.content,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )

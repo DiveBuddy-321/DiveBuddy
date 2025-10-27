@@ -19,6 +19,7 @@ data class ChatUiState(
     val chats: List<Chat> = emptyList(),
     val messagesByChat: Map<String, List<Message>> = emptyMap(),
     val currentUserId: String? = null,
+    val userNames: Map<String, String> = emptyMap(), // userId -> userName mapping
     val error: String? = null,
     val isSocketConnected: Boolean = false
 )
@@ -91,9 +92,37 @@ class ChatViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val profile = profileRepository.getProfile().getOrNull()
             val result = chatRepository.listChats()
-            _uiState.value = result.fold(
-                onSuccess = { list -> ChatUiState(isLoading = false, chats = list, currentUserId = profile?._id) },
-                onFailure = { e -> ChatUiState(isLoading = false, chats = emptyList(), error = e.message, currentUserId = profile?._id) }
+            
+            result.fold(
+                onSuccess = { chatList ->
+                    // Get all unique participant IDs (excluding current user)
+                    val participantIds = chatList.flatMap { chat ->
+                        chat.participants.filter { it != profile?._id }
+                    }.distinct()
+                    
+                    // Fetch user names for all participants
+                    val userNamesMap = mutableMapOf<String, String>()
+                    participantIds.forEach { userId ->
+                        profileRepository.getProfileById(userId).getOrNull()?.let { user ->
+                            userNamesMap[userId] = user.name
+                        }
+                    }
+                    
+                    _uiState.value = ChatUiState(
+                        isLoading = false, 
+                        chats = chatList, 
+                        currentUserId = profile?._id,
+                        userNames = userNamesMap
+                    )
+                },
+                onFailure = { e -> 
+                    _uiState.value = ChatUiState(
+                        isLoading = false, 
+                        chats = emptyList(), 
+                        error = e.message, 
+                        currentUserId = profile?._id
+                    ) 
+                }
             )
         }
     }
@@ -166,6 +195,12 @@ class ChatViewModel @Inject constructor(
     
     fun leaveChatRoom(chatId: String) {
         socketManager.leaveRoom(chatId)
+    }
+    
+    fun getOtherUserName(chat: Chat): String {
+        val currentUserId = _uiState.value.currentUserId
+        val otherUserId = chat.participants.find { it != currentUserId }
+        return otherUserId?.let { _uiState.value.userNames[it] } ?: "Unknown User"
     }
     
     override fun onCleared() {
