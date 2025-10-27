@@ -51,7 +51,6 @@ import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -76,15 +75,11 @@ fun CreateEventScreen(
     var selectedLocation by remember { mutableStateOf<LocationResult?>(null) }
     
     // Parse event date to LocalDate and LocalTime if editing
-    val eventDate = event?.let { 
-        it.date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() 
-    }
-    val eventTime = event?.let { 
-        it.date.toInstant().atZone(ZoneId.systemDefault()).toLocalTime() 
-    }
+    val eventDate = event?.date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+    val eventTime = event?.date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalTime()
     
-    var selectedDate by remember { mutableStateOf<LocalDate?>(eventDate) }
-    var selectedTime by remember { mutableStateOf<LocalTime?>(eventTime) }
+    var selectedDate by remember { mutableStateOf(eventDate) }
+    var selectedTime by remember { mutableStateOf(eventTime) }
     var requiredLevel by remember { mutableStateOf(event?.skillLevel ?: "") }
     var maxParticipants by remember { mutableStateOf(event?.capacity?.toString() ?: "") }
     
@@ -285,12 +280,12 @@ fun CreateEventScreen(
                             location = eventLocation,
                             latitude = selectedLocation?.coordinates?.latitude,
                             longitude = selectedLocation?.coordinates?.longitude,
-                            attendees = if (isEditing) event!!.attendees else emptyList(), // Keep existing attendees when editing
-                            photo = if (isEditing) event!!.photo else null // Keep existing photo when editing
+                            attendees = if (isEditing) event.attendees else emptyList(), // Keep existing attendees when editing
+                            photo = if (isEditing) event.photo else null // Keep existing photo when editing
                         )
                         
                         if (isEditing) {
-                            eventViewModel.updateEvent(event!!._id, eventRequest)
+                            eventViewModel.updateEvent(event._id, eventRequest)
                         } else {
                             eventViewModel.createEvent(eventRequest)
                         }
