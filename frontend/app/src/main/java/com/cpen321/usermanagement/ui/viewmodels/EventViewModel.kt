@@ -22,6 +22,9 @@ data class EventUiState(
     val isCreatingEvent: Boolean = false,
     val createEventError: String? = null,
     val eventCreated: Boolean = false,
+    val isUpdatingEvent: Boolean = false,
+    val updateEventError: String? = null,
+    val eventUpdated: Boolean = false,
     val isJoiningEvent: Boolean = false,
     val joinEventError: String? = null,
     val eventJoined: Boolean = false,
@@ -34,7 +37,8 @@ data class EventUiState(
     val currentUser: User? = null,
     val joinSuccessMessage: String? = null,
     val leaveSuccessMessage: String? = null,
-    val deleteSuccessMessage: String? = null
+    val deleteSuccessMessage: String? = null,
+    val updateSuccessMessage: String? = null
 )
 
 @HiltViewModel
@@ -142,6 +146,53 @@ class EventViewModel @Inject constructor(
             isCreatingEvent = false,
             createEventError = null,
             eventCreated = false
+        )
+    }
+
+    fun updateEvent(eventId: String, request: CreateEventRequest) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isUpdatingEvent = true,
+                updateEventError = null,
+                eventUpdated = false
+            )
+            
+            eventRepository.updateEvent(eventId, request)
+                .onSuccess { event ->
+                    Log.d(TAG, "Event updated successfully: ${event.title}")
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingEvent = false,
+                        eventUpdated = true,
+                        updateEventError = null,
+                        updateSuccessMessage = "Event updated successfully!"
+                    )
+                    // Refresh the events list to show updated event
+                    loadEvents()
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "Failed to update event", error)
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingEvent = false,
+                        updateEventError = error.message ?: "Failed to update event"
+                    )
+                }
+        }
+    }
+
+    fun clearUpdateEventState() {
+        _uiState.value = _uiState.value.copy(
+            isUpdatingEvent = false,
+            updateEventError = null,
+            eventUpdated = false,
+            updateSuccessMessage = null
+        )
+    }
+
+    fun clearUpdateEventFlags() {
+        _uiState.value = _uiState.value.copy(
+            isUpdatingEvent = false,
+            updateEventError = null,
+            eventUpdated = false
         )
     }
 

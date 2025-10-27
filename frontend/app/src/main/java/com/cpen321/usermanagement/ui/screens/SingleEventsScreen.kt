@@ -45,6 +45,7 @@ import java.util.Locale
 fun SingleEventScreen(
     event: Event,
     onBack: () -> Unit,
+    onEditEvent: (Event) -> Unit,
     eventViewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -114,6 +115,7 @@ fun SingleEventScreen(
                 OptionsMenu(
                     event = event,
                     eventViewModel = eventViewModel,
+                    onEditEvent = onEditEvent,
                     modifier = Modifier.align(Alignment.CenterEnd)
                 )
             }
@@ -305,6 +307,7 @@ fun SingleEventScreen(
 private fun OptionsMenu(
     event: Event,
     eventViewModel: EventViewModel,
+    onEditEvent: (Event) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showOptionMenu by remember { mutableStateOf(false) }
@@ -329,7 +332,7 @@ private fun OptionsMenu(
                 text = { Text("Edit") },
                 onClick = { 
                     showOptionMenu = false
-                    /* Handle edit event - TODO: Implement edit functionality */
+                    onEditEvent(event)
                 }
             )
             DropdownMenuItem(

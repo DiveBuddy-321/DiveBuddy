@@ -37,6 +37,13 @@ interface EventInterface {
         @Path("eventId") eventId: String
     ): Response<ApiResponse<EventResponse>>
 
+    @PUT("events/{eventId}")
+    suspend fun updateEvent(
+        @Header("Authorization") authHeader: String,
+        @Path("eventId") eventId: String,
+        @Body request: CreateEventRequest
+    ): Response<ApiResponse<EventResponse>>
+
     @DELETE("events/{eventId}")
     suspend fun deleteEvent(
         @Header("Authorization") authHeader: String,
