@@ -13,10 +13,17 @@ import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Path
 
 interface UserInterface {
     @GET("users/profile")
     suspend fun getProfile(@Header("Authorization") authHeader: String): Response<ApiResponse<ProfileData>>
+
+    @GET("users/{userId}")
+    suspend fun getProfileById(
+        @Header("Authorization") authHeader: String,
+        @Path("userId") userId: String
+    ): Response<ApiResponse<ProfileData>>
 
     @POST("users/")
     suspend fun updateProfile(

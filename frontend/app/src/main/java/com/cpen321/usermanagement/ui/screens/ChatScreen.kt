@@ -27,7 +27,6 @@ import androidx.compose.runtime.collectAsState
 import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
-import java.util.Date
 
 @Composable
 fun ChatScreen(
@@ -40,7 +39,8 @@ fun ChatScreen(
     ChatContent(
         modifier = modifier,
         isLoading = uiState.value.isLoading,
-        chats = uiState.value.chats
+        chats = uiState.value.chats,
+        viewModel = vm
     )
 }
 
@@ -48,7 +48,8 @@ fun ChatScreen(
 private fun ChatContent(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    chats: List<Chat> = emptyList()
+    chats: List<Chat> = emptyList(),
+    viewModel: ChatViewModel
 ) {
     var selectedChat by remember { mutableStateOf<Chat?>(null) }
     var showSelectedChat by remember { mutableStateOf(false) }
@@ -76,6 +77,7 @@ private fun ChatContent(
                 items(chats) { chat ->
                     ChatCard(
                         chat = chat,
+                        viewModel = viewModel,
                         onClick = { 
                             selectedChat = chat
                             showSelectedChat = true
@@ -90,6 +92,7 @@ private fun ChatContent(
 @Composable
 private fun ChatCard(
     chat: Chat,
+    viewModel: ChatViewModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -127,7 +130,7 @@ private fun ChatCard(
             ) {
                 // Chat name
                 Text(
-                    text = chat.name ?: "Unknown Chat",
+                    text = viewModel.getOtherUserName(chat),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
