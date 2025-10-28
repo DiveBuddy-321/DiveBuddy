@@ -736,19 +736,19 @@ Users can view all of the events they have joined/created, as well as their stat
 ![Dependencies Diagram](../documentation/images/dependencies-diagram.drawio.png)
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
-1. **Create Event**
+#### 1. **Create Event**
 ![Dependencies Diagram](../documentation/images/CreateEvent.drawio.png)
 
-3. **Set-Up Profile**
+#### 2. **Set-Up Profile**
 ![Dependencies Diagram](../documentation/images/SetupUserProfile.drawio.png)
 
-4. **Browse Events**
+#### 3. **Browse Events**
 ![Dependencies Diagram](../documentation/images/BrowseEvents.drawio.png)
 
-5. **Find Matches**
+#### 4. **Find Matches**
 ![Dependencies Diagram](../documentation/images/FindMatches.drawio.png)
 
-6. **Match with Other User**
+#### 5. **Match with Other User**
 ![Dependencies Diagram](../documentation/images/MatchWithUser.drawio.png)
 
 
