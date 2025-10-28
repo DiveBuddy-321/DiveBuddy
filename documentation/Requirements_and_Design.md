@@ -36,7 +36,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 ### **3.2. Use Case Diagram**
 
-![Use Case Diagram](../documentation/images/use-case-diagram.png)
+![Use Case Diagram](../documentation/images/use-case-diagram-2.png)
 
 ### **3.3. Actors Description**
 
