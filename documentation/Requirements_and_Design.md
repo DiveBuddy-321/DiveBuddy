@@ -739,7 +739,7 @@ Users can view all of the events they have joined/created, as well as their stat
 1. **Create Event**
 ![Dependencies Diagram](../documentation/images/CreateEvent.drawio.png)
 
-3. **Set up User Profile**
+3. **Set-Up Profile**
 ![Dependencies Diagram](../documentation/images/SetupUserProfile.drawio.png)
 
 4. **Browse Events**
@@ -748,7 +748,7 @@ Users can view all of the events they have joined/created, as well as their stat
 5. **Find Matches**
 ![Dependencies Diagram](../documentation/images/FindMatches.drawio.png)
 
-6. **MatchWithUser**
+6. **Match with Other User**
 ![Dependencies Diagram](../documentation/images/MatchWithUser.drawio.png)
 
 
