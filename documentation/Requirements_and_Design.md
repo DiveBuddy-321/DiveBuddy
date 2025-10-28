@@ -286,12 +286,330 @@ Users can view all of the events they have joined/created, as well as their stat
 
 1. **Users**
     - **Purpose**: Handles Google OAuth sign-up/sign-in, manages session tokens, and stores basic user identity. Also stores custom profile information about the user (age, location, experience, bio, profile photo).
+    - **REST Interfaces**:
+      - POST /auth/signup
+        - Purpose: sign up with Google token, return JWT/session
+        - Parameters: Google token from google authentication. Payload is as follows:
+          ``` 
+          { 
+              idToken: string 
+          } 
+          ```
+        - Returns: JWT/session token on success, error message on error
+          ```
+          { 
+              message: string 
+              data: { token: string, user: User }
+          }
+          ```
+      - POST /auth/signin
+        - Purpose: sign in with Google token, return JWT/session
+        - Parameters: Google token from google authentication. Payload is as follows:
+          ```
+          { 
+              idToken: string 
+          }
+          ```
+        - Returns: JWT/session token on success, error message on error
+          ```
+          { 
+              message: string 
+              data: { token: string, user: User }
+          }
+          ```
+      - GET /users
+        - Purpose: get all users in the database, for debugging/admin purposes
+        - Parameters: No parameters or payload required.
+        - Returns: Success: The userID for the newly created user. Failure: An error message explaining what the error is
+          ```
+          {
+              message: string
+              data: { users: User[] }
+          }
+          ```
+      - POST /users
+        - Purpose: create profile for a new user
+        - Parameters: name, age, bio, skill level, city (all optional). Payload is as follows:
+          ```
+          {
+              name: string
+              age: number
+              bio: string
+              location: string
+              latitude: number
+              longitude: number
+              profilePicture: string
+              skillLevel: one of ["Beginner", "Intermediate", "Expert"]
+          }
+          ```
+        - Returns: Success: The user object for the new user. Failure: An error message explaining what the error is
+          ```
+          {
+              message: string
+              data: { user: User }
+          }
+          ```
+      - GET /users/:userId
+        - Purpose: retrieve a user's profile by ID
+        - Parameters: userID (required).
+        - Returns: Success: The user object for the retrieved user if the ID exists, otherwise an empty object if the user does not exist. Failure: An error message explaining what the error is
+          ```
+          {
+              message: string
+              data: { user: User }
+          }
+          ```
+      - GET /users/profile
+        - Purpose: retrieve the logged in user's profile
+        - Parameters: None
+        - Returns: Success: The user object for the signed in user. Failure: An error message explaining what the error is
+          ```
+          {
+              message: string
+              data: { user: User }
+          }
+          ```
+      - PUT /users/:userId
+        - Purpose: update user profile info by ID
+        - Parameters: userID (required), {name, age, bio, skill level, city (all optional)}. Payload is as follows:
+          ```
+          {
+              name: string
+              age: number
+              bio: string
+              location: string
+              latitude: number
+              longitude: number
+              profilePicture: string
+              skillLevel: one of ["Beginner", "Intermediate", "Expert"]
+          }
+          ```
+        - Returns: The updated user object if update is successful, an error message if not successful explaining what the error is
+          ```
+          {
+              message: string
+              data: { user: User }
+          }
+          ```
+      - DELETE /users/:userId
+        - Purpose: delete user profile by ID
+        - Parameters: userId (required). No payload is required.
+        - Returns: Success message if deletion is successful, error message if not successful explaining what the error is
+          ```
+          {
+              message: string
+          }
+          ```
+      - DELETE /users/
+        - Purpose: delete the signed in user
+        - Parameters: userId (required). No payload is required.
+        - Returns: Success message if deletion is successful, error message if not successful explaining what the error is
+          ```
+          {
+              message: string
+          }
+          ```
+
 2. **Events**
     - **Purpose**: Allows creation, update, deletion, and browsing of dive events. Includes integration with Google Maps API for event location
+    - **REST Interfaces**:
+      - GET /events
+        - Purpose: browse all available events
+        - Parameters: No payload or parameters required. 
+        - Returns: On success, list of all events saved in the Events collection of database. On failure, the error message is returned
+          ```
+          {
+              message: string
+              data: { events: Event[] }
+          }
+          ```
+      - GET /events/:eventId
+        - Purpose: get the event with the given eventId
+        - Parameters: eventId: required
+        - Returns: On success, the Event object with the given Id. On failure, the error message is returned
+          ```
+          {
+              message: string
+              data: { event: Event }
+          }
+          ```
+      - POST /events/
+        - Purpose: create a new event w/ all event info
+        - Parameters: date, time, event name, description, capacity, skill level (all required)
+          ```
+          {
+              title: string
+              description: string
+              date: Date
+              capacity: number
+              skillLevel: one of [“Beginner”, “Intermediate”, “Expert”]
+              location: string
+              latitude: number
+              longitude: number
+              attendees: string[]
+              photo: string
+          }
+          ```       
+        - Returns: On success, returns the newly created Event object. Error message if failure.
+          ```
+          {
+              message: string
+              data: { event: Event }
+          }
+          ```
+      - PUT /events/:eventId
+        - Purpose: update event details (event owner only)
+        - Parameters: eventId(required), date, time, event name, description, capacity, skill level (all optional)
+          ```
+          {
+              title: string
+              description: string
+              date: Date
+              capacity: number
+              skillLevel: one of [“Beginner”, “Intermediate”, “Expert”]
+              location: string
+              latitude: number
+              longitude: number
+              attendees: string[]
+              photo: string
+          }
+          ```
+        - Returns: On success, returns the newly updated Event object. Error message if failure.
+          ```
+          {
+              message: string
+              data: { event: Event }
+          }
+          ```
+      - PUT /events/join/:eventId
+        - Purpose: register/join an event
+        - Parameters: eventId: required
+        - Returns: success message if event successfully joined, error message otherwise
+          ```
+          {
+            message: string
+          }
+          ```
+      - PUT /events/leave/:eventId
+        - Purpose: unregister/leave an event
+        - Parameters: eventId: required
+        - Returns: success message if event successfully left, error message otherwise
+          ```
+          {
+            message: string
+          }
+          ```
+      - DELETE /events/:eventId
+        - Purpose: delete an event (event owner only)
+        - Parameters: eventId (required)
+        - Returns: success message if success, error message if failure
+          ```
+          {
+            message: string
+          }
+          ```
 3. **BuddyMatching**
     - **Purpose**: Runs the buddy matching algorithm and returns the matched results to user
+    - **REST Interfaces**:
+      - GET /buddy
+        - Purpose: Triggers the buddy matching algorithm to allow users to find others to match with, returns a list of “best matching” users based on the current user’s profile information.
+        - Parameters: 
+          user: the current user’s profile information
+          minLevel: minimum skill level of other users the current user is willing to match with
+          maxLevel: maximum skill level of other users the current user is willing to match with
+          minAge: minimum age of other users the current user is willing to match with
+          maxAge: maximum age of other users the current user is willing to match with
+          ```
+          {
+            user: User
+            minLevel: one of [“Beginner”, “Intermediate”, “Expert”]
+            maxLevel: one of [“Beginner”, “Intermediate”, “Expert”]
+            minAge: number
+            maxAge: number
+          }
+          ```
+        - Returns:
+          - Success: A list of users that meet the filter criteria above returned by the matching algorithm, containing the complete profile information for each user
+          - Failure: An error message
+          ```
+          {
+            message: string
+            data: { buddies: { user: User, distance: number } [] }
+          }
+          ```
+
+
 4. **Chats**
     - **Purpose**: Provides in-app chat between matched users
+    - **REST Interfaces**:
+      - GET /chats/
+        - Purpose: get all chats that are related to the user
+        - Parameters: None
+        - Returns: On success, a list of all the chats. On failure, an error message.
+          ```
+          {
+            data: Chat []
+          }
+          ```
+
+      - POST /chats/
+        - Purpose: create a new chat room between 2 users.
+        - Parameters: peerId is the userId of the other user, and the name is the name of the chatroom (optional).Payload is as follows:
+          ```
+          {
+            peerId: string
+            name: string
+          }
+          ```
+        - Returns: On success, returns the new Chat object. On failure, an error message.
+          ```
+          {
+              data: Chat
+              error: string
+          }
+          ```
+
+      - GET /chats/:chatId
+        - Purpose: get the Chat object associated with the given chatId
+        - Parameters: chatId (required). No payload
+        - Returns: On success, the requested Chat with the given chatId. On failure, an error message.
+          ```
+          {
+              data: Chat
+	          error: string
+          }
+          ```
+
+
+      - GET /chats/messages/:chatId
+        - Purpose: gets all the messages in the Chat object with associated chatId. The results are paginated, and are sorted from most recent to least recent.
+        - Parameters: chatId (required), limit (optional) number of chats, before (optional) filter chats. 
+        - Returns: a list of the messages given the parameters and pagination
+          ```
+          {
+            messages: Message []
+            chatId: string
+            limit: number
+            count: number	
+            hasMore: boolean
+          }
+          ```
+
+      - POST /chats/:chatId/messages
+        - Purpose: add a new message to the given Chat that is specified by the chatId
+        - Parameters: chatId (required). Payload is as follows:
+          ```
+          {
+            content: string
+          }
+          ```
+        - Returns: On success, returns the new message. On failure, returns an error message.
+          ```
+          {
+            populatedMessage: Message
+            error: string
+          }
+          ```
 
 ### **4.2. Databases**
 
