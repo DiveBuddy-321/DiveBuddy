@@ -753,7 +753,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
-1. [**Real-time User Experience SLOs (Matching and Chat)**]
+1. **Real-time User Experience SLOs (Matching and Chat)**
     - **Validation**: Efficient database queries and a WebSocket-based implementation are used to enable real-time matching and chat updates, ensuring responses are delivered within 1 second under typical load. This can be tested using load-testing tools like K6 or Artillery to simulate 10,000 users and measure 95th-percentile response times.
-2. [**API Response Times**]
+2. **API Response Times**
     - **Validation**: The Express.js backend uses asynchronous I/O, optimized query handling, and minimal middleware to reduce latency, ensuring API responses remain within the 500 ms target. This can be tested using tools such as Postman or K6 to measure response times of key endpoints under normal load.
