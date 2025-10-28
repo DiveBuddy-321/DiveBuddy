@@ -409,6 +409,25 @@ Users can view all of the events they have joined/created, as well as their stat
 
 2. **Events**
     - **Purpose**: Allows creation, update, deletion, and browsing of dive events. Includes integration with Google Maps API for event location
+    - **Backend Interfaces**:  
+      - joinEvent: interacts with Users component  
+        - **Purpose**: User will be added to the list of attendees (register) for requested event  
+        - **Parameters**: userId, eventId (all required)  
+        - **Returns**: Success message if user was able to successfully join the event, otherwise error message is returned
+          ```json
+          {
+            message: string
+          }
+          ```
+      - leaveEvent: interacts with Users component  
+        - **Purpose**: User will be removed from the list of attendees (unregister) for the requested event  
+        - **Parameters**: userId, eventId (all required)  
+        - **Returns**: Success message if user was able to successfully unregister from the event, otherwise error message is returned
+          ```json
+          {
+            message: string
+          }
+          ```
     - **REST Interfaces**:
       - GET /events
         - Purpose: browse all available events
@@ -507,6 +526,19 @@ Users can view all of the events they have joined/created, as well as their stat
           ```
 3. **BuddyMatching**
     - **Purpose**: Runs the buddy matching algorithm and returns the matched results to user
+    - **Backend Interfaces**:  
+      - getAllBuddies: interacts with Users component  
+        - **Purpose**: Runs the buddy matching algorithm to find all users that are the best matches for the user based on user’s level, age, and location  
+        - **Parameters**: user, minLevel, maxLevel, minAge, maxAge  
+        - **Returns**:  
+          - Success: a success message and a list of match buddies otherwise error message is returned  
+          - Failure: failure message with instructions
+            ```json
+            {
+              message: string
+              data: { buddies: { user: User, distance: number } }
+            }
+            ```
     - **REST Interfaces**:
       - GET /buddy
         - Purpose: Triggers the buddy matching algorithm to allow users to find others to match with, returns a list of “best matching” users based on the current user’s profile information.
