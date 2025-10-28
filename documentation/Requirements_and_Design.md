@@ -49,38 +49,34 @@ Users can view all of the events they have joined/created, as well as their stat
 5. **Google Authentication API**: Third Party API responsible for user authentication.
 
 ### **3.4. Use Case Description**
-
 #### Use cases for feature 1: Authentication
-
-1. **Sign Up**: The user uses Google Authentication to create an account
-2. **Sign In**: The user uses Google Authentication to sign into their account.
-3. **Sign Out**: The user signs out of their account.
-4. **Delete Account**: The user deletes their account (also signing them out). The user should no longer be able to sign in with their old credentials after this action is done.
-
+- Sign Up: The user uses Google Authentication to create an account
+- Sign In: The user uses Google Authentication to sign into their account.
+- Sign Out: The user signs out of their account.
+- Delete Account: The user deletes their account (also signing them out). The user should no longer be able to sign in with their old credentials after this action is done.
+  
 #### Use cases for feature 2: Profile Management
-
-1. **Set-Up Profile**: The user sets their account information on account creation to reflect their age, location, certification level, experience level, and preferred diving conditions. Setting these preferences will allow for optimal buddy matching.
-2. **Update Profile**: The user can update their profile to reflect any changes to it that have occurred since they have set up their account initially.
-
+- Set-Up Profile: The user sets their account information on account creation to reflect their age, location, experience level, name, and bio. Setting these preferences will allow for optimal buddy matching.
+- Update Profile: The user can update their profile to reflect any changes to it that have occurred since they set up their account initially.
+  
 #### Use cases for feature 3: Event Management
-
-1. **Create Event**: A user can create an event on the app with information about the event, including name, date/time, location (with map API), user capacity, gear/certification requirements. This user becomes the event organizer.
-2. **Update Event**: The event organizer can update information for an event they have made. Updates will notify users who have joined the event.
-3. **Delete Event**: The event creator can delete an event they have made. This will notify users who have joined the event, and remove them from the event.
-4. **Unregister for Event**: The user who has previously registered for an event will be able to unregister for it by clicking a button.
-5. **Browse Events**: Users can browse through events created by dive club owners. Events can be browsed from a list view or in a map view, showcasing information about the event such as location, date and time.
-6. **Register for Event**: Users can join events that they see on their feed, given that the event has enough capacity. These users become event attendees.
-7. **Receive Event Updates**: After a user has joined an event, they will receive notifications if the event creator makes any updates to the event, or deletes the event.
-8. **Chat with event organizers/attendees**: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
+- Create Event: A user can create an event on the app with information about the event, including name, date/time, location (with map API), user capacity, and skill level requirements. This user becomes the event organizer.
+- Update Event: The event organizer can update information for an event they have made. Updates will notify users who have joined the event.
+- Delete Event: The event creator can delete an event they have created. This will notify users who have joined the event and remove them from the event.
+- Browse Events: Users can browse through events created by dive club owners. Events can be browsed from a list view, showcasing information about the event such as location, date and time.
+- Register for Event: Users can join events that they see on their feed, given that the event has enough capacity. These users become event attendees.
+- Leave Event: The user who has previously registered for an event will be able to leave the event by clicking a button.
+- Receive Event Updates: After a user has joined an event, they will receive notifications if the event creator makes any updates to the event or deletes the event.
+- Chat with event organizers/attendees: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
 
 #### Use cases for feature 4: Buddy Matching
-
-1. **Match with Other User**: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests.
+- Find Matches: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests.
+- Match with Other User: A user can view the profile for each match and tap on the match button if they are interested in contacting them. A chat between the user and the match will be created.
 
 #### Use cases for feature 5: Chat
+- Chat: After matching as buddy with another user, the users use the created chat room to chat with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event.
+- Block User: When a user blocks another user, they can no longer message or receive messages from the user
 
-1. **Chat**: After matching as buddy with another user, the users can open a chat room to  start chatting with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event.
-2. **Block User**: When a user blocks another user, they can no longer message or receive messages from the user
 
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
 
