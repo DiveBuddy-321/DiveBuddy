@@ -21,6 +21,7 @@ pids
 
 # Test coverage directory used by tools like istanbul
 coverage/
+test-chat.html
 
 # Optional npm cache directory
 .npm
