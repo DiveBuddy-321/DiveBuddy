@@ -78,7 +78,7 @@ Users can view all of the events they have joined/created, as well as their stat
 - Block User: When a user blocks another user, they can no longer message or receive messages from the user
 
 
-### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
+### **3.5. Formal Use Case Specifications (6 Most Major Use Cases)**
 
 #### Use Case 1: Create Event
 
@@ -704,9 +704,16 @@ Users can view all of the events they have joined/created, as well as their stat
 ![Dependencies Diagram](../documentation/images/dependencies-diagram.drawio.png)
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
-1. [**[WRITE_NAME_HERE]**](#uc1)\
-[SEQUENCE_DIAGRAM_HERE]
-2. ...
+1. [**[Create Event]**](#uc1)\
+![Dependencies Diagram](../documentation/images/CreateEvent.drawio.png)
+2. [**[Set up User Profile]**](#uc1)\
+![Dependencies Diagram](../documentation/images/SetupUserProfile.drawio.png)
+1. [**[Browse Events]**](#uc1)\
+![Dependencies Diagram](../documentation/images/BrowseEvents.drawio.png)
+1. [**[Find Matches]**](#uc1)\
+![Dependencies Diagram](../documentation/images/FindMatches.png)
+1. [**[MatchWithUser]**](#uc1)\
+![Dependencies Diagram](../documentation/images/MatchWithUser.drawio.png)
 
 
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
