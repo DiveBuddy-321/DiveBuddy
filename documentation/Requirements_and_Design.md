@@ -4,7 +4,10 @@
 
 | **Change Date**   | **Modified Sections** | **Rationale** |
 | ----------------- | --------------------- | ------------- |
-| _Nothing to show_ | | |
+| Oct 27, 2025 | 4.1 Main Components<br>4.5 Dependencies Diagram | Based on M2 feedback from our TA, the following improvements were made:<br>- Combined "Users" and "Profiles" components into single "Users" component<br>- Removed three separate database components into just using one "MongoDB" component (that contains three collections: users, events, chat)<br>- "Google Maps API" no longer interacts with any backend components, it only interacts with frontend |
+| Oct 27, 2025 | 3.7 Non-Functional Requirements | Based on M2 feedback we changed our second non-functional requirement to be one that is more testable. At first it was about our server uptime being 99.5%, but now we opted for it to reflect our API response times, which would be easier to test for our project. |
+| Oct 27, 2025 | 3.5 Formal Use Case Specifications | Changed based on how our app ended up being implemented<br>Split the Match with Other User use case into two separate use cases: Find Matches, and Match with Other User |
+| Oct 27, 2025 | 4.4 Frameworks | Added Retrofit and Socket.IO frameworks for Android because they are used on the frontend for HTTP requests and live websocket for chats. |
 
 ---
 
@@ -270,10 +273,10 @@ Users can view all of the events they have joined/created, as well as their stat
     - **Description**: Buddy algorithm suggestions return in ≤1.0s p95 when there are 10,000 users in the database.
     - **Justification**: This is to maintain a positive user experience. The app’s value lies in its ability for live coordination with other users, so a slow matching process will contribute to a poor user experience.
     - **Why these numbers**: 1s is the upper bound users still perceive as visual "instant" and p95 means 95% of users will be able to achieve these response times. We believe that when the app is fully released, we will see an active userbase of around 10000 members, so we will use this metric to simulate a release environment. (<https://www.nngroup.com/articles/powers-of-10-time-scales-in-ux>)
-2. **Server Availability**
-    - **Description**: Our API backend that provides our core services (authentication, event registration, chat) will aim to maintain 99.5% availability.
-    - **Justification**: This is important that our app is able to maintain a high level of availablity to service our users because it is important for ensuring trust in our system's overall reliability. It also is crucial for maintaining fairness for diving event registrations and dropped chat messages can directly impact real-world activities.
-    - **Why these numbers**: A whitepaper made by Amazon Web Services reports that having 99.5% availability is a common industry goal and is reasonable for most companies to achieve (<https://docs.aws.amazon.com/whitepapers/latest/availability-and-beyond-improving-resilience/measuring-availability.html>).
+2. **API Response Times**
+    - **Description**: Our backend API, which handles requests from the Android application for authentication, event registration, and chat, should respond within 500 milliseconds under normal load.
+    - **Justification**: Maintaining low response times is crucial to ensuring a smooth user experience on mobile devices, where network latency can already introduce delays. A quick API response helps our app feel responsive, prevents user frustration, and ensures real-time features like chat and event registration remain seamless.
+    - **Why these numbers**: According to Odown, high-performing APIs typically respond within 300–500 ms, which is considered a “very good” benchmark in the industry. This makes 500 ms a realistic and measurable performance target for our backend.(<https://odown.com/blog/api-response-time-standards>)
 
 ---
 
@@ -282,14 +285,12 @@ Users can view all of the events they have joined/created, as well as their stat
 ### **4.1. Main Components**
 
 1. **Users**
-    - **Purpose**: Handles Google OAuth sign-up/sign-in, manages session tokens, and stores basic user identity
-2. **Profiles**
-    - **Purpose**: Stores and manages user profiles (age, location, certification, experience, preferences)
-3. **Events**
+    - **Purpose**: Handles Google OAuth sign-up/sign-in, manages session tokens, and stores basic user identity. Also stores custom profile information about the user (age, location, experience, bio, profile photo).
+2. **Events**
     - **Purpose**: Allows creation, update, deletion, and browsing of dive events. Includes integration with Google Maps API for event location
-4. **BuddyMatching**
+3. **BuddyMatching**
     - **Purpose**: Runs the buddy matching algorithm and returns the matched results to user
-5. **Chats**
+4. **Chats**
     - **Purpose**: Provides in-app chat between matched users
 
 ### **4.2. Databases**
@@ -306,6 +307,7 @@ Users can view all of the events they have joined/created, as well as their stat
     - **Purpose**: For location-based event creation and browsing
 3. **Firebase Cloud Messaging (FCM)**
     - **Purpose**: For event update notifications and buddy match alerts
+    - Note: This is not implemented yet in our MVP, but we will integrate it in M5.
 
 ### **4.4. Frameworks**
 
@@ -314,6 +316,10 @@ Users can view all of the events they have joined/created, as well as their stat
     - **Reason**: Chosen over Microsoft Azure and Google Cloud Platform because AWS is most mature, widely adopted, and as students we want to learn it for job competitiveness
 2. **Node.js with Express.js**
     - **Purpose**: Backend API framework chosen for simplicity, large ecosystem, and real-time websocket support with Socket.IO
+3. **Retrofit with Android**
+    - **Purpose**: Frontend framework for sending HTTP requests to the backend
+4. **Socket.io with Android**
+    - **Purpose**: Frontend framework for websocket connections, used for real-time chats
 
 ### **4.5. Dependencies Diagram**
 
@@ -326,6 +332,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
-1. [**[WRITE_NAME_HERE]**](#nfr1)
-    - **Validation**: ...
-2. ...
+1. [**Real-time User Experience SLOs (Matching and Chat)**]
+    - **Validation**: Efficient database queries and a WebSocket-based implementation are used to enable real-time matching and chat updates, ensuring responses are delivered within 1 second under typical load. This can be tested using load-testing tools like K6 or Artillery to simulate 10,000 users and measure 95th-percentile response times.
+2. [**API Response Times**]
+    - **Validation**: The Express.js backend uses asynchronous I/O, optimized query handling, and minimal middleware to reduce latency, ensuring API responses remain within the 500 ms target. This can be tested using tools such as Postman or K6 to measure response times of key endpoints under normal load.
