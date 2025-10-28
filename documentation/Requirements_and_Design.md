@@ -66,8 +66,8 @@ Users can view all of the events they have joined/created, as well as their stat
 - Browse Events: Users can browse through events created by dive club owners. Events can be browsed from a list view, showcasing information about the event such as location, date and time.
 - Register for Event: Users can join events that they see on their feed, given that the event has enough capacity. These users become event attendees.
 - Leave Event: The user who has previously registered for an event will be able to leave the event by clicking a button.
-- Receive Event Updates: After a user has joined an event, they will receive notifications if the event creator makes any updates to the event or deletes the event.
-- Chat with event organizers/attendees: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
+- Receive Event Updates (To be implemented in future milestone): After a user has joined an event, they will receive notifications if the event creator makes any updates to the event or deletes the event.
+- Chat with event organizers/attendees (To be implemented in future milestone): Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
 
 #### Use cases for feature 4: Buddy Matching
 - Find Matches: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests.
@@ -75,7 +75,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 #### Use cases for feature 5: Chat
 - Chat: After matching as buddy with another user, the users use the created chat room to chat with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event.
-- Block User: When a user blocks another user, they can no longer message or receive messages from the user
+- Block User (To be implemented in future milestone): When a user blocks another user, they can no longer message or receive messages from the user
 
 
 ### **3.5. Formal Use Case Specifications (6 Most Major Use Cases)**
