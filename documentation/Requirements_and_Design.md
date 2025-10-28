@@ -538,6 +538,69 @@ Users can view all of the events they have joined/created, as well as their stat
 
 4. **Chats**
     - **Purpose**: Provides in-app chat between matched users
+    - **Backend Interface**:
+      - createChat: interacts with Users and Messages components
+        - Purpose: Creates a new direct or group chat between users
+        - Parameters: creatorId, peerId, name (all required)
+        - Returns: Success message and chat object if creation is successful, otherwise error message.
+          ```
+          {
+            "message": "Chat created successfully",
+            "chat": {
+              "chatId": "string",
+              "name": "string",
+              "members": ["string"],
+              "createdAt": "Date"
+            }
+          }
+          ```
+
+      - getUserChats: interacts with Users component
+        - Purpose: Retrieves all chats associated with a given user, including last message and timestamp.
+        - Parameters: userId (required)
+        - Returns: A list of chat summaries for that user.
+          ```
+          {
+            "chats": [
+              {
+                "chatId": "string",
+                "name": "string",
+                "lastMessage": "string",
+                "updatedAt": "Date"
+              }
+            ]
+          }
+          ```
+
+      - getMessagesByChat: interacts with Messages component
+        - Purpose: Fetches all messages within a given chat for the requesting user, ordered chronologically.
+        - Parameters: chatId, userId (both required)
+        - Returns: A list of messages belonging to the chat.
+          ```
+          {
+            "messages": [
+              {
+                "messageId": "string",
+                "senderId": "string",
+                "content": "string",
+                "timestamp": "Date"
+              }
+            ]
+          }
+          ```
+
+      - deleteChat: interacts with Users and Messages components
+        - Purpose: Deletes or deactivates a chat if the requesting user has permission to do so.
+        - Parameters: chatId, requesterId (both required)
+        - Returns: Success or error message depending on permission and outcome.
+          ```
+          {
+            "message": "Chat deleted successfully"
+          }
+          ```
+
+
+
     - **REST Interfaces**:
       - GET /chats/
         - Purpose: get all chats that are related to the user
