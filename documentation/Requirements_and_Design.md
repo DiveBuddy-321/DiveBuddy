@@ -89,31 +89,32 @@ Users can view all of the events they have joined/created, as well as their stat
 **Main success scenario**:
 
 1. User selects “Create New Event” from the Events page.
-2. System displays event form (fields: title, date/time, capacity, skill level, location, image). All fields except image are required.
-3. User enters required details.
+2. System displays event form (fields: title, description, date/time, capacity, skill level, location). All fields are required.
+3. User enters required details except location.
 4. User clicks “Location” field and searches via Google Maps API.
 5. System displays suggested locations; user selects one.
 6. User clicks “Submit”.
 7. System validates inputs, saves event to Events DB, assigns the user as Event Organizer.
 8. System displays confirmation and lists the newly created event in Browse Events.
 
+
 **Failure scenario(s)**:
 
-- 2a. User leaves required fields blank
-  - 2a1. System highlights missing fields and shows error.
-  - 2a2. User completes fields → resume at step 3.
-
 - 4a. Google Maps API unavailable.
-  - 4a1. System shows “Cannot connect to Maps. Retry or enter address manually.”
-  - 4a2. User retries/enters address → resume at step 5; cancels → ends use case.
 
-- 6a. Image upload fails.
-  - 6a1. System shows error with retry/skip option.
-  - 6a2. User retries/skips → resume at step 6.
+	- 4a1. System shows “Cannot connect to Maps. Retry or enter address manually.”
+	- 4a2. User retries from step 3 or cancels and ends use case.
 
-- 7a. Event save fails (DB error).
-  - 7a1. System displays “Event not saved, please retry.”
-  - 7a2. User retries → resume at step 6.
+- 7a. User leaves required fields blank
+
+	- 7a1. System highlights missing fields and shows error.
+	- 7a2. User completes fields → resume at step 3.
+
+- 7b. Event save fails (DB error).
+
+	- 7b1. System displays “Event not saved, please retry.”
+	- 7b2. User retries → resume at step 6.
+
 
 #### Use Case 2: Set-Up Profile
 
@@ -124,109 +125,107 @@ Users can view all of the events they have joined/created, as well as their stat
 **Main success scenario**:
 
 1. User signs up for the first time using Google Authentication.
-2. System displays Profile Setup Form (Name, Age, City, Experience Level, Preferred Diving Conditions, Bio, Profile Photo). All fields are mandatory except the Profile Photo.
-3. User enters details and optionally uploads photo.
+2. System displays Profile Setup Form (Name, Age, City, Experience Level, Bio). All fields are optional.
+3. User enters details.
 4. User clicks “Submit”.
-5. System validates and saves profile.
+5. System validates and saves profile with location information.
 6. System confirms completion.
+
 
 **Failure scenario(s)**:
 
-- 2a. User skips required fields.
-  - 2a1. System prevents submit and highlights missing fields.
-  - 2a2. User completes fields → resume at step 3.
+- 2b. Invalid format (non-numeric age or age < 13 or age > 100, bio > 1000 chars).
 
-- 2b. Invalid format (non-numeric age, bio > 1000 chars).
-  - 2b1. System shows inline validation error.
-  - 2b2. User corrects → resume at step 3.
+	- 2b1. System shows inline validation error.
+	- 2b2. User corrects → resume at step 3.
 
-- 3a. Photo upload fails.
-  - 3a1. System notifies user and offers retry/skip.
-  - 3a2. User retries/skips → resume at step 4.
+- 5a. Maps API fails when geocoding city
+	- 5a1. System notifies user and offers retry
+	- 5a2. User retries from step 2
 
-- 5a. Save fails (e.g., DB error).
-  - 5a1. System shows error and preserves form data.
-  - 5a2. User retries → resume at step 4.
+- 5b. Save fails (e.g., DB error).
+
+	- 5b1. System shows error and preserves form data.
+	- 5b2. User retries → resume at step 4.
+
 
 #### Use Case 3: Browse Events
 
-**Description**: A user browses events posted by other users through a list view or a map view.
+**Description**: A user browses events posted by other users through a list view.
 
 **Primary actor(s)**: User, Event Attendee
 
 **Main success scenario**:
 
 1. User navigates to “Browse Events”.
-2. System displays events (list + map view).
-3. User applies filters (date, location, skill).
-4. User selects an event to view details.
-5. System displays event details (title, location, description, attendees, etc.).
-6. User clicks “Register” to join event.
-7. System checks capacity/requirements, then registers user as Event Attendee.
-8. System confirms registration.
+2. System displays events (list view).
+3. User selects an event to view details.
+4. System displays event details (title, location, description, attendees, etc.).
+
 
 **Failure scenario(s)**:
 
 - 2a. No events found.
-  - 2a1. System shows “No events available” message.
-  - 2a2. User adjusts filters → resume at step 2.
 
-- 2b. Map API fails.
-  - 2b1. System hides map view, keeps list view active.
-  - 2b2. User continues browsing → resume at step 3.
+	- 2a1. System shows “No events available” message.
+	- 2a2. User adjusts filters → resume at step 2.
 
-- 4a. Selected event deleted/updated since list load.
-  - 4a1. System shows “Event no longer available.”
-  - 4a2. User returns to list → resume at step 2.
+- 3a. Selected event deleted/updated since list load.
 
-- 6a. Event at full capacity.
-  - 6a1. System shows “Event full” and disables registration.
-  - 6a2. User browses other events → resume at step 2.
+	- 3a1. System shows “Event no longer available.”
+	- 3a2. User returns to list → resume at step 2.
 
-- 6b. User does not meet skill/gear requirements.
-  - 6b1. System shows unmet requirement message.
-  - 6b2. User cancels or updates profile → ends.
 
-#### Use Case 4: Match with Other User
+#### Use Case 4: Find Matches
 
-**Description**: A user requests to find a diving buddy. The system computes matches based on profiles, preferences, and availability.
+**Description**: A user requests to find a diving buddy. The system computes matches based on profiles, preferences, and location.
 
 **Primary actor(s)**: User
 
 **Main success scenario**:
 
 1. User navigates to “Find Buddy”.
-2. User clicks “Match”.
+2. User clicks “Find Buddies”.
 3. System retrieves user profile and preferences.
 4. System runs buddy matching algorithm.
-5. System displays ranked list of compatible users.
-6. User selects a buddy profile.
-7. System sends request to selected buddy.
-8. If buddy accepts, system establishes match and opens chat (see UC5).
+5. System displays ranked list of compatible users one at a time.
+
 
 **Failure scenario(s)**:
 
 - 3a. User’s profile incomplete.
-  - 3a1. System prompts to complete profile first.
-  - 3a2. User updates profile → resume at step 3.
+
+	- 3a1. System prompts to complete profile first.
+	- 3a2. User updates their profile then tries again from step 2.
 
 - 4a. Matching service unavailable.
-  - 4a1. System shows “Unable to match now, retry later.”
-  - 4a2. User retries → resume at step 4.
+
+	- 4a1. System shows “Unable to match now, retry later.”
+	- 4a2. User retries → resume at step 2.
 
 - 5a. No matches found.
-  - 5a1. System shows “No buddies found, try widening filters.”
-    - 5a2. User adjusts filters → resume at step 4.
 
-- 7a. Buddy unavailable or blocks request.
-  - 7a1. System shows “User unavailable.”
-    - 7a2. User selects another → resume at step 6.
+	- 5a1. System shows “No buddies found.”
+	- 5a2. User adjusts filters → resume at step 2.
 
-- 8a. Chat creation fails.
-  - 8a1. System shows “Chat unavailable, please retry.”
-  - 8a2. User retries → resume at step 8.
+#### Use Case 5: Match with Other User
 
-#### Use Case 5: Chat
+**Description**: A user views a matched user’s profile and is interested in chatting with them, so they send a “Match” request to open a chat between the users.
+
+**Primary actor(s)**: User
+
+**Main success scenario**:
+1. User clicks on “Match” button
+2. System creates a chat between the two users
+
+**Failure scenario(s)**:
+- 2a. Chat creation fails.
+
+	- 2a1. System shows “Chat unavailable, please retry.”
+	- 2a2. User retries → resume at step 2.
+
+
+#### Use Case 6: Chat
 
 **Description**: Two matched users, or users attending the same event, use the in-app chat to coordinate diving plans or events.
 
