@@ -1,5 +1,7 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
+import type { FilterQuery } from "mongoose";
 import type { IChat, IChatWithLastMessage } from "../types/chat.types";
+import type { IMessage } from "../types/chat.types";
 
 /**
  * Your IChat extends Document in chat.types.ts, which conflicts with Mongoose's Document _id.
@@ -13,10 +15,10 @@ export interface IChatDocument extends Omit<IChat, "_id" | "isGroup">, Document 
 
 export interface IChatModel extends Model<IChatDocument> {
   listForUser(userId: mongoose.Types.ObjectId): Promise<IChatWithLastMessage[]>; // populated objects
-  getForUser(chatId: string, userId?: mongoose.Types.ObjectId): Promise<IChatDocument | null>; // document (will be populated)
+  getForUser(chatId: string, userId?: mongoose.Types.ObjectId | string): Promise<IChatDocument | null>; // document (will be populated)
   createPair(a: mongoose.Types.ObjectId, b: mongoose.Types.ObjectId, name?: string | null): Promise<IChatDocument>;
   findDirectPair(a: mongoose.Types.ObjectId, b: mongoose.Types.ObjectId): Promise<IChatDocument | null>;
-  getLastConversation(chatId: string, limit?: number): Promise<any[]>; // messages (lean)
+  getLastConversation(chatId: string, limit?: number): Promise<IMessage[]>; // messages (lean)
   leave(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;
 }
 
@@ -52,7 +54,7 @@ chatSchema.index({ updatedAt: -1 });
 /* Statics */
 
 // 1) All rooms for a user (lean + virtuals)
-chatSchema.statics.listForUser = function (userId: mongoose.Types.ObjectId) {
+chatSchema.statics.listForUser = function (this: IChatModel, userId: mongoose.Types.ObjectId) {
   return this.find({ participants: userId })
     .sort({ updatedAt: -1 })
     .select("_id name participants lastMessage lastMessageAt createdAt updatedAt")
@@ -69,13 +71,13 @@ chatSchema.statics.listForUser = function (userId: mongoose.Types.ObjectId) {
 };
 
 // 2) One room by id; optionally enforce membership (document)
-chatSchema.statics.getForUser = function (chatId: string, userId?: mongoose.Types.ObjectId) {
+chatSchema.statics.getForUser = function (this: IChatModel, chatId: string, userId?: mongoose.Types.ObjectId | string) {
   // Validate chatId format
   if (!mongoose.isValidObjectId(chatId)) {
     throw new Error("Invalid chat ID format");
   }
   
-  const query: any = { _id: chatId };
+  const query: FilterQuery<IChatDocument> = { _id: new mongoose.Types.ObjectId(chatId) };
   
   // If userId is provided, ensure user is a participant
   // Convert to ObjectId for proper comparison
@@ -110,7 +112,7 @@ chatSchema.statics.createPair = function (
   return this.create({
     name: name?.trim() || null,
     participants: dedup,
-  } as any);
+  } as unknown as IChatDocument);
 };
 
 // 4) Find existing direct chat between two users (participants exactly those two)

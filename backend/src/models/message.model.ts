@@ -1,5 +1,5 @@
-import mongoose, { Schema, Model, Document } from "mongoose";
-import type { IMessage, IMessageWithSender } from "../types/chat.types";
+import mongoose, { Schema, Model, Document, FilterQuery } from "mongoose";
+import type { IMessage } from "../types/chat.types";
 
 /**
  * Message document interface extending the base IMessage
@@ -10,8 +10,8 @@ export interface IMessageDocument extends IMessage, Document {
 
 export interface IMessageModel extends Model<IMessageDocument> {
   createMessage(chatId: string, senderId: string, content: string): Promise<IMessageDocument>;
-  getMessagesForChat(chatId: string, limit?: number, before?: Date): Promise<any[]>;
-  getMessageById(messageId: string): Promise<any | null>;
+  getMessagesForChat(chatId: string, limit?: number, before?: Date): Promise<IMessageDocument[]>;
+  getMessageById(messageId: string): Promise<IMessageDocument | null>;
 }
 
 const messageSchema = new Schema<IMessageDocument, IMessageModel>(
@@ -81,13 +81,13 @@ messageSchema.statics.getMessagesForChat = function (
   chatId: string, 
   limit: number = 50, 
   before?: Date
-): Promise<any[]> {
+): Promise<IMessageDocument[]> {
   // Validate chatId format
   if (!mongoose.isValidObjectId(chatId)) {
     throw new Error("Invalid chatId format");
   }
   
-  const query: any = { chat: chatId };
+  const query: FilterQuery<IMessageDocument> = { chat: new mongoose.Types.ObjectId(chatId) };
   
   if (before) {
     query.createdAt = { $lt: before };
@@ -102,7 +102,7 @@ messageSchema.statics.getMessagesForChat = function (
 };
 
 // Get a specific message by ID
-messageSchema.statics.getMessageById = function (messageId: string): Promise<any | null> {
+messageSchema.statics.getMessageById = function (messageId: string): Promise<IMessageDocument | null> {
   return this.findById(messageId)
     .populate("sender", "name avatar")
     .lean()

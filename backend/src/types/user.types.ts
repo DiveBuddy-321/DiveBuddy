@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
-import { SKILL_LEVELS, SkillLevel, MIN_AGE, MAX_AGE } from '../constants/statics';
+import { SKILL_LEVELS, SkillLevel } from '../constants/statics';
 
 // User model
 // ------------------------------------------------------------
