@@ -5,6 +5,7 @@ import { Message } from "../models/message.model";
 import { Chat } from "../models/chat.model";
 import { userModel } from "../models/user.model";
 import type { IUser } from "../types/user.types";
+import { sanitizeInput } from "../utils/sanitizeInput.util";
 
 interface AuthSocket extends Socket {
   user?: IUser;
@@ -72,7 +73,6 @@ export class SocketService {
 
   private setupEventHandlers() {
     this.io.on("connection", (socket: AuthSocket) => {
-      console.log(`User connected: ${String(socket.user?._id ?? '')}`);
 
       // Join user to their personal room for notifications
       if (socket.user?._id) {
@@ -113,7 +113,6 @@ export class SocketService {
       await socket.join(`chat:${chatId}`);
       socket.emit("joined_room", { chatId, chat });
       
-      console.log(`User ${String(socket.user?._id ?? '')} joined chat ${chatId}`);
     } catch (error: unknown) {
       console.error("Error joining room:", error);
       socket.emit("error", { message: error instanceof Error ? error.message : "Failed to join room" });
@@ -125,7 +124,6 @@ export class SocketService {
       const { chatId } = data;
       await socket.leave(`chat:${chatId}`);
       socket.emit("left_room", { chatId });
-      console.log(`User ${String(socket.user?._id ?? '')} left chat ${chatId}`);
     } catch (error: unknown) {
       console.error("Error leaving room:", error);
       socket.emit("error", { message: error instanceof Error ? error.message : "Failed to leave room" });
@@ -148,7 +146,6 @@ export class SocketService {
 
       // Verify user is a participant
       const userId = socket.user?._id as mongoose.Types.ObjectId;
-      console.log(`Checking chat access: chatId=${chatId}, userId=${String(userId)}`);
       
       const chat = await Chat.getForUser(chatId, userId);
       
@@ -158,7 +155,6 @@ export class SocketService {
         return;
       }
       
-      console.log(`Chat found: ${String(chat._id)}, participants: ${chat.participants.length}`);
 
       // Create the message - pass string IDs as expected by the new model
       const message = await Message.createMessage(
@@ -208,7 +204,6 @@ export class SocketService {
         }
       }
 
-      console.log(`Message sent in chat ${chatId} by user ${String(socket.user?._id ?? '')}`);
     } catch (error: unknown) {
       console.error("Error sending message:", error);
       socket.emit("error", { message: error instanceof Error ? error.message : "Failed to send message" });
@@ -216,7 +211,8 @@ export class SocketService {
   }
 
   private handleDisconnect(socket: AuthSocket) {
-    console.log(`User disconnected: ${String(socket.user?._id ?? '')}`);
+    const sanitizedUserId = sanitizeInput(String(socket.user?._id));
+    console.log(`User has discconnected from the server: ${sanitizedUserId}`);
   }
 
   // Public method to emit events from outside the socket context (e.g., from REST endpoints)

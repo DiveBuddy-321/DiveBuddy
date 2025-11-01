@@ -87,7 +87,6 @@ export class UserModel {
         if (coords) {
           validatedData.latitude = coords.latitude;
           validatedData.longitude = coords.longitude;
-          console.log(`Geocoded location for new user: ${validatedData.location} -> (${coords.latitude}, ${coords.longitude})`);
         } else {
           //geolocation success is mandatory for user creation to succeed.
           throw new Error('Failed to geocode location');
@@ -116,7 +115,6 @@ export class UserModel {
         if (coords) {
           validatedData.latitude = coords.latitude;
           validatedData.longitude = coords.longitude;
-          console.log(`Geocoded location for update: ${validatedData.location} -> (${coords.latitude}, ${coords.longitude})`);
         }
       }
 
