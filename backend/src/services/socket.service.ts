@@ -32,7 +32,10 @@ export class SocketService {
     // Authentication middleware for socket connections
     this.io.use(async (socket: AuthSocket, next) => {
       try {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(" ")[1];
+        const rawAuth = (socket.handshake.auth as Record<string, unknown> | undefined)?.token;
+        const headerAuth = socket.handshake.headers.authorization;
+        const headerToken = typeof headerAuth === "string" ? headerAuth.split(" ")[1] : undefined;
+        const token = typeof rawAuth === "string" ? rawAuth : headerToken;
         
         if (!token) {
           return next(new Error("Authentication token required"));
@@ -44,36 +47,36 @@ export class SocketService {
         }
 
         // Match the auth middleware format - uses 'id' not 'userId'
-        const decoded = jwt.verify(token, secret) as { id: mongoose.Types.ObjectId; userId?: string };
-        const userId = decoded.id || decoded.userId; // Support both formats
+        const decoded = jwt.verify(token, secret) as { id?: mongoose.Types.ObjectId | string; userId?: string };
+        const userId = decoded.id ?? decoded.userId; // Support both formats
         
         if (!userId) {
           return next(new Error("Invalid token format"));
         }
 
-        const user = await userModel.findById(userId);
+        const user = await userModel.findById(new mongoose.Types.ObjectId(String(userId)));
 
         if (!user) {
-          console.error(`WebSocket auth: User not found for ID: ${userId}`);
+          console.error(`WebSocket auth: User not found for ID: ${String(userId)}`);
           return next(new Error("User not found"));
         }
 
         socket.user = user;
         next();
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('WebSocket authentication error:', error);
-        next(new Error("Invalid authentication token"));
+        next(new Error(error instanceof Error ? error.message : "Invalid authentication token"));
       }
     });
   }
 
   private setupEventHandlers() {
     this.io.on("connection", (socket: AuthSocket) => {
-      console.log(`User connected: ${socket.user?._id}`);
+      console.log(`User connected: ${String(socket.user?._id ?? '')}`);
 
       // Join user to their personal room for notifications
       if (socket.user?._id) {
-        socket.join(`user:${socket.user._id}`);
+        void socket.join(`user:${String(socket.user._id)}`);
       }
 
       // Join a chat room
@@ -107,25 +110,25 @@ export class SocketService {
         return;
       }
 
-      socket.join(`chat:${chatId}`);
+      await socket.join(`chat:${chatId}`);
       socket.emit("joined_room", { chatId, chat });
       
-      console.log(`User ${socket.user?._id} joined chat ${chatId}`);
-    } catch (error: any) {
+      console.log(`User ${String(socket.user?._id ?? '')} joined chat ${chatId}`);
+    } catch (error: unknown) {
       console.error("Error joining room:", error);
-      socket.emit("error", { message: error.message || "Failed to join room" });
+      socket.emit("error", { message: error instanceof Error ? error.message : "Failed to join room" });
     }
   }
 
   private async handleLeaveRoom(socket: AuthSocket, data: JoinRoomData) {
     try {
       const { chatId } = data;
-      socket.leave(`chat:${chatId}`);
+      await socket.leave(`chat:${chatId}`);
       socket.emit("left_room", { chatId });
-      console.log(`User ${socket.user?._id} left chat ${chatId}`);
-    } catch (error: any) {
+      console.log(`User ${String(socket.user?._id ?? '')} left chat ${chatId}`);
+    } catch (error: unknown) {
       console.error("Error leaving room:", error);
-      socket.emit("error", { message: error.message || "Failed to leave room" });
+      socket.emit("error", { message: error instanceof Error ? error.message : "Failed to leave room" });
     }
   }
 
@@ -145,17 +148,17 @@ export class SocketService {
 
       // Verify user is a participant
       const userId = socket.user?._id as mongoose.Types.ObjectId;
-      console.log(`Checking chat access: chatId=${chatId}, userId=${userId}`);
+      console.log(`Checking chat access: chatId=${chatId}, userId=${String(userId)}`);
       
       const chat = await Chat.getForUser(chatId, userId);
       
       if (!chat) {
-        console.error(`Chat not found or user ${userId} not a participant in chat ${chatId}`);
+        console.error(`Chat not found or user ${String(userId)} not a participant in chat ${chatId}`);
         socket.emit("error", { message: "Chat not found or access denied" });
         return;
       }
       
-      console.log(`Chat found: ${chat._id}, participants: ${chat.participants.length}`);
+      console.log(`Chat found: ${String(chat._id)}, participants: ${chat.participants.length}`);
 
       // Create the message - pass string IDs as expected by the new model
       const message = await Message.createMessage(
@@ -184,9 +187,9 @@ export class SocketService {
       
       // Get user IDs of all connected sockets in the room
       for (const socketId of socketsInRoom) {
-        const socket = this.io.sockets.sockets.get(socketId) as AuthSocket;
-        if (socket?.user?._id) {
-          userIdsInRoom.add(String(socket.user._id));
+        const s = this.io.sockets.sockets.get(socketId) as AuthSocket | undefined;
+        if (s?.user?._id) {
+          userIdsInRoom.add(String(s.user._id));
         }
       }
 
@@ -198,30 +201,30 @@ export class SocketService {
       for (const participantId of otherParticipants) {
         // Only send if user is not in the chat room
         if (!userIdsInRoom.has(String(participantId))) {
-          this.io.to(`user:${participantId}`).emit("chat_updated", {
+          this.io.to(`user:${String(participantId)}`).emit("chat_updated", {
             chatId,
             lastMessage: populatedMessage,
           });
         }
       }
 
-      console.log(`Message sent in chat ${chatId} by user ${socket.user?._id}`);
-    } catch (error: any) {
+      console.log(`Message sent in chat ${chatId} by user ${String(socket.user?._id ?? '')}`);
+    } catch (error: unknown) {
       console.error("Error sending message:", error);
-      socket.emit("error", { message: error.message || "Failed to send message" });
+      socket.emit("error", { message: error instanceof Error ? error.message : "Failed to send message" });
     }
   }
 
   private handleDisconnect(socket: AuthSocket) {
-    console.log(`User disconnected: ${socket.user?._id}`);
+    console.log(`User disconnected: ${String(socket.user?._id ?? '')}`);
   }
 
   // Public method to emit events from outside the socket context (e.g., from REST endpoints)
-  public emitToUser(userId: string, event: string, data: any) {
+  public emitToUser<T>(userId: string, event: string, data: T) {
     this.io.to(`user:${userId}`).emit(event, data);
   }
 
-  public emitToChat(chatId: string, event: string, data: any) {
+  public emitToChat<T>(chatId: string, event: string, data: T) {
     this.io.to(`chat:${chatId}`).emit(event, data);
   }
 }
