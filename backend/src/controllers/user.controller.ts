@@ -1,12 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
+import mongoose from 'mongoose';
 
 import { GetProfileResponse, UpdateProfileRequest } from '../types/user.types';
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { userModel } from '../models/user.model';
+import type { IUser } from '../types/user.types';
 
 export class UserController {
-  async getAllProfiles(req: Request, res: Response<{ message: string; data?: { users: any[] } }>, next: NextFunction) {
+  async getAllProfiles(req: Request, res: Response<{ message: string; data?: { users: IUser[] } }>, next: NextFunction) {
     try {
       const users = await userModel.findAll();
 
@@ -24,7 +26,11 @@ export class UserController {
     try {
       const { id } = req.params as { id: string };
 
-      const user = await userModel.findById(new (require('mongoose').Types.ObjectId)(id));
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid user id' });
+      }
+
+      const user = await userModel.findById(new mongoose.Types.ObjectId(id));
 
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -41,7 +47,6 @@ export class UserController {
     try {
       const { id } = req.params as { id: string };
 
-      const mongoose = require('mongoose');
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid user id' });
       }
@@ -70,7 +75,6 @@ export class UserController {
     try {
       const { id } = req.params as { id: string };
 
-      const mongoose = require('mongoose');
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid user id' });
       }
@@ -94,7 +98,10 @@ export class UserController {
     }
   }
   getProfile(req: Request, res: Response<GetProfileResponse>) {
-    const user = req.user!;
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     res.status(200).json({
       message: 'Profile fetched successfully',
@@ -108,7 +115,10 @@ export class UserController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user?._id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
       const updateData = { ...req.body };
 
 
@@ -139,7 +149,10 @@ export class UserController {
 
   async deleteProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user?._id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
       await MediaService.deleteAllUserImages(user._id.toString());
 

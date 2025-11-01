@@ -18,7 +18,12 @@ export class MediaController {
         });
       }
 
-      const user = req.user!;
+      const user = req.user;
+      if (!user?._id) {
+        return res.status(401).json({
+          message: 'Unauthorized',
+        });
+      }
       const sanitizedFilePath = sanitizeInput(req.file.path);
       const image = await MediaService.saveImage(
         sanitizedFilePath,
