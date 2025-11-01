@@ -14,7 +14,13 @@ export class BuddyController {
     next: NextFunction
   ) {
     try {
-      const currentUser = req.user!;
+      const currentUser = req.user ?? null;
+
+      if (!currentUser) {
+        return res.status(401).json({
+          message: 'Unauthorized',
+        });
+      }
 
       //age and level filters
       const targetMinLevel = req.query.targetMinLevel !== undefined ? Number(req.query.targetMinLevel) : undefined;
@@ -46,11 +52,17 @@ export class BuddyController {
         return undefined;
       })();
 
+      if (!currentLong || !currentLat || !currentLevel || !currentUser.age) {
+        return res.status(500).json({
+          message: 'Missing required fields: longitude, latitude, level, age',
+        });
+      }
+
       const sortedBuddies = buddyAlgorithm(
-        currentLong!,
-        currentLat!,
-        currentLevel!,
-        currentUser.age!,
+        currentLong,
+        currentLat,
+        currentLevel,
+        currentUser.age,
         targetMinLevel,
         targetMaxLevel,
         targetMinAge,
