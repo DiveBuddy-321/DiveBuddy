@@ -4,7 +4,7 @@ import path from 'path';
 import { IMAGES_DIR } from '../constants/statics';
 
 export class MediaService {
-  static async saveImage(filePath: string, userId: string): Promise<string> {
+  static saveImage(filePath: string, userId: string): string {
     try {
       const fileExtension = path.extname(filePath);
       const fileName = `${userId}-${Date.now()}${fileExtension}`;
@@ -17,11 +17,11 @@ export class MediaService {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      throw new Error(`Failed to save profile picture: ${error}`);
+      throw new Error(`Failed to save profile picture: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  static async deleteImage(url: string): Promise<void> {
+  static deleteImage(url: string): void {
     try {
       if (url.startsWith(IMAGES_DIR)) {
         const filePath = path.join(process.cwd(), url.substring(1));
