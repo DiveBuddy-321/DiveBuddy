@@ -27,13 +27,11 @@ export async function getCoordinatesFromLocation(location: string): Promise<Geoc
     }
     const data = (await res.json()) as GeocodeApiResponse;
     if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-      console.log(`Geocoding returned no results for location: ${location}`);
       return null;
     }
     const first = data.results[0];
     const loc = first.geometry?.location;
     if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
-      console.log(`Geocoding missing geometry for location: ${location}`);
       return null;
     }
     return { latitude: loc.lat, longitude: loc.lng };

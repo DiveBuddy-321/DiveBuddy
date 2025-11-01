@@ -23,7 +23,7 @@ export class ChatController {
       const rooms = await Chat.listForUser(asObjectId(user._id));
       return res.json(rooms);
     } catch (err: unknown) {
-      return res.status(500).json({ error: (err as Error)?.message ?? "Failed to list chats" });
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to list chats" });
     }
   }
 
@@ -39,7 +39,7 @@ export class ChatController {
       if (!chat) return res.status(404).json({ error: "Chat not found" });
       return res.json(chat);
     } catch (err: unknown) {
-      return res.status(500).json({ error: (err as Error)?.message ?? "Failed to fetch chat" });
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to fetch chat" });
     }
   }
 
@@ -66,7 +66,7 @@ export class ChatController {
       const chat = await Chat.createPair(asObjectId(user._id), asObjectId(peerId), name ?? null);
       return res.status(201).json(chat);
     } catch (err: unknown) {
-      return res.status(500).json({ error: (err as Error)?.message ?? "Failed to create chat" });
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to create chat" });
     }
   }
 
@@ -112,7 +112,7 @@ export class ChatController {
         hasMore: messages.length === validLimit
       });
     } catch (err: unknown) {
-      return res.status(500).json({ error: (err as Error)?.message ?? "Failed to fetch messages" });
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to fetch messages" });
     }
   }
 
@@ -143,7 +143,7 @@ export class ChatController {
 
       return res.status(201).json(populatedMessage);
     } catch (err: unknown) {
-      return res.status(500).json({ error: (err as Error)?.message ?? "Failed to send message" });
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to send message" });
     }
   }
   
