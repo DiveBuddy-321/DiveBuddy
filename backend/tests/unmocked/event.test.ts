@@ -56,26 +56,4 @@ describe('GET /api/events - unmocked (requires running server)', () => {
 	});
 });
 
-/**
- * Describe group 2: GET /api/events (mocked)
- * - Type: Mocked
- * - Purpose: simulate DB failures or edge cases that are hard to reproduce in an integration environment
- * - Example: mock the Event model's find method to throw an error and assert the API returns a handled error
- */
-describe('GET /api/events - mocked', () => {
-	test('Inputs: no inputs; Mock behaviour: DB find throws error; Expected: API returns non-2xx and error message', async () => {
-		// This is a template showing how to mock. Replace the module path below with the actual model path
-		// Example (uncomment and adapt when the project has a model export to mock):
-		// jest.mock('../../src/models/event.model', () => ({
-		//   EventModel: {
-		//     find: jest.fn().mockImplementation(() => { throw new Error('DB failure'); })
-		//   }
-		// }));
-
-		// Because project model paths and exports may vary, this test is left as a clear template for mocking.
-		// If you want a runnable mocked test, uncomment and adapt the jest.mock above and then call the app
-		// via an import (or via a running test server URL). Below we assert a trivial true to keep test file valid.
-		expect(true).toBe(true);
-	});
-});
 
