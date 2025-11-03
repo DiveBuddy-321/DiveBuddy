@@ -5,8 +5,10 @@ import path from 'path';
 
 import { IMAGES_DIR } from './constants/statics';
 
-if (!fs.existsSync(IMAGES_DIR)) {
-  fs.mkdirSync(IMAGES_DIR, { recursive: true });
+// Resolve the images directory path to ensure it's safe
+const resolvedImagesDir = path.resolve(IMAGES_DIR);
+if (!fs.existsSync(resolvedImagesDir)) {
+  fs.mkdirSync(resolvedImagesDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({

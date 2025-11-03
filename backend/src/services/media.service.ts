@@ -4,8 +4,21 @@ import path from 'path';
 import { IMAGES_DIR } from '../constants/statics';
 
 export class MediaService {
+  // Validate that a path is within the expected directory
+  private static isPathSafe(filePath: string, baseDir: string): boolean {
+    const resolvedPath = path.resolve(filePath);
+    const resolvedBase = path.resolve(baseDir);
+    return resolvedPath.startsWith(resolvedBase);
+  }
+
   static saveImage(filePath: string, userId: string): string {
     try {
+      // Validate input path is safe
+      const uploadsDir = path.resolve('./uploads');
+      if (!this.isPathSafe(filePath, uploadsDir)) {
+        throw new Error('Invalid file path');
+      }
+
       const fileExtension = path.extname(filePath);
       const fileName = `${userId}-${Date.now()}${fileExtension}`;
       const newPath = path.join(IMAGES_DIR, fileName);
@@ -14,7 +27,9 @@ export class MediaService {
 
       return newPath.split(path.sep).join('/');
     } catch (error) {
-      if (fs.existsSync(filePath)) {
+      // Safe check: we already validated filePath above
+      const uploadsDir = path.resolve('./uploads');
+      if (this.isPathSafe(filePath, uploadsDir) && fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
       throw new Error(`Failed to save profile picture: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -25,7 +40,9 @@ export class MediaService {
     try {
       if (url.startsWith(IMAGES_DIR)) {
         const filePath = path.join(process.cwd(), url.substring(1));
-        if (fs.existsSync(filePath)) {
+        const imagesDir = path.resolve(IMAGES_DIR);
+        // Validate path is within IMAGES_DIR to prevent path traversal
+        if (this.isPathSafe(filePath, imagesDir) && fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
       }
@@ -36,11 +53,13 @@ export class MediaService {
 
   static deleteAllUserImages(userId: string): void {
     try {
-      if (!fs.existsSync(IMAGES_DIR)) {
+      const imagesDir = path.resolve(IMAGES_DIR);
+      // Safe check: IMAGES_DIR is a constant literal
+      if (!fs.existsSync(imagesDir)) {
         return;
       }
 
-      const files = fs.readdirSync(IMAGES_DIR);
+      const files = fs.readdirSync(imagesDir);
       const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
       userFiles.forEach((file) => {this.deleteImage(file);});

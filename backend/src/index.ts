@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.middlew
 import router from './routes';
 import { SocketService } from './services/socket.service';
 import { sanitizeInput } from './utils/sanitizeInput.util';
+import logger from './utils/logger.util';
 
 dotenv.config();
 
@@ -39,8 +40,8 @@ app.use(errorHandler);
 void connectDB();
 
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${sanitizeInput(String(PORT as string))}`);
-  console.log("WebSocket server ready");
+  logger.info(`Server running on port ${sanitizeInput(String(PORT as string))}`);
+  logger.info("WebSocket server ready");
 });
 
 // Make socket service available globally (optional, for use in controllers)
