@@ -1,7 +1,6 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
 import type { FilterQuery } from "mongoose";
-import type { IChat, IChatWithLastMessage } from "../types/chat.types";
-import type { IMessage } from "../types/chat.types";
+import type { IChat, IChatWithLastMessage, IMessage } from "../types/chat.types";
 
 /**
  * Your IChat extends Document in chat.types.ts, which conflicts with Mongoose's Document _id.
@@ -110,7 +109,7 @@ chatSchema.statics.createPair = function (
   const dedup = Array.from(new Set([String(a), String(b)])).map((id) => new mongoose.Types.ObjectId(id));
   if (dedup.length < 2) throw new Error("A direct chat requires two distinct participants");
   return this.create({
-    name: name?.trim() || null,
+    name: name?.trim() ?? null,
     participants: dedup,
   } as unknown as IChatDocument);
 };

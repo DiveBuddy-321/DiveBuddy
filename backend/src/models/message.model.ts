@@ -79,7 +79,7 @@ messageSchema.statics.createMessage = async function (
 // Get messages for a chat with pagination
 messageSchema.statics.getMessagesForChat = function (
   chatId: string, 
-  limit: number = 50, 
+  limit = 50, 
   before?: Date
 ): Promise<IMessageDocument[]> {
   // Validate chatId format

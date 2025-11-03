@@ -10,8 +10,8 @@ interface GeocodeApiResponse {
   results: {geometry?: {location?: { lat?: number; lng?: number }}}[]
     geometry?: {
       location?: { lat?: number; lng?: number };
-    };
-  };
+    }
+  }
 
 export async function getCoordinatesFromLocation(location: string): Promise<GeocodeResult | null> {
   try {

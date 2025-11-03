@@ -46,12 +46,12 @@ export class EventController {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const payload: CreateEventRequest & { createdBy?: string } = {
+      const payload = {
         ...req.body,
         createdBy: requester._id.toString(),
       };
 
-      const created = await eventModel.create(payload);
+      const created = await eventModel.create(payload as CreateEventRequest);
 
       res.status(201).json({ message: 'Event created successfully', data: { event: created } });
     } catch (error) {
