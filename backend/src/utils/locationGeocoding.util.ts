@@ -27,9 +27,6 @@ export async function getCoordinatesFromLocation(location: string): Promise<Geoc
       return null;
     }
     const data = (await res.json()) as GeocodeApiResponse;
-    if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-      return null;
-    }
     const first = data.results[0];
     const loc = first.geometry?.location;
     if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {

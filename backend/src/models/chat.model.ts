@@ -105,7 +105,6 @@ chatSchema.statics.createPair = function (
   b: mongoose.Types.ObjectId,
   name?: string | null
 ) {
-  if (!a || !b) throw new Error("Both participant ids are required");
   const dedup = Array.from(new Set([String(a), String(b)])).map((id) => new mongoose.Types.ObjectId(id));
   if (dedup.length < 2) throw new Error("A direct chat requires two distinct participants");
   return this.create({
@@ -119,7 +118,6 @@ chatSchema.statics.findDirectPair = function (
   a: mongoose.Types.ObjectId,
   b: mongoose.Types.ObjectId
 ) {
-  if (!a || !b) return Promise.resolve(null);
   const [aId, bId] = [new mongoose.Types.ObjectId(a), new mongoose.Types.ObjectId(b)];
   return this.findOne({
     participants: { $all: [aId, bId] },
