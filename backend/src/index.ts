@@ -40,7 +40,7 @@ void connectDB();
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${sanitizeInput(String(PORT as string))}`);
-  console.log(`WebSocket server ready`);
+  console.log("WebSocket server ready");
 });
 
 // Make socket service available globally (optional, for use in controllers)
