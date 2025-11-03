@@ -93,7 +93,7 @@ export class SocketService {
       socket.on("send_message", (data: SendMessageData) => this.handleSendMessage(socket, data));
 
       // Disconnect
-      socket.on("disconnect", () => this.handleDisconnect(socket));
+      socket.on("disconnect", () => {this.handleDisconnect(socket)});
     });
   }
 
