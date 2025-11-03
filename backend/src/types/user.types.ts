@@ -56,18 +56,18 @@ export interface GetProfileResponse {
   data?: {
     user: IUser;
   };
-};
+}
 
 export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;
 
 // Generic types
 // ------------------------------------------------------------
-export type GoogleUserInfo = {
+export interface GoogleUserInfo {
   googleId: string;
   email: string;
   name: string;
   profilePicture?: string;
-};
+}
 
 // Helper functions
 // ------------------------------------------------------------

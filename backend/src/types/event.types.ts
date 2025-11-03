@@ -57,7 +57,7 @@ export interface GetEventResponse {
   data?: {
     event: IEvent;
   };
-};
+}
 
 //these must remain types because they are zod infererred types
 export type UpdateEventRequest = z.infer<typeof updateEventSchema>;

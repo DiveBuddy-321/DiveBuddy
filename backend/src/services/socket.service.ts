@@ -5,7 +5,7 @@ import { Message } from "../models/message.model";
 import { Chat } from "../models/chat.model";
 import { userModel } from "../models/user.model";
 import type { IUser } from "../types/user.types";
-import { sanitizeInput } from "../utils/sanitizeInput.util";
+import logger from "../utils/logger.util";
 
 interface AuthSocket extends Socket {
   user?: IUser;
@@ -58,14 +58,14 @@ export class SocketService {
         const user = await userModel.findById(new mongoose.Types.ObjectId(String(userId)));
 
         if (!user) {
-          console.error(`WebSocket auth: User not found for ID: ${String(userId)}`);
+          logger.error("WebSocket auth: User not found for ID:", userId);
           return next(new Error("User not found"));
         }
 
         socket.user = user;
         next();
       } catch (error: unknown) {
-        console.error('WebSocket authentication error:', error);
+        logger.error('WebSocket authentication error:', error);
         next(new Error(error instanceof Error ? error.message : "Invalid authentication token"));
       }
     });
@@ -114,7 +114,7 @@ export class SocketService {
       socket.emit("joined_room", { chatId, chat });
       
     } catch (error: unknown) {
-      console.error("Error joining room:", error);
+      logger.error("Error joining room:", error);
       socket.emit("error", { message: error instanceof Error ? error.message : "Failed to join room" });
     }
   }
@@ -125,7 +125,7 @@ export class SocketService {
       await socket.leave(`chat:${chatId}`);
       socket.emit("left_room", { chatId });
     } catch (error: unknown) {
-      console.error("Error leaving room:", error);
+      logger.error("Error leaving room:", error);
       socket.emit("error", { message: error instanceof Error ? error.message : "Failed to leave room" });
     }
   }
@@ -145,12 +145,15 @@ export class SocketService {
       }
 
       // Verify user is a participant
-      const userId = socket.user?._id as mongoose.Types.ObjectId;
+
+      //fix not implemented as the suggested fix will result in a forbidden not null assertion. 
+      // Also, we specifically need it to return mongoose.Types.ObjectId based on what is returned from the database.
+      const userId = socket.user?._id as mongoose.Types.ObjectId; 
       
       const chat = await Chat.getForUser(chatId, userId);
       
       if (!chat) {
-        console.error(`Chat not found or user ${String(userId)} not a participant in chat ${chatId}`);
+        logger.error("Chat not found or user not a participant:", { userId, chatId });
         socket.emit("error", { message: "Chat not found or access denied" });
         return;
       }
@@ -205,14 +208,13 @@ export class SocketService {
       }
 
     } catch (error: unknown) {
-      console.error("Error sending message:", error);
+      logger.error("Error sending message:", error);
       socket.emit("error", { message: error instanceof Error ? error.message : "Failed to send message" });
     }
   }
 
   private handleDisconnect(socket: AuthSocket) {
-    const sanitizedUserId = sanitizeInput(String(socket.user?._id));
-    console.log(`User has discconnected from the server: ${sanitizedUserId}`);
+    logger.info("User disconnected from server:", socket.user?._id);
   }
 
   // Public method to emit events from outside the socket context (e.g., from REST endpoints)

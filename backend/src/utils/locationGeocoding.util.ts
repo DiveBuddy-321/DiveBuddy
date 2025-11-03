@@ -1,16 +1,17 @@
+import logger from './logger.util';
+
 interface GeocodeResult {
   latitude: number;
   longitude: number;
-};
+}
 
 interface GeocodeApiResponse {
   status: string;
-  results: Array<{
+  results: {geometry?: {location?: { lat?: number; lng?: number }}}[]
     geometry?: {
       location?: { lat?: number; lng?: number };
     };
-  }>;
-};
+  };
 
 export async function getCoordinatesFromLocation(location: string): Promise<GeocodeResult | null> {
   try {
@@ -22,7 +23,7 @@ export async function getCoordinatesFromLocation(location: string): Promise<Geoc
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`Geocoding request failed for location "${location}": HTTP ${res.status}`);
+      logger.error('Geocoding request failed:', { location, status: res.status });
       return null;
     }
     const data = (await res.json()) as GeocodeApiResponse;
@@ -36,7 +37,7 @@ export async function getCoordinatesFromLocation(location: string): Promise<Geoc
     }
     return { latitude: loc.lat, longitude: loc.lng };
   } catch (error) {
-    console.error('Failed to geocode location', error);
+    logger.error('Failed to geocode location:', error);
     return null;
   }
 }
