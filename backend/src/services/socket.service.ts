@@ -39,12 +39,12 @@ export class SocketService {
         const token = typeof rawAuth === "string" ? rawAuth : headerToken;
         
         if (!token) {
-          return next(new Error("Authentication token required") as unknown as ExtendedError | undefined);
+          return next(new Error("Authentication token required") as ExtendedError);
         }
 
         const secret = process.env.JWT_SECRET;
         if (!secret) {
-          return next(new Error("JWT secret not configured") as unknown as ExtendedError | undefined);
+          return next(new Error("JWT secret not configured") as ExtendedError);
         }
 
         // Match the auth middleware format - uses 'id' not 'userId'
@@ -52,14 +52,14 @@ export class SocketService {
         const userId = decoded.id ?? decoded.userId; // Support both formats
         
         if (!userId) {
-          return next(new Error("Invalid token format") as unknown as ExtendedError | undefined);
+          return next(new Error("Invalid token format") as ExtendedError);
         }
 
         const user = await userModel.findById(new mongoose.Types.ObjectId(String(userId)));
 
         if (!user) {
           logger.error("WebSocket auth: User not found for ID:", userId);
-          return next(new Error("User not found") as unknown as ExtendedError | undefined);
+          return next(new Error("User not found") as ExtendedError);
         }
 
         socket.user = user;
