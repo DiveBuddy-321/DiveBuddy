@@ -24,7 +24,7 @@ export class MediaController {
           message: 'Unauthorized',
         });
       }
-      const sanitizedFilePath = sanitizeInput(req.file.path);
+      const sanitizedFilePath = sanitizeInput(req.file.path); //multer already returns as string by the '@types/multer package so no need to fix this issue
       const image = MediaService.saveImage(
         sanitizedFilePath,
         user._id.toString()

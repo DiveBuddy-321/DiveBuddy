@@ -95,7 +95,7 @@ messageSchema.statics.getMessagesForChat = function (
   
   return this.find(query)
     .sort({ createdAt: -1 })
-    .limit(Math.max(1, Math.min(200, limit)))
+    .limit(Math.max(1, Math.min(200, limit as number)))
     .populate("sender", "name avatar")
     .lean()
     .exec();

@@ -108,9 +108,9 @@ export class UserModel {
     user: Partial<IUser>
   ): Promise<IUser | null> {
     try {
-      const validatedData = updateProfileSchema.parse(user);
+      const validatedData = updateProfileSchema.parse(user) as mongoose.UpdateQuery<IUser>;
       // If client updated location but did not provide coordinates, try to geocode
-      if (validatedData.location && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
+      if (validatedData.location && typeof validatedData.location === 'string' && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
         const coords = await getCoordinatesFromLocation(validatedData.location);
         if (coords) {
           validatedData.latitude = coords.latitude;

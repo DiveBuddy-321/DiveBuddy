@@ -14,7 +14,7 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
-      const { idToken } = req.body;
+      const { idToken }: AuthenticateUserRequest = req.body;
 
       const data = await authService.signUpWithGoogle(idToken);
 
@@ -55,7 +55,7 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
-      const { idToken } = req.body;
+      const { idToken }: AuthenticateUserRequest = req.body;
 
       const data = await authService.signInWithGoogle(idToken);
 

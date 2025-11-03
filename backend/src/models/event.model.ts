@@ -99,7 +99,7 @@ export class EventModel {
     event: Partial<IEvent>
   ): Promise<IEvent | null> {
     try {
-      const validatedData = updateEventSchema.parse(event);
+      const validatedData = updateEventSchema.parse(event) as mongoose.UpdateQuery<IEvent>;
 
       const updatedEvent = await this.event.findByIdAndUpdate(
         eventId,

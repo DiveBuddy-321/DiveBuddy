@@ -85,7 +85,7 @@ export class UserController {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const updated = await userModel.update(targetId, req.body);
+      const updated = await userModel.update(targetId, req.body as Partial<IUser>);
 
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update user' });
@@ -127,7 +127,7 @@ export class UserController {
       const updateData = { ...req.body };
 
 
-      const updatedUser = await userModel.update(user._id, updateData);
+      const updatedUser = await userModel.update(user._id, updateData as Partial<IUser>);
 
       if (!updatedUser) {
         return res.status(404).json({
