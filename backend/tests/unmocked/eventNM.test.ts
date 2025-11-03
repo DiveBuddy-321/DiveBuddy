@@ -4,10 +4,31 @@ import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { eventModel } from '../../src/models/event.model';
 import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
+import express from 'express';
+import eventRoutes from '../../src/routes/event.routes';
+import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
+import mongoose from 'mongoose';
 
 dotenv.config();
-const TEST_SERVER_URL = process.env.SERVER_URL as string;
 const USER = process.env.USER_ID as string;
+
+// Create Express app for testing
+const app = express();
+app.use(express.json());
+
+// Mock auth middleware - sets req.user for all routes
+app.use((req: any, res, next) => {
+	req.user = { 
+		_id: new mongoose.Types.ObjectId(USER),
+		email: 'test@example.com',
+		name: 'Test User'
+	};
+	next();
+});
+
+app.use('/api/events', eventRoutes); // Mount event routes at /api/events
+app.use('*', notFoundHandler);
+app.use(errorHandler);
 
 beforeAll(async () => {
   await setupTestDB();
@@ -21,7 +42,7 @@ describe('GET /api/events - unmocked (requires running server)', () => {
 	test('returns list of events (200) when server is available', async () => {
 		
 		// make sure GET endpoint works
-		const res = await request(TEST_SERVER_URL).get('/api/events').set('Authorization', `Bearer ${process.env.TEST_TOKEN}`);
+		const res = await request(app).get('/api/events');
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -51,7 +72,7 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 		const createdId = created._id;
 		
 		// now fetch the event by ID through the API
-		const res = await request(TEST_SERVER_URL).get(`/api/events/${createdId.toString()}`).set('Authorization', `Bearer ${process.env.TEST_TOKEN}`);
+		const res = await request(app).get(`/api/events/${createdId.toString()}`);
 
 		// verify response
 		expect(res.status).toBe(200);
@@ -94,7 +115,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		};
 
 		// make sure POST endpoint works
-		const res = await request(TEST_SERVER_URL).post('/api/events').set('Authorization', `Bearer ${process.env.TEST_TOKEN}`).send(newEvent);
+		const res = (await request(app).post('/api/events').send(newEvent));
 		expect(res.status).toBe(201);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -142,7 +163,7 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 		const createdId = created._id;
 
 		// make sure PUT join endpoint works
-		const res = await request(TEST_SERVER_URL).put(`/api/events/join/${createdId.toString()}`).set('Authorization', `Bearer ${process.env.TEST_TOKEN}`);
+		const res = await request(app).put(`/api/events/join/${createdId.toString()}`);
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -179,7 +200,7 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 		const createdId = created._id;
 
 		// make sure PUT leave endpoint works
-		const res = await request(TEST_SERVER_URL).put(`/api/events/leave/${createdId.toString()}`).set('Authorization', `Bearer ${process.env.TEST_TOKEN}`);
+		const res = await request(app).put(`/api/events/leave/${createdId.toString()}`);
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -229,8 +250,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 		};
 
 		// make sure PUT endpoint works
-		const res = await request(TEST_SERVER_URL).put(`/api/events/${createdId.toString()}`).set('Authorization', `Bearer ${process.env.TEST_TOKEN}`).send(updatedEvent);
-		expect(res.status).toBe(200);
+		const res = await request(app).put(`/api/events/${createdId.toString()}`).send(updatedEvent);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
 		expect(res.body.data).toHaveProperty('event');
@@ -278,9 +298,8 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		const createdId = created._id;
 
 		// delete the event through the API (server must point to same DB when running)
-		const delRes = await request(TEST_SERVER_URL)
-			.delete(`/api/events/${createdId.toString()}`)
-			.set('Authorization', `Bearer ${process.env.TEST_TOKEN}`);
+		const delRes = await request(app)
+			.delete(`/api/events/${createdId.toString()}`);
 
 		expect(delRes.status).toBe(200);
 

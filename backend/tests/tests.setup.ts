@@ -7,10 +7,3 @@ export const setupTestDB = async (): Promise<void> => {
 export const teardownTestDB = async (): Promise<void> => {
   await disconnectDB();
 };
-
-// export const clearTestDB = async (): Promise<void> => {
-//   const collections = mongoose.connection.collections;
-//   for (const key in collections) {
-//     await collections[key].deleteMany({});
-//   }
-// };
