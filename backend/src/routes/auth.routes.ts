@@ -10,13 +10,13 @@ const authController = new AuthController();
 router.post(
   '/signup',
   validateBody<AuthenticateUserRequest>(authenticateUserSchema),
-  authController.signUp
+  (req, res, next) => { void authController.signUp(req, res, next); }
 );
 
 router.post(
   '/signin',
   validateBody(authenticateUserSchema),
-  authController.signIn
+  (req, res, next) => { void authController.signIn(req, res, next); }
 );
 
 export default router;

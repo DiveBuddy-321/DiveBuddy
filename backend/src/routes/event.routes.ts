@@ -7,18 +7,18 @@ import { validateBody } from '../middleware/validation.middleware';
 const router = Router();
 const eventController = new EventController();
 
-router.get('/', eventController.getAllEvents);
+router.get('/', (req, res, next) => { void eventController.getAllEvents(req, res, next); });
 
-router.get('/:id', eventController.getEventById);
+router.get('/:id', (req, res, next) => { void eventController.getEventById(req, res, next); });
 
-router.post('/', validateBody<CreateEventRequest>(createEventSchema), eventController.createEvent);
+router.post('/', validateBody<CreateEventRequest>(createEventSchema), (req, res, next) => { void eventController.createEvent(req, res, next); });
 
-router.put('/join/:id', eventController.joinEvent);
+router.put('/join/:id', (req, res, next) => { void eventController.joinEvent(req, res, next); });
 
-router.put('/leave/:id', eventController.leaveEvent);
+router.put('/leave/:id', (req, res, next) => { void eventController.leaveEvent(req, res, next); });
 
-router.put('/:id', validateBody<UpdateEventRequest>(updateEventSchema), eventController.updateEvent);
+router.put('/:id', validateBody<UpdateEventRequest>(updateEventSchema), (req, res, next) => { void eventController.updateEvent(req, res, next); });
 
-router.delete('/:id', eventController.deleteEvent);
+router.delete('/:id', (req, res, next) => { void eventController.deleteEvent(req, res, next); });
 
 export default router;

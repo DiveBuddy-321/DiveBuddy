@@ -7,22 +7,22 @@ import { validateBody } from '../middleware/validation.middleware';
 const router = Router();
 const userController = new UserController();
 
-router.get('/', userController.getAllProfiles);
-router.get('/profile', userController.getProfile);
-router.get('/:id', userController.getProfileById);
-router.delete('/', userController.deleteProfile);
-router.delete('/:id', userController.deleteProfileById);
+router.get('/', (req, res, next) => { void userController.getAllProfiles(req, res, next); });
+router.get('/profile', (req, res) => { void userController.getProfile(req, res); });
+router.get('/:id', (req, res, next) => { void userController.getProfileById(req, res, next); });
+router.delete('/', (req, res, next) => { void userController.deleteProfile(req, res, next); });
+router.delete('/:id', (req, res, next) => { void userController.deleteProfileById(req, res, next); });
 
 router.put(
   '/:id',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  userController.updateProfileById
+  (req, res, next) => { void userController.updateProfileById(req, res, next); }
 );
 
 router.post(
   '/',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  userController.updateProfile
+  (req, res, next) => { void userController.updateProfile(req, res, next); }
 );
 
 export default router;
