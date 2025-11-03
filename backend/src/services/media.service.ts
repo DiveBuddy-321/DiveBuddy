@@ -27,10 +27,14 @@ export class MediaService {
 
       return newPath.split(path.sep).join('/');
     } catch (error) {
-      // Safe check: we already validated filePath above
-      const uploadsDir = path.resolve('./uploads');
-      if (this.isPathSafe(filePath, uploadsDir) && fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      // Clean up uploaded file on error
+      try {
+        const uploadsDir = path.resolve('./uploads');
+        if (this.isPathSafe(filePath, uploadsDir)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch {
+        // Ignore cleanup errors
       }
       throw new Error(`Failed to save profile picture: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -42,8 +46,12 @@ export class MediaService {
         const filePath = path.join(process.cwd(), url.substring(1));
         const imagesDir = path.resolve(IMAGES_DIR);
         // Validate path is within IMAGES_DIR to prevent path traversal
-        if (this.isPathSafe(filePath, imagesDir) && fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        if (this.isPathSafe(filePath, imagesDir)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch {
+            // File doesn't exist or cannot be deleted
+          }
         }
       }
     } catch (error) {
@@ -53,17 +61,13 @@ export class MediaService {
 
   static deleteAllUserImages(userId: string): void {
     try {
-      const imagesDir = path.resolve(IMAGES_DIR);
-      // Safe check: IMAGES_DIR is a constant literal
-      if (!fs.existsSync(imagesDir)) {
-        return;
-      }
-
-      const files = fs.readdirSync(imagesDir);
+      // Try to read directory; if it doesn't exist, readdirSync will throw
+      const files = fs.readdirSync(path.resolve(IMAGES_DIR));
       const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
       userFiles.forEach((file) => {this.deleteImage(file);});
     } catch (error) {
+      // Directory doesn't exist or cannot be read
       console.error('Failed to delete user images:', error);
     }
   }
