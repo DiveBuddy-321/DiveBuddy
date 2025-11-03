@@ -1,9 +1,9 @@
-type GeocodeResult = {
+interface GeocodeResult {
   latitude: number;
   longitude: number;
 };
 
-type GeocodeApiResponse = {
+interface GeocodeApiResponse {
   status: string;
   results: Array<{
     geometry?: {

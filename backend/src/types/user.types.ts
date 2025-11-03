@@ -51,7 +51,7 @@ export const updateProfileSchema = z.object({
 
 // Request types
 // ------------------------------------------------------------
-export type GetProfileResponse = {
+export interface GetProfileResponse {
   message: string;
   data?: {
     user: IUser;
