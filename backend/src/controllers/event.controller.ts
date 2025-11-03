@@ -221,7 +221,7 @@ export class EventController {
 
       // delete related media if any
       if (existing.photo) {
-        await MediaService.deleteImage(existing.photo);
+        MediaService.deleteImage(existing.photo);
       }
 
       await eventModel.delete(eventId);

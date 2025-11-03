@@ -1,29 +1,28 @@
 import { Router } from "express";
-import type { Request, Response, NextFunction } from "express";
 import { ChatController } from "../controllers/chat.controller";
+import { asyncHandler } from "../utils/asyncHandler.util";
 
 const router = Router();
 const chatController = new ChatController();
 
-router.get("/", async (req: Request, res: Response, next: NextFunction) => {
-  try { await chatController.listChats(req, res); }
-  catch (err: unknown) { next(err); }
-});
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
-  try { await chatController.createChat(req, res); }
-  catch (err: unknown) { next(err); }
-});
-router.get("/:chatId", async (req: Request, res: Response, next: NextFunction) => {
-  try { await chatController.getChat(req, res); }
-  catch (err: unknown) { next(err); }
-});
-router.get("/messages/:chatId", async (req: Request, res: Response, next: NextFunction) => {
-  try { await chatController.getMessages(req, res); }
-  catch (err: unknown) { next(err); }
-});
-router.post("/:chatId/messages", async (req: Request, res: Response, next: NextFunction) => {
-  try { await chatController.sendMessage(req, res); }
-  catch (err: unknown) { next(err); }
-});
+router.get("/", asyncHandler(async (req, res) => {
+  await chatController.listChats(req, res);
+}));
+
+router.post("/", asyncHandler(async (req, res) => {
+  await chatController.createChat(req, res);
+}));
+
+router.get("/:chatId", asyncHandler(async (req, res) => {
+  await chatController.getChat(req, res);
+}));
+
+router.get("/messages/:chatId", asyncHandler(async (req, res) => {
+  await chatController.getMessages(req, res);
+}));
+
+router.post("/:chatId/messages", asyncHandler(async (req, res) => {
+  await chatController.sendMessage(req, res);
+}));
 
 export default router;

@@ -58,7 +58,7 @@ export class UserController {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      await MediaService.deleteAllUserImages(user._id.toString());
+      MediaService.deleteAllUserImages(user._id.toString());
       await userModel.delete(user._id);
 
       res.status(200).json({ message: 'User deleted successfully' });
@@ -159,7 +159,7 @@ export class UserController {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      await MediaService.deleteAllUserImages(user._id.toString());
+      MediaService.deleteAllUserImages(user._id.toString());
 
       await userModel.delete(user._id);
 

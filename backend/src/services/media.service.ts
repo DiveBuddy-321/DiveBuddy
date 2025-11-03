@@ -34,7 +34,7 @@ export class MediaService {
     }
   }
 
-  static async deleteAllUserImages(userId: string): Promise<void> {
+  static deleteAllUserImages(userId: string): void {
     try {
       if (!fs.existsSync(IMAGES_DIR)) {
         return;
@@ -43,7 +43,7 @@ export class MediaService {
       const files = fs.readdirSync(IMAGES_DIR);
       const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
-      await Promise.all(userFiles.map(file => this.deleteImage(file)));
+      userFiles.forEach(file => this.deleteImage(file));
     } catch (error) {
       console.error('Failed to delete user images:', error);
     }

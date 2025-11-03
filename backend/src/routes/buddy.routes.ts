@@ -1,15 +1,17 @@
 import { Router } from 'express';
-import type { Request, Response, NextFunction } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 
 import { BuddyController } from '../controllers/buddy.controller';
 import type { GetAllBuddiesResponse } from '../types/buddy.types';
+import { asyncHandler } from '../utils/asyncHandler.util';
 
 const router = Router();
 const buddyController = new BuddyController();
 
-router.get('/', async (req: Request, res: Response<GetAllBuddiesResponse>, next: NextFunction) => {
-  try { await buddyController.getAllBuddies(req, res, next); }
-  catch (err: unknown) { next(err); }
-});
+router.get('/', asyncHandler<ParamsDictionary, GetAllBuddiesResponse>(
+  async (req, res, next) => {
+    await buddyController.getAllBuddies(req, res, next);
+  }
+));
 
 export default router;
