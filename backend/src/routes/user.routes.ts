@@ -1,28 +1,50 @@
 import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 import { UserController } from '../controllers/user.controller';
-import { UpdateProfileRequest, updateProfileSchema } from '../types/user.types';
+import { UpdateProfileRequest, GetProfileResponse, IUser, updateProfileSchema } from '../types/user.types';
 import { validateBody } from '../middleware/validation.middleware';
 
 const router = Router();
 const userController = new UserController();
 
-router.get('/', (req, res, next) => { void userController.getAllProfiles(req, res, next); });
-router.get('/profile', (req, res) => { void userController.getProfile(req, res); });
-router.get('/:id', (req, res, next) => { void userController.getProfileById(req, res, next); });
-router.delete('/', (req, res, next) => { void userController.deleteProfile(req, res, next); });
-router.delete('/:id', (req, res, next) => { void userController.deleteProfileById(req, res, next); });
+router.get('/', async (req: Request, res: Response<{ message: string; data?: { users: IUser[] } }>, next: NextFunction) => {
+  try { await userController.getAllProfiles(req, res, next); }
+  catch (err: unknown) { next(err); }
+});
+router.get('/profile', (req: Request, res: Response<GetProfileResponse>, next: NextFunction) => {
+  try { userController.getProfile(req, res, next); }
+  catch (err: unknown) { next(err); }
+});
+router.get('/:id', async (req: Request, res: Response<GetProfileResponse>, next: NextFunction) => {
+  try { await userController.getProfileById(req, res, next); }
+  catch (err: unknown) { next(err); }
+});
+router.delete('/', async (req: Request, res: Response, next: NextFunction) => {
+  try { await userController.deleteProfile(req, res, next); }
+  catch (err: unknown) { next(err); }
+});
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try { await userController.deleteProfileById(req, res, next); }
+  catch (err: unknown) { next(err); }
+});
 
 router.put(
   '/:id',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  (req, res, next) => { void userController.updateProfileById(req, res, next); }
+  async (req: Request<unknown, unknown, UpdateProfileRequest>, res: Response<GetProfileResponse>, next: NextFunction) => {
+    try { await userController.updateProfileById(req, res, next); }
+    catch (err: unknown) { next(err); }
+  }
 );
 
 router.post(
   '/',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  (req, res, next) => { void userController.updateProfile(req, res, next); }
+  async (req: Request<unknown, unknown, UpdateProfileRequest>, res: Response<GetProfileResponse>, next: NextFunction) => {
+    try { await userController.updateProfile(req, res, next); }
+    catch (err: unknown) { next(err); }
+  }
 );
 
 export default router;

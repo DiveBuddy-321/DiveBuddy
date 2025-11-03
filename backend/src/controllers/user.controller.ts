@@ -97,7 +97,8 @@ export class UserController {
       next(error);
     }
   }
-  getProfile(req: Request, res: Response<GetProfileResponse>) {
+  getProfile(req: Request, res: Response<GetProfileResponse>, next: NextFunction) {
+    try {
     const user = req.user;
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -105,8 +106,12 @@ export class UserController {
 
     res.status(200).json({
       message: 'Profile fetched successfully',
-      data: { user },
-    });
+        data: { user },
+      });
+    } catch (error) {
+      logger.error('Failed to fetch profile:', error);
+      next(error);
+    }
   }
 
   async updateProfile(

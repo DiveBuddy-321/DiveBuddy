@@ -1,7 +1,8 @@
 import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 import { AuthController } from '../controllers/auth.controller';
-import { AuthenticateUserRequest, authenticateUserSchema } from '../types/auth.types';
+import { AuthenticateUserRequest, AuthenticateUserResponse, authenticateUserSchema } from '../types/auth.types';
 import { validateBody } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -10,13 +11,19 @@ const authController = new AuthController();
 router.post(
   '/signup',
   validateBody<AuthenticateUserRequest>(authenticateUserSchema),
-  (req, res, next) => { authController.signUp(req, res, next).catch(next); }
+  async (req: Request<unknown, unknown, AuthenticateUserRequest>, res: Response<AuthenticateUserResponse>, next: NextFunction) => {
+    try { await authController.signUp(req, res, next); }
+    catch (err: unknown) { next(err); }
+  }
 );
 
 router.post(
   '/signin',
   validateBody(authenticateUserSchema),
-  (req, res, next) => { authController.signIn(req, res, next).catch(next); }
+  async (req: Request<unknown, unknown, AuthenticateUserRequest>, res: Response<AuthenticateUserResponse>, next: NextFunction) => {
+    try { await authController.signIn(req, res, next); }
+    catch (err: unknown) { next(err); }
+  }
 );
 
 export default router;
