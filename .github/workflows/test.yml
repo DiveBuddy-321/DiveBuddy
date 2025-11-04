@@ -20,7 +20,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ubuntu/divebuddy/backend
-            docker exec cpen321_app sh -c "npm ci --include=dev && chmod +x run-tests-individually.sh && ./run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
+            docker exec cpen321_app sh -c "npm ci --include=dev && chmod +x tests/run-tests-individually.sh && ./tests/run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
 
       - name: Notify test results
         if: failure()
