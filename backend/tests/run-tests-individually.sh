@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Script to run each test file individually
 # This helps identify which test file might be causing issues
@@ -19,37 +19,36 @@ NC='\033[0m' # No Color
 # Counters
 PASSED=0
 FAILED=0
-FAILED_TESTS=()
+FAILED_TESTS=""
 
-# Array of test files
-TEST_FILES=(
-  "mocked/authM.test.ts"
-  "mocked/eventM.test.ts"
-  "mocked/userM.test.ts"
-  "mocked/chatM.test.ts"
-  "mocked/socketM.test.ts"
-  "unmocked/eventNM.test.ts"
-  "unmocked/userNM.test.ts"
-  "unmocked/chatNM.test.ts"
-  "unmocked/socketNM.test.ts"
-)
+# List of test files (space-separated, works in /bin/sh)
+TEST_FILES="
+mocked/authM.test.ts
+mocked/eventM.test.ts
+mocked/userM.test.ts
+mocked/chatM.test.ts
+mocked/socketM.test.ts
+unmocked/eventNM.test.ts
+unmocked/userNM.test.ts
+unmocked/chatNM.test.ts
+unmocked/socketNM.test.ts
+"
 
 # Run each test file
-for test_file in "${TEST_FILES[@]}"; do
+for test_file in $TEST_FILES; do
   echo "=========================================="
-  echo -e "${YELLOW}Running: $test_file${NC}"
+  printf "${YELLOW}Running: %s${NC}\n" "$test_file"
   echo "=========================================="
-  
+
   if npx jest "$test_file" --runInBand --coverage; then
-    echo -e "${GREEN}✓ PASSED: $test_file${NC}"
-    ((PASSED++))
+    printf "${GREEN}✓ PASSED: %s${NC}\n" "$test_file"
+    PASSED=$((PASSED + 1))
   else
-    echo -e "${RED}✗ FAILED: $test_file${NC}"
-    ((FAILED++))
-    FAILED_TESTS+=("$test_file")
+    printf "${RED}✗ FAILED: %s${NC}\n" "$test_file"
+    FAILED=$((FAILED + 1))
+    FAILED_TESTS="$FAILED_TESTS\n  ${RED}✗ $test_file${NC}"
   fi
-  
-  echo ""
+
   echo ""
 done
 
@@ -57,17 +56,15 @@ done
 echo "=========================================="
 echo "TEST SUMMARY"
 echo "=========================================="
-echo -e "${GREEN}Passed: $PASSED${NC}"
-echo -e "${RED}Failed: $FAILED${NC}"
+printf "${GREEN}Passed: %s${NC}\n" "$PASSED"
+printf "${RED}Failed: %s${NC}\n" "$FAILED"
 
-if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
+if [ "$FAILED" -gt 0 ]; then
   echo ""
   echo "Failed tests:"
-  for failed_test in "${FAILED_TESTS[@]}"; do
-    echo -e "  ${RED}✗ $failed_test${NC}"
-  done
+  printf "$FAILED_TESTS\n"
   exit 1
 else
-  echo -e "${GREEN}All tests passed!${NC}"
+  printf "${GREEN}All tests passed!${NC}\n"
   exit 0
 fi
