@@ -176,10 +176,9 @@ private fun CreateEventButton(
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
-    
     Button(
         onClick = onClick,
-        modifier = modifier.padding(spacing.large, spacing.medium)
+        modifier = modifier.padding(spacing.small, spacing.small)
     ) {
         Text(
             text = "Create Event",
