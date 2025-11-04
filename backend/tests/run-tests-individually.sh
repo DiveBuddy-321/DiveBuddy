@@ -24,14 +24,19 @@ FAILED_TESTS=""
 # List of test files (space-separated, works in /bin/sh)
 TEST_FILES="
 mocked/authM.test.ts
-mocked/eventM.test.ts
-mocked/userM.test.ts
+mocked/buddyM.test.ts
 mocked/chatM.test.ts
+mocked/eventM.test.ts
+mocked/mediaM.test.ts
 mocked/socketM.test.ts
-unmocked/eventNM.test.ts
-unmocked/userNM.test.ts
+mocked/userM.test.ts
+unmocked/authNM.test.ts
+unmocked/buddyNM.test.ts
 unmocked/chatNM.test.ts
+unmocked/eventNM.test.ts
+unmocked/mediaNM.test.ts
 unmocked/socketNM.test.ts
+unmocked/userNM.test.ts
 "
 
 # Run each test file
