@@ -47,3 +47,17 @@ jobs:
             docker-compose down
             docker-compose --env-file .env build
             docker-compose --env-file .env up -d
+
+      - name: Run tests on deployed server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ubuntu/divebuddy
+            docker exec cpen321_app sh -c "cd /app/backend && npx jest --runInBand --coverage" || { echo "Tests failed!"; exit 1; }
+
+      - name: Notify test results
+        if: failure()
+        run: echo "⚠️ Tests failed after deployment! Check the logs above."
