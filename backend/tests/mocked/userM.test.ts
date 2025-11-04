@@ -122,9 +122,6 @@ describe('GET /api/users/:id - mocked', () => {
 
         const testId = new mongoose.Types.ObjectId();
         await expect(userModel.findById(testId)).rejects.toThrow('Failed to find user');
-        
-        // Explicitly restore this mock
-        findOneSpy.mockRestore();
     });
 });
 
@@ -209,9 +206,6 @@ describe('PUT /api/users/:id - mocked', () => {
         };
 
         await expect(userModel.update(testId, updateData)).rejects.toThrow('Failed to update user');
-        
-        // Explicitly restore this mock
-        updateSpy.mockRestore();
     });
 });
 
@@ -267,9 +261,6 @@ describe('POST /api/users - mocked', () => {
         };
 
         await expect(userModel.create(validUserInfo)).rejects.toThrow('Failed to create user');
-        
-        // Explicitly restore this mock
-        createSpy.mockRestore();
     });
 
     test('findByGoogleId throws "Failed to find user" when database operation fails', async () => {
@@ -278,9 +269,6 @@ describe('POST /api/users - mocked', () => {
         const findOneSpy = jest.spyOn(User, 'findOne').mockRejectedValue(new Error('Database connection lost'));
 
         await expect(userModel.findByGoogleId('test-google-id')).rejects.toThrow('Failed to find user');
-        
-        // Explicitly restore this mock
-        findOneSpy.mockRestore();
     });
 });
 
@@ -343,9 +331,6 @@ describe('DELETE /api/users/:id - mocked', () => {
 
         const testId = new mongoose.Types.ObjectId();
         await expect(userModel.delete(testId)).rejects.toThrow('Failed to delete user');
-        
-        // Explicitly restore this mock
-        deleteSpy.mockRestore();
     });
 });
 
