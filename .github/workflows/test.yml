@@ -1,12 +1,16 @@
 name: Run Tests on EC2
 on:
-  push:
+  workflow_run:
+    workflows: ["Deploy to EC2"]
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Run tests on deployed server
         uses: appleboy/ssh-action@master
@@ -16,7 +20,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ubuntu/divebuddy/backend
-            docker exec -w /backend cpen321_app sh -c "npm ci --include=dev && chmod +x run-tests-individually.sh && ./run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
+            docker exec cpen321_app sh -c "npm ci --include=dev && chmod +x run-tests-individually.sh && ./run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
 
       - name: Notify test results
         if: failure()
