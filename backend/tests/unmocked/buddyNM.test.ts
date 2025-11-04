@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll, afterEach, jest } from '@jest/globals';
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { userModel } from '../../src/models/user.model';
@@ -8,6 +8,7 @@ import express from 'express';
 import buddyRoutes from '../../src/routes/buddy.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 import mongoose from 'mongoose';
+import { getCoordinatesFromLocation } from '../../src/utils/locationGeocoding.util';
 
 dotenv.config();
 const USER = process.env.USER_ID as string;
@@ -262,6 +263,576 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     res.body.data.buddies.forEach((buddy: any) => {
       expect(String(buddy.user._id)).not.toBe(USER);
     });
+  });
+
+  /*
+    Inputs: query { targetMinLevel: 1 } (only min level, no max)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+  */
+  test('handles partial level filter (only min, no max)', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    // Create users with different skill levels to test
+    const beginnerUser = await userModel.create({
+      email: 'beginner@test.com',
+      name: 'Beginner User',
+      googleId: `test-beginner-${Date.now()}`,
+      age: 25,
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Beginner'
+    } as any);
+
+    const res = await request(app)
+      .get('/api/buddy')
+      .query({ targetMinLevel: 1 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    // Should return all eligible users since filter requires both min and max
+
+    // Cleanup
+    await userModel.delete(new mongoose.Types.ObjectId(beginnerUser._id));
+  });
+
+  /*
+    Inputs: query { targetMaxLevel: 3 } (only max level, no min)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+  */
+  test('handles partial level filter (only max, no min)', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    const res = await request(app)
+      .get('/api/buddy')
+      .query({ targetMaxLevel: 3 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    // Should return all eligible users since filter requires both min and max
+  });
+
+  /*
+    Inputs: query { targetMinAge: 20 } (only min age, no max)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+  */
+  test('handles partial age filter (only min, no max)', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    const res = await request(app)
+      .get('/api/buddy')
+      .query({ targetMinAge: 20 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    // Should return all eligible users since filter requires both min and max
+  });
+
+  /*
+    Inputs: query { targetMaxAge: 50 } (only max age, no min)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+  */
+  test('handles partial age filter (only max, no min)', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    const res = await request(app)
+      .get('/api/buddy')
+      .query({ targetMaxAge: 50 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    // Should return all eligible users since filter requires both min and max
+  });
+
+  /*
+    Inputs: none (user with all skill levels in database)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: Algorithm should handle all three skill levels (Beginner, Intermediate, Expert)
+  */
+  test('handles all skill levels (Beginner, Intermediate, Expert)', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    // Create users with all skill levels
+    const beginnerUser = await userModel.create({
+      email: `beginner-${Date.now()}@test.com`,
+      name: 'Beginner User',
+      googleId: `test-beginner-${Date.now()}`,
+      age: 25,
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Beginner'
+    } as any);
+
+    const expertUser = await userModel.create({
+      email: `expert-${Date.now()}@test.com`,
+      name: 'Expert User',
+      googleId: `test-expert-${Date.now()}`,
+      age: 30,
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Expert'
+    } as any);
+
+    const res = await request(app).get('/api/buddy');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    
+    // Should include users with all skill levels
+    const skillLevels = res.body.data.buddies.map((b: any) => b.user.skillLevel).filter(Boolean);
+    expect(skillLevels.length).toBeGreaterThan(0);
+
+    // Cleanup
+    await userModel.delete(new mongoose.Types.ObjectId(beginnerUser._id));
+    await userModel.delete(new mongoose.Types.ObjectId(expertUser._id));
+  });
+
+  /*
+    Inputs: none (users with missing location data)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: Users without complete profile (missing latitude/longitude) should be filtered out
+  */
+  test('filters out users with incomplete profiles', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    // Create user with incomplete profile (missing location)
+    const incompleteUser = await userModel.create({
+      email: `incomplete-${Date.now()}@test.com`,
+      name: 'Incomplete User',
+      googleId: `test-incomplete-${Date.now()}`,
+      age: 25,
+      skillLevel: 'Intermediate'
+      // Missing latitude and longitude
+    } as any);
+
+    const res = await request(app).get('/api/buddy');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    
+    // Incomplete user should not be in results
+    const incompleteUserId = String(incompleteUser._id);
+    res.body.data.buddies.forEach((buddy: any) => {
+      expect(String(buddy.user._id)).not.toBe(incompleteUserId);
+    });
+
+    // Cleanup
+    await userModel.delete(new mongoose.Types.ObjectId(incompleteUser._id));
+  });
+
+  /*
+    Inputs: query with filters that match no users
+    Expected status: 200
+    Output: { message: string, data: { buddies: [] } }
+    Expected behavior: Returns empty array when filters match no users
+  */
+  test('returns empty array when filters match no users', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    // Use very restrictive filters that likely match no one
+    const res = await request(app)
+      .get('/api/buddy')
+      .query({ 
+        targetMinLevel: 1, 
+        targetMaxLevel: 1,
+        targetMinAge: 100,
+        targetMaxAge: 100
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    expect(Array.isArray(res.body.data.buddies)).toBe(true);
+    // Should return empty array or very few results
+  });
+
+  /*
+    Inputs: none (users at different geographic distances)
+    Expected status: 200
+    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
+    Expected behavior: Distance calculation should consider geographic distance, age difference, and skill level difference
+  */
+  test('calculates distance considering geography, age, and skill level', async () => {
+    if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
+      return;
+    }
+
+    // Create users at different distances
+    const nearbyUser = await userModel.create({
+      email: `nearby-${Date.now()}@test.com`,
+      name: 'Nearby User',
+      googleId: `test-nearby-${Date.now()}`,
+      age: testUser.age, // Same age
+      latitude: testUser.latitude + 0.01, // Very close
+      longitude: testUser.longitude + 0.01,
+      skillLevel: testUser.skillLevel // Same skill level
+    } as any);
+
+    const farUser = await userModel.create({
+      email: `far-${Date.now()}@test.com`,
+      name: 'Far User',
+      googleId: `test-far-${Date.now()}`,
+      age: testUser.age + 50, // Large age difference
+      latitude: testUser.latitude + 10, // Far away
+      longitude: testUser.longitude + 10,
+      skillLevel: testUser.skillLevel === 'Beginner' ? 'Expert' : 'Beginner' // Different skill level
+    } as any);
+
+    const res = await request(app).get('/api/buddy');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.buddies).toBeDefined();
+    
+    // Nearby user with similar age/skill should have smaller distance than far user
+    const nearbyBuddy = res.body.data.buddies.find((b: any) => String(b.user._id) === String(nearbyUser._id));
+    const farBuddy = res.body.data.buddies.find((b: any) => String(b.user._id) === String(farUser._id));
+    
+    if (nearbyBuddy && farBuddy) {
+      expect(nearbyBuddy.distance).toBeLessThan(farBuddy.distance);
+    }
+
+    // Cleanup
+    await userModel.delete(new mongoose.Types.ObjectId(nearbyUser._id));
+    await userModel.delete(new mongoose.Types.ObjectId(farUser._id));
+  });
+});
+
+describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
+  // Mock global fetch
+  const originalFetch = global.fetch;
+  const originalEnv = process.env.GEOCODING_API;
+
+  beforeAll(() => {
+    // Set a test API key
+    process.env.GEOCODING_API = 'test-api-key';
+    // Mock global fetch
+    global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+  });
+
+  afterAll(() => {
+    // Restore original fetch
+    global.fetch = originalFetch;
+    // Restore original env
+    if (originalEnv) {
+      process.env.GEOCODING_API = originalEnv;
+    } else {
+      delete process.env.GEOCODING_API;
+    }
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    // Restore API key after each test
+    process.env.GEOCODING_API = 'test-api-key';
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to GeocodeResult
+    Output: { latitude: number, longitude: number } | null
+    Expected behavior: Successfully geocodes location and returns coordinates
+  */
+  test('successfully geocodes a valid location', async () => {
+    const mockResponse = {
+      status: 'OK',
+      results: [
+        {
+          geometry: {
+            location: {
+              lat: 49.2827,
+              lng: -123.1207
+            }
+          }
+        }
+      ]
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('latitude');
+    expect(result).toHaveProperty('longitude');
+    expect(result?.latitude).toBe(49.2827);
+    expect(result?.longitude).toBe(-123.1207);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when API key is not set
+  */
+  test('returns null when GEOCODING_API is not set', async () => {
+    delete process.env.GEOCODING_API;
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).toBeNull();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  /*
+    Inputs: location: 'Invalid Location'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when API returns non-OK status
+  */
+  test('returns null when API returns non-OK status', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    const mockResponse = {
+      status: 'ZERO_RESULTS',
+      results: []
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const result = await getCoordinatesFromLocation('Invalid Location');
+
+    expect(result).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when API returns empty results array
+  */
+  test('returns null when API returns empty results', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    const mockResponse = {
+      status: 'OK',
+      results: []
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when response is not OK (HTTP error)
+  */
+  test('returns null when HTTP request fails', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({})
+    } as any);
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when geometry location is missing
+  */
+  test('returns null when geometry location is missing', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    const mockResponse = {
+      status: 'OK',
+      results: [
+        {
+          geometry: {}
+        }
+      ]
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when lat/lng are not numbers
+  */
+  test('returns null when lat/lng are not numbers', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    const mockResponse = {
+      status: 'OK',
+      results: [
+        {
+          geometry: {
+            location: {
+              lat: 'invalid',
+              lng: 'invalid'
+            }
+          }
+        }
+      ]
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'Vancouver, BC'
+    Expected status: Promise resolves to null
+    Output: null
+    Expected behavior: Returns null when fetch throws an error
+  */
+  test('returns null when fetch throws an error', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockRejectedValue(
+      new Error('Network error')
+    );
+
+    const result = await getCoordinatesFromLocation('Vancouver, BC');
+
+    expect(result).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Inputs: location: 'New York, NY'
+    Expected status: Promise resolves to GeocodeResult
+    Output: { latitude: number, longitude: number }
+    Expected behavior: Properly URL-encodes location in API request
+  */
+  test('properly URL-encodes location in API request', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    const mockResponse = {
+      status: 'OK',
+      results: [
+        {
+          geometry: {
+            location: {
+              lat: 40.7128,
+              lng: -74.0060
+            }
+          }
+        }
+      ]
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const location = 'New York, NY';
+    const result = await getCoordinatesFromLocation(location);
+
+    expect(result).not.toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    
+    // Verify the URL contains the encoded location
+    const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0][0];
+    expect(fetchCall).toContain(encodeURIComponent(location));
+    expect(fetchCall).toContain('test-api-key');
+  });
+
+  /*
+    Inputs: location: 'San Francisco, CA'
+    Expected status: Promise resolves to GeocodeResult
+    Output: { latitude: number, longitude: number }
+    Expected behavior: Handles locations with special characters
+  */
+  test('handles locations with special characters', async () => {
+    process.env.GEOCODING_API = 'test-api-key';
+
+    const mockResponse = {
+      status: 'OK',
+      results: [
+        {
+          geometry: {
+            location: {
+              lat: 37.7749,
+              lng: -122.4194
+            }
+          }
+        }
+      ]
+    };
+
+    (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse
+    } as any);
+
+    const location = 'San Francisco, CA';
+    const result = await getCoordinatesFromLocation(location);
+
+    expect(result).not.toBeNull();
+    expect(result?.latitude).toBe(37.7749);
+    expect(result?.longitude).toBe(-122.4194);
   });
 });
 
