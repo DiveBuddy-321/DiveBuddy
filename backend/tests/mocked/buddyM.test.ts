@@ -1,0 +1,212 @@
+import request from 'supertest';
+import { describe, test, expect, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
+import dotenv from 'dotenv';
+import { setupTestDB, teardownTestDB } from '../tests.setup';
+import { userModel } from '../../src/models/user.model';
+import express from 'express';
+import buddyRoutes from '../../src/routes/buddy.routes';
+import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
+import mongoose from 'mongoose';
+
+dotenv.config();
+const USER = process.env.USER_ID as string;
+
+// Create Express app for testing
+const app = express();
+app.use(express.json());
+
+// Mock auth middleware to set req.user with complete profile
+app.use('/api/buddy', (req: any, res: any, next: any) => {
+  req.user = {
+    _id: new mongoose.Types.ObjectId(USER),
+    email: 'test@example.com',
+    name: 'Test User',
+    age: 25,
+    skillLevel: 'Intermediate',
+    latitude: 49.2827,
+    longitude: -123.1207
+  };
+  next();
+}, buddyRoutes);
+
+// Error handling middleware
+app.use('*', notFoundHandler);
+app.use((err: any, req: any, res: any, next: any) => {
+  errorHandler(err, req, res);
+});
+
+beforeAll(async () => {
+  await setupTestDB();
+});
+
+afterAll(async () => {
+  await teardownTestDB();
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe('GET /api/buddy - mocked', () => {
+  test('returns 500 when userModel.findAll fails', async () => {
+    // Mock userModel.findAll to throw an error
+    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Database connection failed'));
+
+    // Make request
+    const res = await request(app).get('/api/buddy');
+
+    // Assertions
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns 500 when unexpected error occurs', async () => {
+    // Mock userModel.findAll to throw an unexpected error
+    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Unexpected error'));
+
+    // Make request
+    const res = await request(app).get('/api/buddy');
+
+    // Assertions
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns 500 when database timeout occurs', async () => {
+    // Mock userModel.findAll to throw a timeout error
+    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Connection timeout'));
+
+    // Make request
+    const res = await request(app).get('/api/buddy');
+
+    // Assertions
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns 500 when null pointer exception occurs', async () => {
+    // Mock userModel.findAll to throw null error
+    jest.spyOn(userModel, 'findAll').mockRejectedValue(new TypeError('Cannot read property of null'));
+
+    // Make request
+    const res = await request(app).get('/api/buddy');
+
+    // Assertions
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns 500 when network error occurs', async () => {
+    // Mock userModel.findAll to throw a network error
+    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Network error'));
+
+    // Make request
+    const res = await request(app).get('/api/buddy');
+
+    // Assertions
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns 500 when memory error occurs', async () => {
+    // Mock userModel.findAll to throw a memory error
+    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Out of memory'));
+
+    // Make request
+    const res = await request(app).get('/api/buddy');
+
+    // Assertions
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('GET /api/buddy - profile validation mocked', () => {
+  test('returns 400 when user profile is incomplete (missing age)', async () => {
+    // Override middleware for this test with incomplete profile
+    const incompleteApp = express();
+    incompleteApp.use(express.json());
+    incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
+      req.user = {
+        _id: new mongoose.Types.ObjectId(USER),
+        email: 'test@example.com',
+        name: 'Test User',
+        // Missing age
+        skillLevel: 'Intermediate',
+        latitude: 49.2827,
+        longitude: -123.1207
+      };
+      next();
+    }, buddyRoutes);
+    incompleteApp.use('*', notFoundHandler);
+    incompleteApp.use((err: any, req: any, res: any, next: any) => {
+      errorHandler(err, req, res);
+    });
+
+    const res = await request(incompleteApp).get('/api/buddy');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toContain('complete your profile');
+  });
+
+  test('returns 400 when user profile is incomplete (missing skillLevel)', async () => {
+    const incompleteApp = express();
+    incompleteApp.use(express.json());
+    incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
+      req.user = {
+        _id: new mongoose.Types.ObjectId(USER),
+        email: 'test@example.com',
+        name: 'Test User',
+        age: 25,
+        // Missing skillLevel
+        latitude: 49.2827,
+        longitude: -123.1207
+      };
+      next();
+    }, buddyRoutes);
+    incompleteApp.use('*', notFoundHandler);
+    incompleteApp.use((err: any, req: any, res: any, next: any) => {
+      errorHandler(err, req, res);
+    });
+
+    const res = await request(incompleteApp).get('/api/buddy');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toContain('complete your profile');
+  });
+
+  test('returns 400 when user profile is incomplete (missing location)', async () => {
+    const incompleteApp = express();
+    incompleteApp.use(express.json());
+    incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
+      req.user = {
+        _id: new mongoose.Types.ObjectId(USER),
+        email: 'test@example.com',
+        name: 'Test User',
+        age: 25,
+        skillLevel: 'Intermediate',
+        // Missing latitude/longitude
+      };
+      next();
+    }, buddyRoutes);
+    incompleteApp.use('*', notFoundHandler);
+    incompleteApp.use((err: any, req: any, res: any, next: any) => {
+      errorHandler(err, req, res);
+    });
+
+    const res = await request(incompleteApp).get('/api/buddy');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toContain('complete your profile');
+  });
+});
+

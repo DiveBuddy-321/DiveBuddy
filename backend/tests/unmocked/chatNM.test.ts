@@ -126,6 +126,12 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     console.log('[TEST] Created chatId:', chatId);
   });
 
+  /*
+    Inputs: { peerId: OTHER_USER, name?: string } (same as previous chat)
+    Expected status: 200
+    Output: existing chat document directly in response.body
+    Expected behavior: Returns existing chat instead of creating duplicate
+  */
   test('returns existing chat when direct chat already exists', async () => {
     const res = await request(app).post('/api/chats').send({
       peerId: OTHER_USER,
@@ -136,6 +142,12 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     expect(String(res.body._id)).toBe(chatId);
   });
 
+  /*
+    Inputs: { name?: string } (missing peerId)
+    Expected status: 400
+    Output: error message in response.body.error
+    Expected behavior: Rejects request when peerId is missing
+  */
   test('returns 400 when peerId is missing', async () => {
     const res = await request(app).post('/api/chats').send({
       name: 'Test Chat'
@@ -144,6 +156,12 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: { peerId: 'invalid-id', name?: string }
+    Expected status: 400
+    Output: error message in response.body.error
+    Expected behavior: Rejects request when peerId is not a valid ObjectId
+  */
   test('returns 400 when peerId is invalid', async () => {
     const res = await request(app).post('/api/chats').send({
       peerId: 'invalid-id',
@@ -189,9 +207,10 @@ describe('GET /api/chats - unmocked (no mocking)', () => {
 
 describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
   /*
-    Inputs: path param chatId
+    Inputs: path param chatId (valid chat where user is participant)
     Expected status: 200
     Output: chat document directly in response.body
+    Expected behavior: Returns chat when user is a participant
   */
   test('returns a chat when the user is a participant', async () => {
     const res = await request(app).get(`/api/chats/${chatId}`);
@@ -200,12 +219,24 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
     expect(String(res.body._id)).toBe(chatId);
   });
 
+  /*
+    Inputs: path param 'invalid-id' (not a valid ObjectId)
+    Expected status: 400
+    Output: error message in response.body.error
+    Expected behavior: Rejects invalid chatId format
+  */
   test('returns 400 when chatId is invalid', async () => {
     const res = await request(app).get('/api/chats/invalid-id');
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId (valid ObjectId but non-existent chat)
+    Expected status: 404
+    Output: error message in response.body.error
+    Expected behavior: Returns 404 when chat doesn't exist
+  */
   test('returns 404 when chat does not exist', async () => {
     const fakeId = new mongoose.Types.ObjectId().toString();
     const res = await request(app).get(`/api/chats/${fakeId}`);
@@ -213,6 +244,12 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId (valid chat where user is NOT a participant)
+    Expected status: 404
+    Output: error message in response.body.error
+    Expected behavior: Returns 404 when user is not a participant (access denied)
+  */
   test('returns 404 when user is not a participant', async () => {
     // Create a chat between OTHER_USER and a third user
     const thirdUser = new mongoose.Types.ObjectId().toString();
@@ -235,9 +272,10 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
 
 describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
   /*
-    Inputs: path param chatId, body { content }
+    Inputs: path param chatId, body { content: string }
     Expected status: 201
     Output: created message directly in response.body
+    Expected behavior: Creates message in chat and returns populated message
   */
   test('sends a message in the chat', async () => {
     const res = await request(app).post(`/api/chats/${chatId}/messages`).send({
@@ -251,6 +289,12 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     messageId = String(res.body._id);
   });
 
+  /*
+    Inputs: path param chatId, body {} (missing content)
+    Expected status: 400
+    Output: error message 'Message content is required' in response.body.error
+    Expected behavior: Rejects request when content is missing
+  */
   test('returns 400 when content is missing', async () => {
     const res = await request(app).post(`/api/chats/${chatId}/messages`).send({});
     expect(res.status).toBe(400);
@@ -258,6 +302,12 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     expect(res.body.error).toBe('Message content is required');
   });
 
+  /*
+    Inputs: path param chatId, body { content: '   ' } (whitespace only)
+    Expected status: 400
+    Output: error message in response.body.error
+    Expected behavior: Rejects request when content is empty/whitespace
+  */
   test('returns 400 when content is empty', async () => {
     const res = await request(app).post(`/api/chats/${chatId}/messages`).send({
       content: '   '
@@ -266,6 +316,12 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param 'invalid-id', body { content: string }
+    Expected status: 400
+    Output: error message in response.body.error
+    Expected behavior: Rejects invalid chatId format
+  */
   test('returns 400 when chatId is invalid', async () => {
     const res = await request(app).post('/api/chats/invalid-id/messages').send({
       content: 'Test message'
@@ -274,6 +330,12 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId (valid ObjectId but non-existent chat), body { content: string }
+    Expected status: 404
+    Output: error message in response.body.error
+    Expected behavior: Returns 404 when chat doesn't exist or user not a participant
+  */
   test('returns 404 when chat does not exist', async () => {
     const fakeId = new mongoose.Types.ObjectId().toString();
     const res = await request(app).post(`/api/chats/${fakeId}/messages`).send({
@@ -283,6 +345,12 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId, body { content: string } (multiple messages)
+    Expected status: 201 for each message
+    Output: created messages
+    Expected behavior: Allows sending multiple messages sequentially
+  */
   test('sends multiple messages and verifies order', async () => {
     const messages = ['First message', 'Second message', 'Third message'];
     for (const msg of messages) {
@@ -301,9 +369,10 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
 
 describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
   /*
-    Inputs: path param chatId, optional query { limit, before }
+    Inputs: path param chatId (no query params)
     Expected status: 200
-    Output: object with messages array and metadata directly in response.body
+    Output: object with messages array, chatId, limit, count, hasMore in response.body
+    Expected behavior: Returns messages with default limit of 20
   */
   test('fetches messages for a chat', async () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}`);
@@ -317,6 +386,12 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
     expect(res.body.messages.length).toBeGreaterThan(0);
   });
 
+  /*
+    Inputs: path param chatId, query { limit: 2 }
+    Expected status: 200
+    Output: messages array with max 2 items, limit: 2 in response.body
+    Expected behavior: Limits number of messages returned
+  */
   test('respects limit parameter', async () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}?limit=2`);
     expect(res.status).toBe(200);
@@ -324,6 +399,12 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
     expect(res.body.limit).toBe(2);
   });
 
+  /*
+    Inputs: path param chatId, query { before: ISO timestamp }
+    Expected status: 200
+    Output: messages array (only messages before the timestamp)
+    Expected behavior: Returns paginated messages before specified timestamp
+  */
   test('handles before timestamp parameter', async () => {
     // Get all messages first
     const allRes = await request(app).get(`/api/chats/messages/${chatId}`);
@@ -344,12 +425,24 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
     }
   });
 
+  /*
+    Inputs: path param 'invalid-id' (not a valid ObjectId)
+    Expected status: 400
+    Output: error message in response.body.error
+    Expected behavior: Rejects invalid chatId format
+  */
   test('returns 400 when chatId is invalid', async () => {
     const res = await request(app).get('/api/chats/messages/invalid-id');
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId (valid ObjectId but non-existent or user not participant)
+    Expected status: 404
+    Output: error message in response.body.error
+    Expected behavior: Returns 404 when chat doesn't exist or access denied
+  */
   test('returns 404 when chat does not exist or user is not a participant', async () => {
     const fakeId = new mongoose.Types.ObjectId().toString();
     const res = await request(app).get(`/api/chats/messages/${fakeId}`);
@@ -357,18 +450,36 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId, query { before: 'invalid-date' }
+    Expected status: 400
+    Output: error message 'Invalid before timestamp format' in response.body.error
+    Expected behavior: Rejects invalid timestamp format
+  */
   test('returns 400 when before timestamp is invalid', async () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}?before=invalid-date`);
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');
   });
 
+  /*
+    Inputs: path param chatId, query { limit: 500 }
+    Expected status: 200
+    Output: messages array, limit: 200 (capped) in response.body
+    Expected behavior: Caps limit at maximum of 200 even if higher value provided
+  */
   test('caps limit at maximum of 200', async () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}?limit=500`);
     expect(res.status).toBe(200);
     expect(res.body.limit).toBe(200);
   });
 
+  /*
+    Inputs: path param chatId (no limit query param)
+    Expected status: 200
+    Output: messages array, limit: 20 (default) in response.body
+    Expected behavior: Uses default limit of 20 when not specified
+  */
   test('uses default limit of 20 when not specified', async () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}`);
     expect(res.status).toBe(200);
