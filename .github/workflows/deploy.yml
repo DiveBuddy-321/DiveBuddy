@@ -38,6 +38,8 @@ jobs:
             JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
             GOOGLE_CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}
             GEOCODING_API=${{ secrets.PROD_GEOCODING_API }}
+            USER_ID=${{ secrets.TEST_USER_1 }}
+            OTHER_USER_ID=${{ secrets.TEST_USER_2 }}
             EOF
 
             # give .env permissions
