@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Run tests on deployed server
@@ -16,7 +16,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ubuntu/divebuddy/backend
-            docker exec -w /app/backend cpen321_app sh -c "npm ci --include=dev && chmod +x run-tests-individually.sh && ./run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
+            docker exec -w /backend cpen321_app sh -c "npm ci --include=dev && chmod +x run-tests-individually.sh && ./run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
 
       - name: Notify test results
         if: failure()
