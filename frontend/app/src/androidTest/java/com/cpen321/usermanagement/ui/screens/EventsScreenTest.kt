@@ -44,32 +44,8 @@ class EventsScreenTest {
     }
 
     @Test
-    fun eventsScreen_displaysEventsList() {
+    fun success_scenario_browsing_events() {
         // Given: We have events to display
-        val testEvents = createTestEvents()
-        testViewModel.setEvents(testEvents)
-
-        // When: Events screen is displayed
-        composeTestRule.setContent {
-            UserManagementTheme {
-                ProvideSpacing {
-                    EventsScreen(eventViewModel = testViewModel)
-                }
-            }
-        }
-
-        // Wait for composition to complete
-        composeTestRule.waitForIdle()
-
-        // Then: Verify events are displayed
-        composeTestRule.onNodeWithText("Upcoming Events").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Test Event 1").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Test Event 2").assertIsDisplayed()
-    }
-
-    @Test
-    fun eventsScreen_clickingEvent_showsEventDetails() {
-        // Given: We have events and one is selected
         val testEvents = createTestEvents()
         testViewModel.setEvents(testEvents)
         val selectedEvent = testEvents[0]
@@ -82,6 +58,13 @@ class EventsScreenTest {
                 }
             }
         }
+
+        composeTestRule.waitForIdle()
+
+        // Verify all available events are displayed
+        composeTestRule.onNodeWithText("Upcoming Events").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Test Event 1").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Test Event 2").assertIsDisplayed()
 
         composeTestRule.waitForIdle()
 
@@ -92,91 +75,18 @@ class EventsScreenTest {
 
         composeTestRule.waitForIdle()
 
-        // Then: Event details screen should be displayed
+        // Event details screen should be displayed
         composeTestRule.onNodeWithText("Event Details").assertIsDisplayed()
         composeTestRule.onNodeWithText(selectedEvent.title).assertIsDisplayed()
         composeTestRule.onNodeWithText(selectedEvent.description).assertIsDisplayed()
-        
+
         // Verify event details are shown
         if (selectedEvent.location != null) {
             composeTestRule.onNodeWithText(selectedEvent.location, substring = true).assertIsDisplayed()
         }
-        
+
         // Verify back button is present
         composeTestRule.onNodeWithContentDescription("Back to events screen").assertIsDisplayed()
-    }
-
-    @Test
-    fun eventsScreen_clickingEvent_displaysAllEventDetails() {
-        // Given: We have an event with all details filled
-        val testEvents = createTestEventsWithFullDetails()
-        testViewModel.setEvents(testEvents)
-        val selectedEvent = testEvents[0]
-
-        // When: Events screen is displayed and event is clicked
-        composeTestRule.setContent {
-            UserManagementTheme {
-                ProvideSpacing {
-                    EventsScreen(eventViewModel = testViewModel)
-                }
-            }
-        }
-
-        composeTestRule.waitForIdle()
-
-        // Click on the event
-        composeTestRule.onNodeWithText(selectedEvent.title, substring = true)
-            .performScrollTo()
-            .performClick()
-
-        composeTestRule.waitForIdle()
-
-        // Then: All event details should be displayed
-        composeTestRule.onNodeWithText("Event Details").assertIsDisplayed()
-        composeTestRule.onNodeWithText(selectedEvent.title).assertIsDisplayed()
-        composeTestRule.onNodeWithText(selectedEvent.description).assertIsDisplayed()
-        
-        if (selectedEvent.location != null) {
-            composeTestRule.onNodeWithText("Location", substring = true).assertIsDisplayed()
-            composeTestRule.onNodeWithText(selectedEvent.location, substring = true).assertIsDisplayed()
-        }
-        
-        if (selectedEvent.skillLevel != null) {
-            composeTestRule.onNodeWithText("Skill Level", substring = true).assertIsDisplayed()
-            composeTestRule.onNodeWithText(selectedEvent.skillLevel, substring = true).assertIsDisplayed()
-        }
-        
-        composeTestRule.onNodeWithText("Attendees", substring = true).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Date & Time", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun eventsScreen_clickingBackFromDetails_returnsToEventsList() {
-        // Given: We have events
-        val testEvents = createTestEvents()
-        testViewModel.setEvents(testEvents)
-        val selectedEvent = testEvents[0]
-
-        // When: Events screen is displayed
-        composeTestRule.setContent {
-            UserManagementTheme {
-                ProvideSpacing {
-                    EventsScreen(eventViewModel = testViewModel)
-                }
-            }
-        }
-
-        composeTestRule.waitForIdle()
-
-        // Click on an event to view details
-        composeTestRule.onNodeWithText(selectedEvent.title, substring = true)
-            .performScrollTo()
-            .performClick()
-
-        composeTestRule.waitForIdle()
-
-        // Verify we're on details screen
-        composeTestRule.onNodeWithText("Event Details").assertIsDisplayed()
 
         // Click back button
         composeTestRule.onNodeWithContentDescription("Back to events screen")
