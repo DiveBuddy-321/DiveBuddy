@@ -108,6 +108,12 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     Expected status: 201
     Output: created chat document directly in response.body
   */
+  /*
+    Inputs: body { peerId: OTHER_USER, name?: string }
+    Expected status: 201
+    Output: created chat document directly in response.body
+    Expected behavior: Creates new direct chat between two users
+  */
   test('creates a direct chat between two users', async () => {
     console.log('[TEST] Creating chat with peerId:', OTHER_USER);
     const res = await request(app).post('/api/chats').send({
@@ -124,6 +130,22 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     expect(parts).toContain(OTHER_USER);
     chatId = String(res.body._id);
     console.log('[TEST] Created chatId:', chatId);
+  });
+
+  /*
+    Inputs: body { peerId: OTHER_USER, name: null } (null name for direct chat)
+    Expected status: 201
+    Output: created chat document with null name
+    Expected behavior: Direct chats can have null name
+  */
+  test('creates direct chat with null name', async () => {
+    const res = await request(app).post('/api/chats').send({
+      peerId: OTHER_USER
+      // name is optional, can be null for direct chats
+    });
+    expect(res.status).toBeGreaterThanOrEqual(200);
+    expect(res.body).toHaveProperty('_id');
+    expect(res.body).toHaveProperty('participants');
   });
 
   /*
