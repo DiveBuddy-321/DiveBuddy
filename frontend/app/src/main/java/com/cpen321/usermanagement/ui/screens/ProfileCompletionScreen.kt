@@ -67,14 +67,6 @@ import kotlinx.coroutines.delay
 import com.cpen321.usermanagement.common.Constants
 import com.google.android.libraries.places.api.Places
 
-private enum class DivingCondition(val label: String) {
-    POOL("Pool"),
-    OPEN_WATER("Open Water"),
-    NIGHT("Night"),
-    LOW_VIS("Low-Vis"),
-    DEEP("Deep"),
-    CURRENT("Current");
-}
 
 private data class ProfileCompletionFormState(
     val name: String = "",
@@ -137,7 +129,6 @@ private data class ProfileCompletionScreenData(
     val onCityQueryChange: (String) -> Unit = {},
     val onCitySelect: (String) -> Unit = {},
     val onExperienceSelect: (ExperienceLevel) -> Unit = {},
-    //val onConditionToggle: (DivingCondition) -> Unit = {},
     val onBioChange: (String) -> Unit,
     val onSkipClick: () -> Unit,
     val onSaveClick: () -> Unit
@@ -155,7 +146,6 @@ private data class ProfileCompletionScreenContentData(
     val onCityQueryChange: (String) -> Unit = {},
     val onCitySelect: (String) -> Unit = {},
     val onExperienceSelect: (ExperienceLevel) -> Unit = {},
-    //val onConditionToggle: (DivingCondition) -> Unit = {},
     val onBioChange: (String) -> Unit,
     val onSkipClick: () -> Unit,
     val onSaveClick: () -> Unit,
@@ -169,125 +159,170 @@ fun ProfileCompletionScreen(
     onProfileCompletedWithMessage: (String) -> Unit = { onProfileCompleted() }
 ) {
     val uiState by profileViewModel.uiState.collectAsState()
-    val snackBarHostState = remember { SnackbarHostState() }
-
-    // collect live city suggestions from the ViewModel
     val suggestions by profileViewModel.citySuggestions.collectAsState()
-
-// used to debounce typing
+    val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var cityJob by remember { mutableStateOf<Job?>(null) }
+    var formState by remember { mutableStateOf(ProfileCompletionFormState()) }
 
+    InitializePlacesClient(profileViewModel)
+    LoadProfileOnMount(profileViewModel, uiState)
+
+    ProfileCompletionContent(
+        data = createScreenContentData(
+            uiState = uiState,
+            formState = formState,
+            snackBarHostState = snackBarHostState,
+            suggestions = suggestions,
+            scope = scope,
+            cityJob = cityJob,
+            profileViewModel = profileViewModel,
+            successMessage = stringResource(R.string.successful_bio_update),
+            onFormStateChange = { formState = it },
+            onCityJobChange = { cityJob = it },
+            onProfileCompleted = onProfileCompleted,
+            onProfileCompletedWithMessage = onProfileCompletedWithMessage
+        )
+    )
+}
+
+@Composable
+private fun createScreenContentData(
+    uiState: ProfileUiState,
+    formState: ProfileCompletionFormState,
+    snackBarHostState: SnackbarHostState,
+    suggestions: List<com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel.CitySuggestion>,
+    scope: kotlinx.coroutines.CoroutineScope,
+    cityJob: Job?,
+    profileViewModel: ProfileViewModel,
+    successMessage: String,
+    onFormStateChange: (ProfileCompletionFormState) -> Unit,
+    onCityJobChange: (Job?) -> Unit,
+    onProfileCompleted: () -> Unit,
+    onProfileCompletedWithMessage: (String) -> Unit
+): ProfileCompletionScreenContentData = ProfileCompletionScreenContentData(
+    uiState = uiState,
+    formState = formState,
+    snackBarHostState = snackBarHostState,
+    citySuggestions = suggestions.map { it.label },
+    onNameChange = { onFormStateChange(formState.copy(name = it)) },
+    onAgeChange = { v -> 
+        if (v.length <= 3 && v.all(Char::isDigit)) {
+            onFormStateChange(formState.copy(ageText = v))
+        }
+    },
+    onExperienceSelect = { onFormStateChange(formState.copy(experience = it)) },
+    onBioChange = { onFormStateChange(formState.copy(bioText = it.take(Constants.MAX_BIO_LENGTH))) },
+    onCityQueryChange = { query ->
+        handleCityQueryChange(query, formState, cityJob, scope, profileViewModel, onFormStateChange, onCityJobChange)
+    },
+    onCitySelect = { label ->
+        val match = suggestions.firstOrNull { it.label == label }
+        onFormStateChange(formState.copy(selectedCity = label, selectedCityPlaceId = match?.placeId, cityQuery = ""))
+    },
+    onSkipClick = onProfileCompleted,
+    onSaveClick = {
+        handleSaveClick(formState, scope, snackBarHostState, profileViewModel, successMessage, onFormStateChange, onProfileCompletedWithMessage)
+    },
+    onErrorMessageShown = profileViewModel::clearError
+)
+
+@Composable
+private fun InitializePlacesClient(profileViewModel: ProfileViewModel) {
     val context = LocalContext.current
     val placesClient = remember { Places.createClient(context) }
-
+    
     LaunchedEffect(Unit) {
         profileViewModel.attachPlacesClient(placesClient)
     }
+}
 
-    val successfulBioUpdateMessage = stringResource(R.string.successful_bio_update)
-
-    // Form state
-    var formState by remember {
-        mutableStateOf(ProfileCompletionFormState())
-    }
-
-    // Side effects
+@Composable
+private fun LoadProfileOnMount(
+    profileViewModel: ProfileViewModel,
+    uiState: ProfileUiState
+) {
     LaunchedEffect(Unit) {
         if (uiState.user == null) {
             profileViewModel.loadProfile()
         }
     }
+}
 
-    ProfileCompletionContent(
-        data = ProfileCompletionScreenContentData(
-            uiState = uiState,
-            formState = formState,
-            snackBarHostState = snackBarHostState,
-
-            // NEW handlers so fields actually update state
-            onNameChange = { formState = formState.copy(name = it) },
-            onAgeChange  = { v -> if (v.length <= 3 && v.all(Char::isDigit)) formState = formState.copy(ageText = v) },
-            onExperienceSelect = { lvl -> formState = formState.copy(experience = lvl) },
-
-            // keep bio but clamp to 500 to match validation and submission
-            onBioChange = { formState = formState.copy(bioText = it.take(Constants.MAX_BIO_LENGTH)) },
-
-            // --- City autocomplete wiring ---
-            citySuggestions = suggestions.map { it.label },
-
-            onCityQueryChange = { q ->
-                formState = formState.copy(
-                    cityQuery = q,
-                    selectedCity = null,
-                    selectedCityPlaceId = null
-                )
-                cityJob?.cancel()
-                cityJob = scope.launch {
-                    delay(Constants.DEFAULT_DEBOUNCE_MS.toLong()) // debounce
-                    if (q.length >= 2) {
-                        profileViewModel.queryCities(q)
-                    } else {
-                        profileViewModel.queryCities("") // clears suggestions
-                    }
-                }
-            },
-            onCitySelect = { label ->
-                val match = suggestions.firstOrNull { it.label == label }
-                formState = formState.copy(
-                    selectedCity = label,
-                    selectedCityPlaceId = match?.placeId,
-                    cityQuery = "" // collapse the menu
-                )
-            },
-
-
-            onSkipClick = onProfileCompleted,
-            onSaveClick = {
-                // Local validation first (you already have canSave())
-                if (!formState.canSave()) {
-                    formState = formState.copy(showErrors = true)   // <-- show errors now
-                    scope.launch { snackBarHostState.showSnackbar("Please complete all required fields") }
-                    return@ProfileCompletionScreenContentData
-                }
-
-                val pid = formState.selectedCityPlaceId
-                if (pid == null) {
-                    formState = formState.copy(showErrors = true)   // <-- also ensure errors show
-                    scope.launch { snackBarHostState.showSnackbar("Please pick a city from suggestions") }
-                    return@ProfileCompletionScreenContentData
-                }
-
-                scope.launch {
-                    try {
-                        val resolved = profileViewModel.resolveCity(pid)
-
-                        val safeName = formState.name.trim()
-                        val safeBio = formState.bioText.take(Constants.MAX_BIO_LENGTH).trim()                 // backend max 500
-                        val safeAge = formState.ageOrNull                                 // nullable Int
-                        val skill = formState.experience?.label           // "beginner|intermediate|advanced"
-
-                        // Call the full-profile updater in your ViewModel
-                        profileViewModel.updateProfileFull(
-                            name = safeName,                                              // keep if your VM/repo accepts it
-                            bio = safeBio,
-                            age = safeAge,
-                            location = resolved.display,                                  // human-readable city
-                            latitude = resolved.lat,
-                            longitude = resolved.lng,
-                            skillLevel = skill
-                        ) {
-                            onProfileCompletedWithMessage(successfulBioUpdateMessage)
-                        }
-                    } catch (e: Exception) {
-                        snackBarHostState.showSnackbar("Couldn’t verify city. Please try again.")
-                    }
-                }
-            },
-            onErrorMessageShown = profileViewModel::clearError
+private fun handleCityQueryChange(
+    query: String,
+    formState: ProfileCompletionFormState,
+    cityJob: Job?,
+    scope: kotlinx.coroutines.CoroutineScope,
+    profileViewModel: ProfileViewModel,
+    onFormStateChange: (ProfileCompletionFormState) -> Unit,
+    onCityJobChange: (Job?) -> Unit
+) {
+    onFormStateChange(
+        formState.copy(
+            cityQuery = query,
+            selectedCity = null,
+            selectedCityPlaceId = null
         )
     )
+    
+    cityJob?.cancel()
+    val newJob = scope.launch {
+        delay(Constants.DEFAULT_DEBOUNCE_MS.toLong())
+        if (query.length >= 2) {
+            profileViewModel.queryCities(query)
+        } else {
+            profileViewModel.queryCities("")
+        }
+    }
+    onCityJobChange(newJob)
+}
 
+private fun handleSaveClick(
+    formState: ProfileCompletionFormState,
+    scope: kotlinx.coroutines.CoroutineScope,
+    snackBarHostState: SnackbarHostState,
+    profileViewModel: ProfileViewModel,
+    successMessage: String,
+    onFormStateChange: (ProfileCompletionFormState) -> Unit,
+    onProfileCompletedWithMessage: (String) -> Unit
+) {
+    if (!formState.canSave()) {
+        onFormStateChange(formState.copy(showErrors = true))
+        scope.launch { 
+            snackBarHostState.showSnackbar("Please complete all required fields") 
+        }
+        return
+    }
+
+    val placeId = formState.selectedCityPlaceId
+    if (placeId == null) {
+        onFormStateChange(formState.copy(showErrors = true))
+        scope.launch { 
+            snackBarHostState.showSnackbar("Please pick a city from suggestions") 
+        }
+        return
+    }
+
+    scope.launch {
+        try {
+            val resolved = profileViewModel.resolveCity(placeId)
+            
+            profileViewModel.updateProfileFull(
+                name = formState.name.trim(),
+                bio = formState.bioText.take(Constants.MAX_BIO_LENGTH).trim(),
+                age = formState.ageOrNull,
+                location = resolved.display,
+                latitude = resolved.lat,
+                longitude = resolved.lng,
+                skillLevel = formState.experience?.label
+            ) {
+                onProfileCompletedWithMessage(successMessage)
+            }
+        } catch (e: Exception) {
+            snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
+        }
+    }
 }
 
 @Composable
@@ -348,87 +383,79 @@ private fun ProfileCompletionBody(
         verticalArrangement = Arrangement.Top
     ) {
         ProfileCompletionHeader()
-
-        Spacer(modifier = Modifier.height(spacing.extraLarge2))
-
-        // --- Name ---
-        NameInputField(
-            name = data.formState.name,
-            isEnabled = !data.isSavingProfile,
-            error = data.formState.nameError,
-            onNameChange = data.onNameChange
-        )
-
-        Spacer(modifier = Modifier.height(spacing.extraLarge))
-
-        // --- Age ---
-        AgeInputField(
-            ageText = data.formState.ageText,
-            isEnabled = !data.isSavingProfile,
-            error = data.formState.ageError,
-            onAgeChange = data.onAgeChange
-        )
-
-        Spacer(modifier = Modifier.height(spacing.extraLarge))
-
-        // --- City (autocomplete suggestions list shown as a dropdown) ---
-        CityAutocompleteField(
-            state = CityAutocompleteState(
-                query = data.formState.cityQuery,
-                selectedCity = data.formState.selectedCity,
-                suggestions = data.citySuggestions,
-                isEnabled = !data.isSavingProfile,
-                error = data.formState.cityError
-            ),
-            callbacks = CityAutocompleteCallbacks(
-                onQueryChange = data.onCityQueryChange,
-                onSelect = data.onCitySelect,
-                onClearSelection = {
-                    // clear both selection and placeId, and clear the query
-                    data.onCityQueryChange("")
-                }
-            )
-        )
-
-        Spacer(modifier = Modifier.height(spacing.extraLarge))
-
-        // --- Experience Level ---
-        ExperienceDropdown(
-            selected = data.formState.experience,
-            isEnabled = !data.isSavingProfile,
-            error = data.formState.expError,
-            onSelect = data.onExperienceSelect
-        )
-
-        Spacer(modifier = Modifier.height(spacing.extraLarge))
-
-        // --- Preferred Diving Conditions ---
-//        PreferredConditionsField(
-//            selected = data.formState.conditions,
-//            isEnabled = !data.isSavingProfile,
-//            error = data.formState.conditionsError,
-//            onToggle = data.onConditionToggle
-//        )
-//
-//        Spacer(modifier = Modifier.height(spacing.extraLarge))
-
-        // --- Bio (<= 1000) ---
-        BioInputField(
-            bioText = data.formState.bioText,
-            isEnabled = !data.isSavingProfile,
-            onBioChange = data.onBioChange
-        )
-
-        Spacer(modifier = Modifier.height(spacing.extraLarge))
-
-        // --- Actions ---
-        ActionButtons(
-            isSavingProfile = data.isSavingProfile,
-            isSaveEnabled = true,
-            onSkipClick = data.onSkipClick,
-            onSaveClick = data.onSaveClick
-        )
+        HeaderSpacer()
+        ProfileForm(data)
     }
+}
+
+@Composable
+private fun HeaderSpacer() {
+    val spacing = LocalSpacing.current
+    Spacer(modifier = Modifier.height(spacing.extraLarge2))
+}
+
+@Composable
+private fun SectionSpacer() {
+    val spacing = LocalSpacing.current
+    Spacer(modifier = Modifier.height(spacing.extraLarge))
+}
+
+@Composable
+private fun ProfileForm(data: ProfileCompletionScreenData) {
+    
+    NameInputField(
+        name = data.formState.name,
+        isEnabled = !data.isSavingProfile,
+        error = data.formState.nameError,
+        onNameChange = data.onNameChange
+    )
+    SectionSpacer()
+    
+    AgeInputField(
+        ageText = data.formState.ageText,
+        isEnabled = !data.isSavingProfile,
+        error = data.formState.ageError,
+        onAgeChange = data.onAgeChange
+    )
+    SectionSpacer()
+    
+    CityAutocompleteField(
+        state = CityAutocompleteState(
+            query = data.formState.cityQuery,
+            selectedCity = data.formState.selectedCity,
+            suggestions = data.citySuggestions,
+            isEnabled = !data.isSavingProfile,
+            error = data.formState.cityError
+        ),
+        callbacks = CityAutocompleteCallbacks(
+            onQueryChange = data.onCityQueryChange,
+            onSelect = data.onCitySelect,
+            onClearSelection = { data.onCityQueryChange("") }
+        )
+    )
+    SectionSpacer()
+    
+    ExperienceDropdown(
+        selected = data.formState.experience,
+        isEnabled = !data.isSavingProfile,
+        error = data.formState.expError,
+        onSelect = data.onExperienceSelect
+    )
+    SectionSpacer()
+    
+    BioInputField(
+        bioText = data.formState.bioText,
+        isEnabled = !data.isSavingProfile,
+        onBioChange = data.onBioChange
+    )
+    SectionSpacer()
+
+    ActionButtons(
+        isSavingProfile = data.isSavingProfile,
+        isSaveEnabled = true,
+        onSkipClick = data.onSkipClick,
+        onSaveClick = data.onSaveClick
+    )
 }
 
 
@@ -562,7 +589,6 @@ private fun CityAutocompleteField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
-
     val textValue = if (state.selectedCity != null && state.query.isBlank()) {
         state.selectedCity
     } else {
@@ -579,58 +605,82 @@ private fun CityAutocompleteField(
             modifier = Modifier.fillMaxWidth()
         ) {
             CityTextField(
-                textValue = textValue,
+                uiState = CityTextFieldUiState(
+                    textValue = textValue,
+                    hasFocus = hasFocus,
+                    shouldShowMenu = shouldShowMenu,
+                    expanded = expanded
+                ),
                 state = state,
                 callbacks = callbacks,
-                hasFocus = hasFocus,
-                shouldShowMenu = shouldShowMenu,
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                onFocusChanged = { focused ->
-                    hasFocus = focused
-                    expanded = focused && state.query.isNotBlank() && state.suggestions.isNotEmpty()
-                }
+                textFieldCallbacks = CityTextFieldCallbacks(
+                    onExpandedChange = { expanded = it },
+                    onFocusChanged = { focused ->
+                        hasFocus = focused
+                        expanded = focused && state.query.isNotBlank() && state.suggestions.isNotEmpty()
+                    }
+                ),
+                modifier = Modifier.menuAnchor()
             )
-
-            CitySuggestionsMenu(
+            ExposedDropdownMenu(
                 expanded = expanded && shouldShowMenu,
-                suggestions = state.suggestions,
-                onDismiss = { expanded = false },
-                onSelect = { item ->
-                    callbacks.onSelect(item)
-                    expanded = false
+                onDismissRequest = { expanded = false }
+            ) {
+                state.suggestions.take(Constants.DEFAULT_PAGE_SIZE / 2).forEach { item ->
+                    DropdownMenuItem(
+                        text = { Text(item) },
+                        onClick = {
+                            callbacks.onSelect(item)
+                            expanded = false
+                        }
+                    )
                 }
-            )
+            }
         }
-
         if (state.error != null) {
-            Text(
-                text = state.error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
+            CityErrorText(state.error)
         }
     }
 }
 
+@Composable
+private fun CityErrorText(error: String?) {
+    if (error != null) {
+        Text(
+            text = error,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+private data class CityTextFieldUiState(
+    val textValue: String,
+    val hasFocus: Boolean,
+    val shouldShowMenu: Boolean,
+    val expanded: Boolean
+)
+
+private data class CityTextFieldCallbacks(
+    val onExpandedChange: (Boolean) -> Unit,
+    val onFocusChanged: (Boolean) -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CityTextField(
-    textValue: String,
+    uiState: CityTextFieldUiState,
     state: CityAutocompleteState,
     callbacks: CityAutocompleteCallbacks,
-    hasFocus: Boolean,
-    shouldShowMenu: Boolean,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    onFocusChanged: (Boolean) -> Unit
+    textFieldCallbacks: CityTextFieldCallbacks,
+    modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
-        value = textValue,
+        value = uiState.textValue,
         onValueChange = { newText ->
             if (state.selectedCity != null) callbacks.onClearSelection()
             callbacks.onQueryChange(newText)
-            onExpandedChange(true)
+            textFieldCallbacks.onExpandedChange(true)
         },
         label = { Text("City") },
         placeholder = { Text("Start typing…") },
@@ -644,18 +694,17 @@ private fun CityTextField(
         trailingIcon = {
             CityFieldTrailingIcon(
                 selectedCity = state.selectedCity,
-                shouldShowMenu = shouldShowMenu,
-                expanded = expanded,
-                hasFocus = hasFocus,
+                shouldShowMenu = uiState.shouldShowMenu,
+                expanded = uiState.expanded,
+                hasFocus = uiState.hasFocus,
                 query = state.query,
                 onClear = callbacks.onClearSelection,
-                onExpandedChange = onExpandedChange
+                onExpandedChange = textFieldCallbacks.onExpandedChange
             )
         },
-        modifier = Modifier
-            .menuAnchor()
+        modifier = modifier
             .fillMaxWidth()
-            .onFocusChanged { onFocusChanged(it.isFocused) }
+            .onFocusChanged { textFieldCallbacks.onFocusChanged(it.isFocused) }
     )
 }
 
@@ -680,27 +729,6 @@ private fun CityFieldTrailingIcon(
         shouldShowMenu -> ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
     }
 }
-
-@Composable
-private fun CitySuggestionsMenu(
-    expanded: Boolean,
-    suggestions: List<String>,
-    onDismiss: () -> Unit,
-    onSelect: (String) -> Unit
-) {
-    ExposedDropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss
-    ) {
-        suggestions.take(Constants.DEFAULT_PAGE_SIZE / 2).forEach { item ->
-            DropdownMenuItem(
-                text = { Text(item) },
-                onClick = { onSelect(item) }
-            )
-        }
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -736,38 +764,6 @@ private fun ExperienceDropdown(
             }
         }
         if (error != null) Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-@Composable
-private fun PreferredConditionsField(
-    selected: Set<DivingCondition>, // your enum or sealed class
-    isEnabled: Boolean,
-    error: String?,
-    onToggle: (DivingCondition) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val spacing = LocalSpacing.current
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text("Preferred Diving Conditions", style = MaterialTheme.typography.labelLarge)
-        Spacer(Modifier.height(spacing.small))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(spacing.small),
-            verticalArrangement = Arrangement.spacedBy(spacing.small)
-        ) {
-            DivingCondition.entries.forEach { cond ->
-                FilterChip(
-                    selected = cond in selected,
-                    onClick = { if (isEnabled) onToggle(cond) },
-                    label = { Text(cond.label) },
-                    enabled = isEnabled
-                )
-            }
-        }
-        if (error != null) {
-            Spacer(Modifier.height(spacing.small))
-            Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
     }
 }
 
