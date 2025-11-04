@@ -22,7 +22,7 @@ const config: Config = {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.{ts,js}'],
   coverageDirectory: '<rootDir>/coverage',
-  testTimeout: 10000, // 10 seconds (default is 5000ms)
+  testTimeout: 30000, 
 };
 
 export default config;

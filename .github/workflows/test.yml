@@ -1,0 +1,23 @@
+name: Run Tests on EC2
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run tests on deployed server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ubuntu/divebuddy/backend
+            docker exec -w /app/backend cpen321_app sh -c "npm ci --include=dev && chmod +x run-tests-individually.sh && ./run-tests-individually.sh" || { echo "Tests failed!"; exit 1; }
+
+      - name: Notify test results
+        if: failure()
+        run: echo "⚠️ Tests failed after deployment! Check the logs above."
