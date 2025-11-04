@@ -58,7 +58,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ubuntu/divebuddy
-            docker exec cpen321_app sh -c "cd /app/backend && npx jest --runInBand --coverage" || { echo "Tests failed!"; exit 1; }
+            docker exec cpen321_app sh -c "npm install --include=dev && npx jest --runInBand --coverage" || { echo "Tests failed!"; exit 1; }
 
       - name: Notify test results
         if: failure()

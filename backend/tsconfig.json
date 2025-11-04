@@ -4,9 +4,12 @@
     "module": "nodenext",
     "target": "es2022",
     "strict": true,
+    "isolatedModules": true,
     "esModuleInterop": true,
     "outDir": "./dist",
     "rootDir": "./src"
+    ,
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -59,6 +59,7 @@ export type GetProfileResponse = {
 };
 
 export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;
+export type CreateUserRequest = z.infer<typeof createUserSchema>;
 
 // Generic types
 // ------------------------------------------------------------
