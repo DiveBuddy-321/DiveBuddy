@@ -373,17 +373,21 @@ private fun ProfileCompletionBody(
 
         // --- City (autocomplete suggestions list shown as a dropdown) ---
         CityAutocompleteField(
-            query = data.formState.cityQuery,
-            selectedCity = data.formState.selectedCity,
-            suggestions = data.citySuggestions,
-            isEnabled = !data.isSavingProfile,
-            error = data.formState.cityError,
-            onQueryChange = data.onCityQueryChange,
-            onSelect = data.onCitySelect,
-            onClearSelection = {
-                // clear both selection and placeId, and clear the query
-                data.onCityQueryChange("")
-            }
+            state = CityAutocompleteState(
+                query = data.formState.cityQuery,
+                selectedCity = data.formState.selectedCity,
+                suggestions = data.citySuggestions,
+                isEnabled = !data.isSavingProfile,
+                error = data.formState.cityError
+            ),
+            callbacks = CityAutocompleteCallbacks(
+                onQueryChange = data.onCityQueryChange,
+                onSelect = data.onCitySelect,
+                onClearSelection = {
+                    // clear both selection and placeId, and clear the query
+                    data.onCityQueryChange("")
+                }
+            )
         )
 
         Spacer(modifier = Modifier.height(spacing.extraLarge))
@@ -535,86 +539,165 @@ private fun AgeInputField(
     )
 }
 
+private data class CityAutocompleteState(
+    val query: String,
+    val selectedCity: String?,
+    val suggestions: List<String>,
+    val isEnabled: Boolean,
+    val error: String?
+)
+
+private data class CityAutocompleteCallbacks(
+    val onQueryChange: (String) -> Unit,
+    val onSelect: (String) -> Unit,
+    val onClearSelection: () -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CityAutocompleteField(
-    query: String,
-    selectedCity: String?,
-    suggestions: List<String>,
-    isEnabled: Boolean,
-    error: String?,
-    onQueryChange: (String) -> Unit,
-    onSelect: (String) -> Unit,
-    onClearSelection: () -> Unit,
+    state: CityAutocompleteState,
+    callbacks: CityAutocompleteCallbacks,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
 
-    // show selected label when you have a selection and no in-progress query
-    val textValue = if (selectedCity != null && query.isBlank()) selectedCity else query
-
-    // only show menu while focused + there’s a query + we have suggestions
-    val shouldShowMenu = isEnabled && hasFocus && query.isNotBlank() && suggestions.isNotEmpty()
-
-    ExposedDropdownMenuBox(
-        expanded = expanded && shouldShowMenu,
-        onExpandedChange = { if (isEnabled) expanded = it && hasFocus },
-        modifier = modifier.fillMaxWidth()
-    ) {
-        OutlinedTextField(
-            value = textValue,
-            onValueChange = { newText ->
-                if (selectedCity != null) onClearSelection() // typing clears selection
-                onQueryChange(newText)
-                expanded = true
-            },
-            label = { Text("City") },
-            placeholder = { Text("Start typing…") },
-            singleLine = true,
-            isError = error != null,
-            enabled = isEnabled,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrectEnabled = false),
-            trailingIcon = {
-                when {
-                    selectedCity != null -> IconButton(onClick = {
-                        onClearSelection()
-                        expanded = hasFocus && query.isNotBlank()
-                    }) { Icon(Icons.Default.Close, contentDescription = "Clear city") }
-                    shouldShowMenu -> ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                }
-            },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-                .onFocusChanged {
-                    hasFocus = it.isFocused
-                    expanded = it.isFocused && query.isNotBlank() && suggestions.isNotEmpty()
-                }
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded && shouldShowMenu,
-            onDismissRequest = { expanded = false }
-        ) {
-            suggestions.take(Constants.DEFAULT_PAGE_SIZE / 2).forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(item) },
-                    onClick = {
-                        onSelect(item)      // parent sets selectedCity + placeId, clears query
-                        expanded = false
-                    }
-                )
-            }
-        }
+    val textValue = if (state.selectedCity != null && state.query.isBlank()) {
+        state.selectedCity
+    } else {
+        state.query
     }
 
-    if (error != null) {
-        Text(
-            text = error,
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodySmall
-        )
+    val shouldShowMenu = state.isEnabled && hasFocus && 
+        state.query.isNotBlank() && state.suggestions.isNotEmpty()
+
+    Column(modifier = modifier) {
+        ExposedDropdownMenuBox(
+            expanded = expanded && shouldShowMenu,
+            onExpandedChange = { if (state.isEnabled) expanded = it && hasFocus },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            CityTextField(
+                textValue = textValue,
+                state = state,
+                callbacks = callbacks,
+                hasFocus = hasFocus,
+                shouldShowMenu = shouldShowMenu,
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                onFocusChanged = { focused ->
+                    hasFocus = focused
+                    expanded = focused && state.query.isNotBlank() && state.suggestions.isNotEmpty()
+                }
+            )
+
+            CitySuggestionsMenu(
+                expanded = expanded && shouldShowMenu,
+                suggestions = state.suggestions,
+                onDismiss = { expanded = false },
+                onSelect = { item ->
+                    callbacks.onSelect(item)
+                    expanded = false
+                }
+            )
+        }
+
+        if (state.error != null) {
+            Text(
+                text = state.error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CityTextField(
+    textValue: String,
+    state: CityAutocompleteState,
+    callbacks: CityAutocompleteCallbacks,
+    hasFocus: Boolean,
+    shouldShowMenu: Boolean,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onFocusChanged: (Boolean) -> Unit
+) {
+    OutlinedTextField(
+        value = textValue,
+        onValueChange = { newText ->
+            if (state.selectedCity != null) callbacks.onClearSelection()
+            callbacks.onQueryChange(newText)
+            onExpandedChange(true)
+        },
+        label = { Text("City") },
+        placeholder = { Text("Start typing…") },
+        singleLine = true,
+        isError = state.error != null,
+        enabled = state.isEnabled,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Next, 
+            autoCorrectEnabled = false
+        ),
+        trailingIcon = {
+            CityFieldTrailingIcon(
+                selectedCity = state.selectedCity,
+                shouldShowMenu = shouldShowMenu,
+                expanded = expanded,
+                hasFocus = hasFocus,
+                query = state.query,
+                onClear = callbacks.onClearSelection,
+                onExpandedChange = onExpandedChange
+            )
+        },
+        modifier = Modifier
+            .menuAnchor()
+            .fillMaxWidth()
+            .onFocusChanged { onFocusChanged(it.isFocused) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CityFieldTrailingIcon(
+    selectedCity: String?,
+    shouldShowMenu: Boolean,
+    expanded: Boolean,
+    hasFocus: Boolean,
+    query: String,
+    onClear: () -> Unit,
+    onExpandedChange: (Boolean) -> Unit
+) {
+    when {
+        selectedCity != null -> IconButton(onClick = {
+            onClear()
+            onExpandedChange(hasFocus && query.isNotBlank())
+        }) {
+            Icon(Icons.Default.Close, contentDescription = "Clear city")
+        }
+        shouldShowMenu -> ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+    }
+}
+
+@Composable
+private fun CitySuggestionsMenu(
+    expanded: Boolean,
+    suggestions: List<String>,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    ExposedDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss
+    ) {
+        suggestions.take(Constants.DEFAULT_PAGE_SIZE / 2).forEach { item ->
+            DropdownMenuItem(
+                text = { Text(item) },
+                onClick = { onSelect(item) }
+            )
+        }
     }
 }
 
