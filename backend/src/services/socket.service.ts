@@ -79,9 +79,12 @@ export class SocketService {
     this.io.on("connection", (socket: AuthSocket) => {
 
       // Join user to their personal room for notifications
-      if (socket.user?._id) {
-        void socket.join(`user:${String(socket.user._id)}`);
-      }
+      Promise
+        .resolve(socket.join(`user:${String(socket.user?._id)}`))
+        .catch((err) => {
+          // your logger here
+          console.error("Failed to join user room:", err);
+        });
 
       // Join a chat room
       socket.on("join_room", (data: JoinRoomData) => this.handleJoinRoom(socket, data));

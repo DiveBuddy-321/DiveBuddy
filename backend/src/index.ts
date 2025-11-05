@@ -37,7 +37,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-void connectDB();
+connectDB().catch((error) => {
+  logger.error('❌ Failed to connect to MongoDB:', error);
+  process.exitCode = 1;
+});
 
 httpServer.listen(PORT, () => {
   logger.info(`Server running on port ${sanitizeInput(String(PORT as string))}`);

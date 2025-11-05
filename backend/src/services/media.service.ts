@@ -62,7 +62,11 @@ export class MediaService {
   static deleteAllUserImages(userId: string): void {
     try {
       // Try to read directory; if it doesn't exist, readdirSync will throw
-      const files = fs.readdirSync(path.resolve(IMAGES_DIR));
+      const dirPath = path.resolve(IMAGES_DIR);
+      if (!dirPath.startsWith(path.resolve(__dirname, '../uploads'))) {
+        throw new Error('Unsafe image directory path');
+      }
+      const files = fs.readdirSync(dirPath);
       const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
       userFiles.forEach((file) => {this.deleteImage(file);});
