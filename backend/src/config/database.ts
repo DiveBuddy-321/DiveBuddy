@@ -7,7 +7,7 @@ export const connectDB = async (): Promise<void> => {
 
     await mongoose.connect(uri);
 
-    console.log(`MongoDB connected successfully`);
+    logger.info(`MongoDB connected successfully`);
 
     mongoose.connection.on('error', error => {
       logger.error('MongoDB connection error:', error as Error);
