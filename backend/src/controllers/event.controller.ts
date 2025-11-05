@@ -128,7 +128,7 @@ export class EventController {
       existing.attendees.push(requester._id);
 
       const eventObject = existing.toObject() as IEvent & { __v?: number };
-      const { createdAt: _createdAt, updatedAt: _updatedAt, createdBy: _createdBy, _id, ...rest } = eventObject;
+      const { updatedAt: _updatedAt, createdBy: _createdBy, _id, ...rest } = eventObject;
 
       const updateBody = {
         ...rest,
