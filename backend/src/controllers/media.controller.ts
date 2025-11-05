@@ -6,7 +6,7 @@ import { UploadImageRequest, UploadImageResponse } from '../types/media.types';
 import { sanitizeInput } from '../utils/sanitizeInput.util';
 
 export class MediaController {
-  uploadImage(
+  async uploadImage(
     req: Request<unknown, unknown, UploadImageRequest>,
     res: Response<UploadImageResponse>,
     next: NextFunction
@@ -25,7 +25,7 @@ export class MediaController {
         });
       }
       const sanitizedFilePath = sanitizeInput(req.file.path as string);
-      const image = MediaService.saveImage(
+      const image = await MediaService.saveImage(
         sanitizedFilePath,
         user._id.toString()
       );

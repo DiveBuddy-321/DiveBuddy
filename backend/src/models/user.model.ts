@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, FilterQuery } from 'mongoose';
 import { z } from 'zod';
 
 import {
@@ -177,6 +177,19 @@ export class UserModel {
     } catch (error) {
       logger.error('Error fetching all users:', error);
       throw new Error('Failed to fetch users');
+    }
+  }
+
+  async findByQuery(query: FilterQuery<IUser>, limit?: number): Promise<IUser[]> {
+    try {
+      const cursor = this.user.find(query);
+      if (typeof limit === 'number' && limit > 0) {
+        cursor.limit(limit);
+      }
+      return await cursor.lean().exec();
+    } catch (error) {
+      logger.error('Error fetching users by query:', error);
+      throw new Error('Failed to fetch users by query');
     }
   }
 }
