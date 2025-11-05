@@ -321,13 +321,10 @@ private fun handleSaveClick(
             }
         } 
         catch (e: java.net.SocketTimeoutException) {
-            Log.e(TAG, "Network timeout while resolving city", e)
             snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
         } catch (e: java.net.UnknownHostException) {
-            Log.e(TAG, "Network connection failed while resolving city", e)
             snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
         } catch (e: java.io.IOException) {
-            Log.e(TAG, "IO error while resolving city", e)
             snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
         }
     }
