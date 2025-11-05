@@ -76,17 +76,42 @@ fun SingleChatScreen(
 		messagesByChat = uiState.messagesByChat,
 		onMessagesChanged = { newMessages -> messages.value = newMessages }
 	)
-	InfiniteScrollEffect(
-		listState = listState,
-		messages = messages.value,
-		isLoadingMore = { isLoadingMore.value },
-		onLoadingStateChange = { loading -> isLoadingMore.value = loading },
-		onLoadMore = { beforeTimestamp ->
-			chat._id?.let { id ->
-				chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
-			}
+	// Detect when user scrolls near the top to load more older messages
+	// With reverseLayout, index 0 is at bottom (newest), high indices are at top (oldest)
+	// Backend returns messages sorted newest first, so lastOrNull() gives us the oldest
+	LaunchedEffect(listState) {
+		snapshotFlow {
+			val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+			val total = listState.layoutInfo.totalItemsCount
+			Pair(lastVisible, total)
 		}
-	)
+			.distinctUntilChanged()
+			.collect { (lastVisibleIndex, totalItems) ->
+				if (lastVisibleIndex != null &&
+					totalItems > 0 &&
+					lastVisibleIndex >= totalItems - 3 &&
+					!isLoadingMore.value &&
+					messages.value.isNotEmpty()
+				) {
+					isLoadingMore.value = true
+					// Backend returns messages newest first, so last item is the oldest
+					val oldestMessage = messages.value.lastOrNull()
+					val beforeTimestamp = oldestMessage?.createdAt?.let {
+						SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+							timeZone = java.util.TimeZone.getTimeZone("UTC")
+						}.format(it)
+					}
+
+					chat._id?.let { id ->
+						chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
+					}
+
+					kotlinx.coroutines.delay(1000)
+					isLoadingMore.value = false
+				}
+			}
+	}
+
     Column(
         modifier = modifier.fillMaxSize()
     ) {
@@ -138,41 +163,6 @@ private fun MessagesCollector(
 ) {
 	LaunchedEffect(chatId, messagesByChat) {
 		onMessagesChanged(chatId?.let { messagesByChat[it] } ?: emptyList())
-	}
-}
-
-@Composable
-private fun InfiniteScrollEffect(
-	listState: androidx.compose.foundation.lazy.LazyListState,
-	messages: List<Message>,
-	isLoadingMore: () -> Boolean,
-	onLoadingStateChange: (Boolean) -> Unit,
-	onLoadMore: (beforeTimestamp: String?) -> Unit
-) {
-	LaunchedEffect(listState, messages, isLoadingMore) {
-		snapshotFlow {
-			val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-			val total = listState.layoutInfo.totalItemsCount
-			Pair(lastVisible, total)
-		}
-			.distinctUntilChanged()
-			.collect { (lastVisibleIndex, totalItems) ->
-				val hasItems = totalItems > 0
-				val isNearTop = lastVisibleIndex?.let { it >= totalItems - 3 } == true
-				val canLoadMore = !isLoadingMore() && messages.isNotEmpty()
-				if (hasItems && isNearTop && canLoadMore) {
-					onLoadingStateChange(true)
-					val oldestMessage = messages.lastOrNull()
-					val beforeTimestamp = oldestMessage?.createdAt?.let {
-						SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-							timeZone = java.util.TimeZone.getTimeZone("UTC")
-						}.format(it)
-					}
-					onLoadMore(beforeTimestamp)
-					kotlinx.coroutines.delay(1000)
-					onLoadingStateChange(false)
-				}
-			}
 	}
 }
 
