@@ -107,7 +107,7 @@ export class SocketService {
       }
 
       // Verify user is a participant in this chat
-      const chat = await Chat.getForUser(chatId, socket.user?._id as mongoose.Types.ObjectId);
+      const chat = await Chat.getForUser(chatId, socket.user?._id! as mongoose.Types.ObjectId);
       
       if (!chat) {
         socket.emit("error", { message: "Chat not found or access denied" });
@@ -152,7 +152,7 @@ export class SocketService {
 
       //fix not implemented as the suggested fix will result in a forbidden not null assertion. 
       // Also, we specifically need it to return mongoose.Types.ObjectId based on what is returned from the database.
-      const userId = socket.user?._id as mongoose.Types.ObjectId; 
+      const userId = socket.user?._id! as mongoose.Types.ObjectId; 
       
       const chat = await Chat.getForUser(chatId, userId);
       
