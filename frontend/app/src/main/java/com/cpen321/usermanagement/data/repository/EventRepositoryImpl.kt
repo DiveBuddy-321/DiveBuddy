@@ -82,9 +82,6 @@ class EventRepositoryImpl @Inject constructor(
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while updating event", e)
             Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error while updating event", e)
-            Result.failure(e)
         }
     }
 
@@ -107,9 +104,6 @@ class EventRepositoryImpl @Inject constructor(
             Result.failure(e)
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while joining event", e)
-            Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error while joining event", e)
             Result.failure(e)
         }
     }
@@ -134,10 +128,7 @@ class EventRepositoryImpl @Inject constructor(
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while leaving event", e)
             Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error while leaving event", e)
-            Result.failure(e)
-        }
+        } 
     }
 
     override suspend fun deleteEvent(eventId: String): Result<Unit> {
@@ -160,9 +151,6 @@ class EventRepositoryImpl @Inject constructor(
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while deleting event", e)
             Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error while deleting event", e)
-            Result.failure(e)
-        }
+        } 
     }
 }

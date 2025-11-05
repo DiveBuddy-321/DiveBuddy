@@ -294,10 +294,6 @@ class EventViewModel @Inject constructor(
         )
     }
 
-    fun refreshCurrentUser() {
-        loadCurrentUser()
-    }
-
     fun deleteEvent(eventId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -349,4 +345,4 @@ class EventViewModel @Inject constructor(
         val currentUser = _uiState.value.currentUser
         return currentUser != null && event.createdBy == currentUser._id
     }
-}
+} 

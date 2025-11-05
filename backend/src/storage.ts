@@ -2,12 +2,13 @@ import { Express, Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
+import crypto from 'crypto';
 
 import { IMAGES_DIR } from './constants/statics';
 
 // Ensure images directory exists (IMAGES_DIR is a constant from statics)
 try {
-  fs.mkdirSync(path.resolve(IMAGES_DIR), { recursive: true });
+  fs.mkdirSync('uploads/images', { recursive: true });
 } catch (error) {
   // Directory already exists or cannot be created
   console.error('Failed to create images directory:', error);
@@ -18,9 +19,10 @@ const storage = multer.diskStorage({
     cb(null, IMAGES_DIR);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    if (!path.extname(file.originalname)) {
-      cb(new Error('Invalid file extension'), "");
+    const uniqueSuffix = Date.now() + '-' + Math.round(crypto.randomBytes(8).readUInt32LE(0));
+    const stringName = String(file.originalname);
+    if (!path.extname(stringName)) {
+      cb(new Error('Invalid file extension'), '');
       return;
     }
     cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
@@ -45,4 +47,4 @@ export const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024,
   },
-});
+}); 

@@ -64,4 +64,4 @@ export const authenticateToken: RequestHandler = async (
 
     next(error);
   }
-};
+}; 

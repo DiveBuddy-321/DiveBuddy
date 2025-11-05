@@ -51,6 +51,7 @@ import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.cpen321.usermanagement.data.repository.ProfileUpdateParams
 
 // State holder moved to its own file to keep this file lean
 import com.cpen321.usermanagement.ui.screens.ProfileFormState
@@ -518,14 +519,16 @@ private fun buildManageProfileActions(
                     val safeBio  = formState.bioText.trim()
                     val safeAge  = formState.ageOrNull
                     val skill    = formState.experience?.label
-                    profileViewModel.updateProfileFull(
-                        name = safeName,
-                        bio = safeBio.ifEmpty { null },
-                        age = safeAge,
-                        location  = resolved?.display,
-                        latitude  = resolved?.lat,
-                        longitude = resolved?.lng,
-                        skillLevel = skill
+                    profileViewModel.updateProfile(
+                        ProfileUpdateParams(
+                            name = safeName,
+                            bio = safeBio.ifEmpty { null },
+                            age = safeAge,
+                            location  = resolved?.display,
+                            latitude  = resolved?.lat,
+                            longitude = resolved?.lng,
+                            skillLevel = skill
+                        )
                     )
                 } catch (_: Exception) { }
             }

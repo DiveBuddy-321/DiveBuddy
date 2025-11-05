@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 
-import { connectDB } from './config/database';
+import { connectDB, disconnectDB } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware';
 import router from './routes';
 import { SocketService } from './services/socket.service';
@@ -19,7 +19,7 @@ const httpServer = createServer(app);
 // Initialize Socket.IO with CORS configuration
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: process.env.CORS_ORIGIN ?? "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -37,7 +37,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-void connectDB();
+connectDB().catch((error: unknown) => {
+  logger.error('❌ Failed to connect to MongoDB:', error as Error);
+  process.exitCode = 1;
+});
 
 httpServer.listen(PORT, () => {
   logger.info(`Server running on port ${sanitizeInput(String(PORT as string))}`);
@@ -45,4 +48,14 @@ httpServer.listen(PORT, () => {
 });
 
 // Make socket service available globally (optional, for use in controllers)
-export { socketService };
+export { socketService }; 
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  void Promise.allSettled([
+    new Promise<void>((resolve) => httpServer.close(() => resolve())),
+    disconnectDB(),
+  ]).finally(() => {
+    process.exitCode = 0;
+  });
+});
