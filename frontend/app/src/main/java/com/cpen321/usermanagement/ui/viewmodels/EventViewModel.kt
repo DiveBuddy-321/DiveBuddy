@@ -94,8 +94,12 @@ class EventViewModel @Inject constructor(
             try {
                 val user = authRepository.getCurrentUser()
                 _uiState.value = _uiState.value.copy(currentUser = user)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load current user", e)
+            } catch (e: java.net.SocketTimeoutException) {
+                Log.e(TAG, "Network timeout while loading current user", e)
+            } catch (e: java.net.UnknownHostException) {
+                Log.e(TAG, "Network connection failed while loading current user", e)
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "IO error while loading current user", e)
             }
         }
     }

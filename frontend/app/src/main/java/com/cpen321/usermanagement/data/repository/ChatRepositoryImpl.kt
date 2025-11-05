@@ -22,10 +22,16 @@ class ChatRepositoryImpl @Inject constructor(
                 Log.e(TAG, "Failed to list chats: ${'$'}err")
                 Result.failure(IllegalStateException("Failed to list chats"))
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error listing chats", e)
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while listing chats", e)
             Result.failure(e)
-        }
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while listing chats", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while listing chats", e)
+            Result.failure(e)
+        } 
     }
 
     override suspend fun getMessages(chatId: String, limit: Int?, before: String?): Result<MessagesResponse> {

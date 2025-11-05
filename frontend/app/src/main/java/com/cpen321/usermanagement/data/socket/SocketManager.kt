@@ -34,7 +34,6 @@ data class SocketErrorEvent(
 
 @Singleton
 class SocketManager @Inject constructor() {
-    
     private var socket: Socket? = null
     // We parse JSON manually to avoid Date adapter issues across threads/instances
     private val roomsToJoin: MutableSet<String> = mutableSetOf()
@@ -58,13 +57,11 @@ class SocketManager @Inject constructor() {
     companion object {
         private const val TAG = "SocketManager"
     }
-    
     fun connect(token: String) {
         if (socket?.connected() == true) {
             Log.d(TAG, "Socket already connected")
             return
         }
-        
         try {
             // Remove /api suffix if present - Socket.IO connects to root, not /api
             var serverUrl = BuildConfig.API_BASE_URL
@@ -75,7 +72,6 @@ class SocketManager @Inject constructor() {
                 serverUrl = serverUrl.removeSuffix("/api/")
             }
             Log.d(TAG, "Connecting to WebSocket at $serverUrl")
-            
             val options = IO.Options().apply {
                 auth = mapOf("token" to token)
                 transports = arrayOf("websocket", "polling")
@@ -83,16 +79,18 @@ class SocketManager @Inject constructor() {
                 reconnectionDelay = 1000
                 reconnectionAttempts = 5
             }
-            
             socket = IO.socket(serverUrl, options)
-            
             setupEventListeners()
             socket?.connect()
-            
+        
         } catch (e: URISyntaxException) {
             Log.e(TAG, "Invalid server URL", e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error connecting to socket", e)
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while connecting to socket", e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while connecting to socket", e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while connecting to socket", e)
         }
     }
     

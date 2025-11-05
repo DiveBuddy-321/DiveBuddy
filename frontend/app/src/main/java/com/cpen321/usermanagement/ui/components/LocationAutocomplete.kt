@@ -115,8 +115,14 @@ private fun PredictionsFetcher(
                 }
                 Log.d("LocationSearchDialog", "Predictions: $results")
                 onPredictionsChange(results)
-            } catch (e: Exception) {
-                Log.e("LocationSearchDialog", "Error finding predictions: ${e.message}")
+            } catch (e: java.net.SocketTimeoutException) {
+                Log.e("LocationSearchDialog", "Network timeout while finding predictions", e)
+                onPredictionsChange(emptyList())
+            } catch (e: java.net.UnknownHostException) {
+                Log.e("LocationSearchDialog", "Network connection failed while finding predictions", e)
+                onPredictionsChange(emptyList())
+            } catch (e: java.io.IOException) {
+                Log.e("LocationSearchDialog", "IO error while finding predictions", e)
                 onPredictionsChange(emptyList())
             } finally {
                 onLoadingChange(false)
