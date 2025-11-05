@@ -7,7 +7,6 @@ import {
   authenticateUserSchema,
 } from '../types/auth.types';
 import logger from '../utils/logger.util';
-import {z} from 'zod';
 
 export class AuthController {
   async signUp(
