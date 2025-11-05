@@ -66,6 +66,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import com.cpen321.usermanagement.common.Constants
 import com.google.android.libraries.places.api.Places
+import com.cpen321.usermanagement.data.repository.ProfileUpdateParams
 
 
 private data class ProfileCompletionFormState(
@@ -170,61 +171,68 @@ fun ProfileCompletionScreen(
 
     ProfileCompletionContent(
         data = createScreenContentData(
-            uiState = uiState,
-            formState = formState,
-            snackBarHostState = snackBarHostState,
-            suggestions = suggestions,
-            scope = scope,
-            cityJob = cityJob,
-            profileViewModel = profileViewModel,
-            successMessage = stringResource(R.string.successful_bio_update),
-            onFormStateChange = { formState = it },
-            onCityJobChange = { cityJob = it },
-            onProfileCompleted = onProfileCompleted,
-            onProfileCompletedWithMessage = onProfileCompletedWithMessage
+            CreateScreenContentArgs(
+                uiState = uiState,
+                formState = formState,
+                snackBarHostState = snackBarHostState,
+                suggestions = suggestions,
+                scope = scope,
+                cityJob = cityJob,
+                profileViewModel = profileViewModel,
+                successMessage = stringResource(R.string.successful_bio_update),
+                onFormStateChange = { formState = it },
+                onCityJobChange = { cityJob = it },
+                onProfileCompleted = onProfileCompleted,
+                onProfileCompletedWithMessage = onProfileCompletedWithMessage
+            )
         )
     )
 }
 
+private data class CreateScreenContentArgs(
+    val uiState: ProfileUiState,
+    val formState: ProfileCompletionFormState,
+    val snackBarHostState: SnackbarHostState,
+    val suggestions: List<com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel.CitySuggestion>,
+    val scope: kotlinx.coroutines.CoroutineScope,
+    val cityJob: Job?,
+    val profileViewModel: ProfileViewModel,
+    val successMessage: String,
+    val onFormStateChange: (ProfileCompletionFormState) -> Unit,
+    val onCityJobChange: (Job?) -> Unit,
+    val onProfileCompleted: () -> Unit,
+    val onProfileCompletedWithMessage: (String) -> Unit
+)
+
 @Composable
 private fun createScreenContentData(
-    uiState: ProfileUiState,
-    formState: ProfileCompletionFormState,
-    snackBarHostState: SnackbarHostState,
-    suggestions: List<com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel.CitySuggestion>,
-    scope: kotlinx.coroutines.CoroutineScope,
-    cityJob: Job?,
-    profileViewModel: ProfileViewModel,
-    successMessage: String,
-    onFormStateChange: (ProfileCompletionFormState) -> Unit,
-    onCityJobChange: (Job?) -> Unit,
-    onProfileCompleted: () -> Unit,
-    onProfileCompletedWithMessage: (String) -> Unit
+    args: CreateScreenContentArgs
 ): ProfileCompletionScreenContentData = ProfileCompletionScreenContentData(
-    uiState = uiState,
-    formState = formState,
-    snackBarHostState = snackBarHostState,
-    citySuggestions = suggestions.map { it.label },
-    onNameChange = { onFormStateChange(formState.copy(name = it)) },
+    uiState = args.uiState,
+    formState = args.formState,
+    snackBarHostState = args.snackBarHostState,
+    citySuggestions = args.suggestions.map { it.label },
+    onNameChange = { args.onFormStateChange(args.formState.copy(name = it)) },
     onAgeChange = { v -> 
         if (v.length <= 3 && v.all(Char::isDigit)) {
-            onFormStateChange(formState.copy(ageText = v))
+            args.onFormStateChange(args.formState.copy(ageText = v))
         }
     },
-    onExperienceSelect = { onFormStateChange(formState.copy(experience = it)) },
-    onBioChange = { onFormStateChange(formState.copy(bioText = it.take(Constants.MAX_BIO_LENGTH))) },
+    onExperienceSelect = { args.onFormStateChange(args.formState.copy(experience = it)) },
+    onBioChange = { args.onFormStateChange(args.formState.copy(bioText = it.take(Constants.MAX_BIO_LENGTH))) },
     onCityQueryChange = { query ->
-        handleCityQueryChange(query, formState, cityJob, scope, profileViewModel, onFormStateChange, onCityJobChange)
+        handleCityQueryChange(query, args.formState, args.cityJob, args.scope, args.profileViewModel, args.onFormStateChange, args.onCityJobChange)
     },
     onCitySelect = { label ->
-        val match = suggestions.firstOrNull { it.label == label }
-        onFormStateChange(formState.copy(selectedCity = label, selectedCityPlaceId = match?.placeId, cityQuery = ""))
+        val match = args.suggestions.firstOrNull { it.label == label }
+        args.onFormStateChange(args.formState.copy(selectedCity = label, selectedCityPlaceId = match?.placeId, cityQuery = ""))
     },
-    onSkipClick = onProfileCompleted,
+    onSkipClick = args.onProfileCompleted,
     onSaveClick = {
-        handleSaveClick(formState, scope, snackBarHostState, profileViewModel, successMessage, onFormStateChange, onProfileCompletedWithMessage)
+        handleSaveClick(args.formState, args.scope, args.snackBarHostState, args.profileViewModel, args.successMessage, 
+        args.onFormStateChange, args.onProfileCompletedWithMessage)
     },
-    onErrorMessageShown = profileViewModel::clearError
+    onErrorMessageShown = args.profileViewModel::clearError
 )
 
 @Composable
@@ -308,14 +316,16 @@ private fun handleSaveClick(
         try {
             val resolved = profileViewModel.resolveCity(placeId)
             
-            profileViewModel.updateProfileFull(
-                name = formState.name.trim(),
-                bio = formState.bioText.take(Constants.MAX_BIO_LENGTH).trim(),
-                age = formState.ageOrNull,
-                location = resolved.display,
-                latitude = resolved.lat,
-                longitude = resolved.lng,
-                skillLevel = formState.experience?.label
+            profileViewModel.updateProfile(
+                ProfileUpdateParams(
+                    name = formState.name.trim(),
+                    bio = formState.bioText.take(Constants.MAX_BIO_LENGTH).trim(),
+                    age = formState.ageOrNull,
+                    location = resolved.display,
+                    latitude = resolved.lat,
+                    longitude = resolved.lng,
+                    skillLevel = formState.experience?.label
+                )
             ) {
                 onProfileCompletedWithMessage(successMessage)
             }
