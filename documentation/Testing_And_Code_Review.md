@@ -50,28 +50,72 @@
 
    - Open your terminal and run:
      ```
-     git clone https://github.com/example/your-project.git
+     https://github.com/DiveBuddy-321/DiveBuddy.git
      ```
 
-2. **...**
+2. **Enter the Backend Directory**:
+
+   - Navigate to the backend directory:
+     ```
+     cd DiveBuddy/backend
+     ```
+
+3. **Install Dependencies**:
+    - Install the required packages using npm:
+      ```
+      npm install
+      ```
+
+4. **Enter the Test Directory**:
+    - Navigate to the tests directory:
+      ```
+      cd tests
+      ```
+
+5. **Run the Tests**:
+    - To run the tests without mocking, execute:
+      ```
+      npx jest /unmocked --runInBand --coverage
+      ```
+    - To run the tests with mocking, execute:
+      ```
+      npx jest /mocked --runInBand --coverage
+      ``` 
+    - To execute non-functional requirement tests, run:
+      ```
+      npx jest /nfr --runInBand --coverage
+      ```
+    - To run all tests, execute:
+      ```
+      npx jest --runInBand --coverage
+      ```
+    - To run a specific test file, (for example nfr1.test.ts), execute:
+      ```
+      npx jest nfr1 --runInBand --coverage
+      ```
+
+
 
 ### 2.2. GitHub Actions Configuration Location
 
-`~/.github/workflows/backend-tests.yml`
+`~/.github/workflows/test.yml`
 
 ### 2.3. Jest Coverage Report Screenshots for Tests Without Mocking
 
-_(Placeholder for Jest coverage screenshot without mocking)_
+![Unmocked Coverage](../documentation/images/unmocked_coverage.png)
 
 ### 2.4. Jest Coverage Report Screenshots for Tests With Mocking
 
-_(Placeholder for Jest coverage screenshot with mocking)_
+![Mocked Coverage](../documentation/images/mocked_coverage.png)
 
 ### 2.5. Jest Coverage Report Screenshots for Both Tests With and Without Mocking
 
-_(Placeholder for Jest coverage screenshot both with and without mocking)_
+![Total Coverage](../documentation/images/total_coverage.png)
 
----
+Total coverage is only around 85% because some files such as index.ts, routes.ts, storage.ts and database.ts are involved with setting up the server and routing, and are not directly tested by any test suites.
+Furthermore, the authentication middleware in authMiddleware.ts is not directly tested, because many of the functions need a valid Google OAuth token to work, which is difficult to simulate in tests. The authentication middleware is mainly mocked throughout the tests, and as a result, the coverage for that file is low. In the models and controller files, some lines are not directly reached in the tests because 
+they are error handling code for edge cases that are often caught in other parts of the code. All test cases testing each endpoint focus on all success and failures scenarios, but some specific error handling code is not directly reached because of being caught in other areas of the code. The other files that have low coverage are utility files that contain helper functions that are not directly used when calling the 
+exposed backend APIs, so their coverage is low as well.
 
 ## 3. Back-end Test Specification: Tests of Non-Functional Requirements
 
@@ -79,26 +123,29 @@ _(Placeholder for Jest coverage screenshot both with and without mocking)_
 
 | **Non-Functional Requirement**  | **Location in Git**                              |
 | ------------------------------- | ------------------------------------------------ |
-| **Performance (Response Time)** | [`tests/nonfunctional/response_time.test.js`](#) |
-| **Chat Data Security**          | [`tests/nonfunctional/chat_security.test.js`](#) |
+| **Buddy Matching Response Times** | [`tests/nfr/nfr1.test.js`]|
+| **Auth/Chat/User/ChatAPI Response Times**          | [`tests/nfr/nfr2.test.js`] |
 
 ### 3.2. Test Verification and Logs
 
-- **Performance (Response Time)**
+- **Buddy Matching Response Times**
 
-  - **Verification:** This test suite simulates multiple concurrent API calls using Jest along with a load-testing utility to mimic real-world user behavior. The focus is on key endpoints such as user login and study group search to ensure that each call completes within the target response time of 2 seconds under normal load. The test logs capture metrics such as average response time, maximum response time, and error rates. These logs are then analyzed to identify any performance bottlenecks, ensuring the system can handle expected traffic without degradation in user experience.
+  - **Verification:** This test suite populates the test database with 10000 simulated users and then calls the buddy matching API endpoint to ensure that the response time is within 1s, as our non-functional requirement specifies.
   - **Log Output**
-    ```
-    [Placeholder for response time test logs]
-    ```
 
-- **Chat Data Security**
-  - **Verification:** ...
+    ![NFR1 log](../documentation/images/nfr1_log.png)
+
+- **Auth/Chat/User/ChatAPI Response Times**
+  - **Verification:** This test suite tests every API endpoint related to authentication, chat, user management, and event management to ensure that each endpoint responds within 500ms, as specified in our non-functional requirements.
   - **Log Output**
-    ```
-    [Placeholder for chat security test logs]
-    ```
 
+    ![NFR2 auth log](../documentation/images/nfr2_auth.png)
+
+    ![NFR2 chats log](../documentation/images/nfr2_chats.png)
+
+    ![NFR2 events log](../documentation/images/nfr2_events.png)
+
+    ![NFR2 users log](../documentation/images/nfr2_users.png)
 ---
 
 ## 4. Front-end Test Specification

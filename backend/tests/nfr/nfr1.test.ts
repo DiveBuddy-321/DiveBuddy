@@ -125,6 +125,7 @@ describe('NFR1 - Buddy matching performance with 10,000 users', () => {
     
     // NFR1: Must complete within 1 second (1000ms)
     expect(duration).toBeLessThan(1000);
+    console.log('Buddy matching took ' + duration.toFixed(2) + 'ms');
 
     // Cleanup: Delete all test users
     console.log('Cleaning up test data...');

@@ -130,11 +130,12 @@ describe('GET /api/events - unmocked (requires running server)', () => {
 	test('returns list of events (200) when server is available, within 500ms', async () => {
 		
 		// make sure GET endpoint works
-        const startTime = performance.now();
+    const startTime = performance.now();
 		const res = await request(app).get('/api/events');
-        const endTime = performance.now();
+    const endTime = performance.now();
 
-        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('GET /api/events took ' + (endTime - startTime).toFixed(2) + 'ms');
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -164,11 +165,12 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 		const createdId = created._id;
 		
 		// now fetch the event by ID through the API
-        const startTime = performance.now();
+    const startTime = performance.now();
 		const res = await request(app).get(`/api/events/${createdId.toString()}`);
-        const endTime = performance.now();
+    const endTime = performance.now();
 
-        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('GET /api/events/:eventId took ' + (endTime - startTime).toFixed(2) + 'ms');
 
 		// verify response
 		expect(res.status).toBe(200);
@@ -211,11 +213,12 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		};
 
 		// make sure POST endpoint works
-        const startTime = performance.now();
+    const startTime = performance.now();
 		const res = (await request(app).post('/api/events').send(newEvent));
 		const endTime = performance.now();
 
 		expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('POST /api/events took ' + (endTime - startTime).toFixed(2) + 'ms');
 		expect(res.status).toBe(201);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -268,6 +271,7 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 		const endTime = performance.now();
 
 		expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+		console.log('PUT /api/events/join/:eventId took ' + (endTime - startTime).toFixed(2) + 'ms');
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -304,11 +308,12 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 		const createdId = created._id;
 
 		// make sure PUT leave endpoint works
-        const startTime = performance.now();
+    const startTime = performance.now();
 		const res = await request(app).put(`/api/events/leave/${createdId.toString()}`);
 		const endTime = performance.now();
 
 		expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('PUT /api/events/leave/:eventId took ' + (endTime - startTime).toFixed(2) + 'ms');
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -358,10 +363,11 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 		};
 
 		// make sure PUT endpoint works
-        const startTime = performance.now();
+    const startTime = performance.now();
 		const res = await request(app).put(`/api/events/${createdId.toString()}`).send(updatedEvent);
-        const endTime = performance.now();
-        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    const endTime = performance.now();
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('PUT /api/events/:eventId took ' + (endTime - startTime).toFixed(2) + 'ms');
 
 		expect(res.body).toHaveProperty('message');
 		expect(res.body).toHaveProperty('data');
@@ -410,12 +416,12 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		const createdId = created._id;
 
 		// delete the event through the API (server must point to same DB when running)
-        const startTime = performance.now();
+    const startTime = performance.now();
 		const delRes = await request(app)
 			.delete(`/api/events/${createdId.toString()}`);
-        const endTime = performance.now();
-        
-        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    const endTime = performance.now();
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('DELETE /api/events/:eventId took ' + (endTime - startTime).toFixed(2) + 'ms');
 
 		expect(delRes.status).toBe(200);
 
@@ -463,6 +469,7 @@ describe('POST /api/auth/signup - unmocked (covers auth.service.ts)', () => {
     const endTime = performance.now();
 
     expect(endTime - startTime).toBeLessThan(500);
+    console.log('POST /api/auth/signup took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty('message');
     expect(res.body.message).toBe('User signed up successfully');
@@ -532,6 +539,7 @@ describe('POST /api/auth/signin - unmocked (covers auth.service.ts)', () => {
     const endTime = performance.now();
     
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('POST /api/auth/signin took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body.message).toBe('User signed in successfully');
@@ -559,6 +567,7 @@ describe('GET /api/users - unmocked (requires running server)', () => {
         const endTime = performance.now();
         
         expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+        console.log('GET /api/users took ' + (endTime - startTime).toFixed(2) + 'ms');
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('data');
@@ -575,6 +584,7 @@ describe('GET /api/users/profile - unmocked (requires running server)', () => {
         const endTime = performance.now();
 
         expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+        console.log('GET /api/users/profile took ' + (endTime - startTime).toFixed(2) + 'ms');
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('data');
@@ -595,7 +605,12 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
   */
   test('returns user by ID (200) when server is available, within 500ms', async () => {
     // call the endpoint
+    const startTime = performance.now();
     const res = await request(app).get(`/api/users/${testUser._id.toString()}`);
+    const endTime = performance.now();
+    
+    expect(endTime - startTime).toBeLessThan(500);
+    console.log('GET /api/users/:id took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body).toHaveProperty('data');
@@ -632,6 +647,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
     const endTime = performance.now();
 
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('PUT /api/users/:id took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body).toHaveProperty('data');
@@ -676,6 +692,7 @@ describe('POST /api/users/ - unmocked (requires running server)', () => {
     const endTime = performance.now();
 
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('POST /api/users/ took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body).toHaveProperty('data');
@@ -730,6 +747,7 @@ describe('DELETE /api/users/ - unmocked (requires running server)', () => {
         const endTime = performance.now();
 
         expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+        console.log('DELETE /api/users/ took ' + (endTime - startTime).toFixed(2) + 'ms');
         expect(deleteRes.status).toBe(200);
         expect(deleteRes.body).toHaveProperty('message');
         
@@ -765,6 +783,7 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     });
     const endTime = performance.now();
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('[TEST] Create chat took ' + (endTime - startTime).toFixed(2) + 'ms');
     console.log('[TEST] Create chat response status:', res.status);
     console.log('[TEST] Create chat response body:', JSON.stringify(res.body, null, 2));
     expect(res.status).toBe(201);
@@ -794,6 +813,7 @@ describe('GET /api/chats - unmocked (no mocking)', () => {
     const endTime = performance.now();
 
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('[TEST] GET /api/chats took ' + (endTime - startTime).toFixed(2) + 'ms');
     console.log('[TEST] Response status:', res.status);
     console.log('[TEST] Response body:', JSON.stringify(res.body, null, 2));
     console.log('[TEST] Response headers:', res.headers);
@@ -826,6 +846,7 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
     const res = await request(app).get(`/api/chats/${chatId}`);
     const endTime = performance.now();
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('GET /api/chats/:chatId took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('_id');
     expect(String(res.body._id)).toBe(chatId);
@@ -846,6 +867,7 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     });
     const endTime = performance.now();
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('POST /api/chats/:chatId/messages took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty('_id');
     expect(res.body).toHaveProperty('content');
@@ -867,6 +889,7 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}`);
     const endTime = performance.now();
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('GET /api/chats/messages/:chatId took ' + (endTime - startTime).toFixed(2) + 'ms');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('messages');
     expect(res.body).toHaveProperty('chatId');
