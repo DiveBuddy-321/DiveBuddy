@@ -13,7 +13,7 @@ export const asyncHandler = <P = any, ResBody = any, ReqBody = any, ReqQuery = P
   return (req, res, next): void => {
     const result = fn(req, res, next);
     if (result instanceof Promise) {
-      result.catch((error: unknown) => next(error as Error));
+      result.catch((error: unknown) => {next(error as Error)});
     }
   };
 }; 

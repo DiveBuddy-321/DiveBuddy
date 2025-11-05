@@ -66,7 +66,7 @@ export class MediaService {
       if (!dirPath.startsWith(path.resolve(__dirname, '../uploads'))) {
         throw new Error('Unsafe image directory path');
       }
-      const files = fs.readdirSync(dirPath);
+      const files = fs.readdirSync(path.resolve(__dirname, "../uploads"));
       const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
       userFiles.forEach((file) => {this.deleteImage(file);});

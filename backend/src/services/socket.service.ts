@@ -81,9 +81,8 @@ export class SocketService {
       // Join user to their personal room for notifications
       Promise
         .resolve(socket.join(`user:${String(socket.user?._id)}`))
-        .catch((err) => {
-          // your logger here
-          console.error("Failed to join user room:", err);
+        .catch((err: unknown) => {
+          logger.error("Failed to join user room:", err as Error);
         });
 
       // Join a chat room

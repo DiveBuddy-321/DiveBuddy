@@ -37,8 +37,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-connectDB().catch((error) => {
-  logger.error('❌ Failed to connect to MongoDB:', error);
+connectDB().catch((error: unknown) => {
+  logger.error('❌ Failed to connect to MongoDB:', error as Error);
   process.exitCode = 1;
 });
 
