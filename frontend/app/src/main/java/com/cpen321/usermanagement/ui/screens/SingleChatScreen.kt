@@ -79,7 +79,7 @@ fun SingleChatScreen(
 	InfiniteScrollEffect(
 		listState = listState,
 		messages = messages.value,
-		isLoadingMore = isLoadingMore.value,
+		isLoadingMore = { isLoadingMore.value },
 		onLoadingStateChange = { loading -> isLoadingMore.value = loading },
 		onLoadMore = { beforeTimestamp ->
 			chat._id?.let { id ->
@@ -145,7 +145,7 @@ private fun MessagesCollector(
 private fun InfiniteScrollEffect(
 	listState: androidx.compose.foundation.lazy.LazyListState,
 	messages: List<Message>,
-	isLoadingMore: Boolean,
+	isLoadingMore: () -> Boolean,
 	onLoadingStateChange: (Boolean) -> Unit,
 	onLoadMore: (beforeTimestamp: String?) -> Unit
 ) {
@@ -157,12 +157,10 @@ private fun InfiniteScrollEffect(
 		}
 			.distinctUntilChanged()
 			.collect { (lastVisibleIndex, totalItems) ->
-				if (lastVisibleIndex != null &&
-					totalItems > 0 &&
-					lastVisibleIndex >= totalItems - 3 &&
-					!isLoadingMore &&
-					messages.isNotEmpty()
-				) {
+				val hasItems = totalItems > 0
+				val isNearTop = lastVisibleIndex?.let { it >= totalItems - 3 } == true
+				val canLoadMore = !isLoadingMore() && messages.isNotEmpty()
+				if (hasItems && isNearTop && canLoadMore) {
 					onLoadingStateChange(true)
 					val oldestMessage = messages.lastOrNull()
 					val beforeTimestamp = oldestMessage?.createdAt?.let {
