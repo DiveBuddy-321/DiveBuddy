@@ -324,4 +324,45 @@ fun ProfileExperienceDropdown(
     }
 }
 
+@Composable
+fun ProfileCompletionHeader(
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        WelcomeTitle()
+
+        Spacer(modifier = Modifier.height(spacing.medium))
+
+        BioDescription()
+    }
+}
+
+@Composable
+fun WelcomeTitle(
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = stringResource(R.string.complete_profile),
+        style = MaterialTheme.typography.headlineLarge,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun BioDescription(
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = stringResource(R.string.bio_description),
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = modifier
+    )
+}
+
 
