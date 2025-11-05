@@ -128,7 +128,7 @@ export class EventController {
       existing.attendees.push(requester._id);
 
       const eventObject = existing.toObject() as IEvent & { __v?: number };
-      const { updatedAt: _updatedAt, createdBy: _createdBy, _id, ...rest } = eventObject;
+      const { _id, ...rest } = eventObject;
 
       const updateBody = {
         ...rest,
@@ -180,7 +180,7 @@ export class EventController {
       existing.attendees = existing.attendees.filter((attendeeId) => !attendeeId.equals(requester._id));
 
       const eventObject = existing.toObject() as IEvent & { __v?: number };
-      const { updatedAt: _updatedAt, createdBy: _createdBy, _id, ...rest } = eventObject;
+      const { _id, ...rest } = eventObject;
 
       const updateBody = {
         ...rest,
