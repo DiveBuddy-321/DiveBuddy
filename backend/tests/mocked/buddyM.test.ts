@@ -3,13 +3,16 @@ import { describe, test, expect, beforeAll, afterEach, afterAll, jest } from '@j
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { userModel } from '../../src/models/user.model';
+import { CreateUserRequest } from '../../src/types/user.types';
 import express from 'express';
 import buddyRoutes from '../../src/routes/buddy.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -17,15 +20,9 @@ app.use(express.json());
 
 // Mock auth middleware to set req.user with complete profile
 app.use('/api/buddy', (req: any, res: any, next: any) => {
-  req.user = {
-    _id: new mongoose.Types.ObjectId(USER),
-    email: 'test@example.com',
-    name: 'Test User',
-    age: 25,
-    skillLevel: 'Intermediate',
-    latitude: 49.2827,
-    longitude: -123.1207
-  };
+  if (testUser) {
+    req.user = testUser;
+  }
   next();
 }, buddyRoutes);
 
@@ -37,9 +34,28 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create a test user with complete profile
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -134,7 +150,7 @@ describe('GET /api/buddy - profile validation mocked', () => {
     incompleteApp.use(express.json());
     incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
       req.user = {
-        _id: new mongoose.Types.ObjectId(USER),
+        _id: testUser ? testUser._id : new mongoose.Types.ObjectId(),
         email: 'test@example.com',
         name: 'Test User',
         // Missing age
@@ -161,7 +177,7 @@ describe('GET /api/buddy - profile validation mocked', () => {
     incompleteApp.use(express.json());
     incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
       req.user = {
-        _id: new mongoose.Types.ObjectId(USER),
+        _id: testUser ? testUser._id : new mongoose.Types.ObjectId(),
         email: 'test@example.com',
         name: 'Test User',
         age: 25,
@@ -188,7 +204,7 @@ describe('GET /api/buddy - profile validation mocked', () => {
     incompleteApp.use(express.json());
     incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
       req.user = {
-        _id: new mongoose.Types.ObjectId(USER),
+        _id: testUser ? testUser._id : new mongoose.Types.ObjectId(),
         email: 'test@example.com',
         name: 'Test User',
         age: 25,

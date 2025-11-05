@@ -4,12 +4,16 @@ import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { eventModel } from '../../src/models/event.model';
 import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
+import { CreateUserRequest } from '../../src/types/user.types';
+import { userModel } from '../../src/models/user.model';
 import express from 'express';
 import eventRoutes from '../../src/routes/event.routes';
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -17,7 +21,9 @@ app.use(express.json());
 
 // Mock auth middleware to set req.user
 app.use('/api/events', (req: any, res: any, next: any) => {
-    req.user = { _id: new mongoose.Types.ObjectId(USER) };
+    if (testUser) {
+        req.user = { _id: testUser._id };
+    }
     next();
 }, eventRoutes);
 
@@ -30,9 +36,28 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create a test user
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -409,7 +434,7 @@ describe('PUT /api/events/join/:id - mocked', () => {
 
     test('returns 400 when user already joined', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
-        const mockUserId = new mongoose.Types.ObjectId(USER);
+        const mockUserId = testUser ? testUser._id : new mongoose.Types.ObjectId();
         
         // Create a mock attendees array with includes method
         const mockAttendees = [mockUserId];
@@ -492,7 +517,7 @@ describe('PUT /api/events/join/:id - mocked', () => {
 
     test('returns 500 when update fails after join', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
-        const mockUserId = new mongoose.Types.ObjectId(USER);
+        const mockUserId = testUser ? testUser._id : new mongoose.Types.ObjectId();
         const existingEvent = {
             _id: mockEventId,
             title: 'Test Event',
@@ -577,7 +602,7 @@ describe('PUT /api/events/leave/:id - mocked', () => {
 
     test('returns 500 when update fails after leave', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
-        const mockUserId = new mongoose.Types.ObjectId(USER);
+        const mockUserId = testUser ? testUser._id : new mongoose.Types.ObjectId();
         
         // Create mock attendees array with all needed methods
         const mockAttendees = [mockUserId];

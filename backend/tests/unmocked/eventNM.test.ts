@@ -4,13 +4,17 @@ import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { eventModel } from '../../src/models/event.model';
 import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
+import { CreateUserRequest } from '../../src/types/user.types';
+import { userModel } from '../../src/models/user.model';
 import express from 'express';
 import eventRoutes from '../../src/routes/event.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -18,11 +22,13 @@ app.use(express.json());
 
 // Mock auth middleware - sets req.user for all routes
 app.use((req: any, res, next) => {
-	req.user = { 
-		_id: new mongoose.Types.ObjectId(USER),
-		email: 'test@example.com',
-		name: 'Test User'
-	};
+	if (testUser) {
+		req.user = { 
+			_id: testUser._id,
+			email: testUser.email,
+			name: testUser.name
+		};
+	}
 	next();
 });
 
@@ -32,9 +38,28 @@ app.use(errorHandler);
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create a test user
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -64,7 +89,7 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Test Location",
 			latitude: 37.7749,
 			longitude: -122.4194,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -109,7 +134,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			location: "Test Location",
 			latitude: 37.7749,
 			longitude: -122.4194,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -133,7 +158,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		expect(eventInDb?.location).toBe(newEvent.location);
 		expect(eventInDb?.latitude).toBe(newEvent.latitude);
 		expect(eventInDb?.longitude).toBe(newEvent.longitude);
-		expect(eventInDb?.createdBy.toString()).toBe(newEvent.createdBy);
+		expect(eventInDb?.createdBy.toString()).toBe(testUser._id.toString());
 		expect(eventInDb?.attendees.length).toBe(0);
 		expect(eventInDb?.photo).toBe(newEvent.photo);
 
@@ -147,7 +172,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			description: "TEST DESCRIPTION",
 			date: new Date().toISOString(),
 			capacity: 10,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: []
 		};
 
@@ -160,7 +185,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			description: "Valid Description",
 			date: new Date().toISOString(),
 			capacity: -5, // Invalid: negative capacity
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: []
 		};
 
@@ -173,7 +198,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			description: "Valid Description",
 			date: new Date().toISOString(),
 			capacity: 0, // Invalid: capacity must be at least 1
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: []
 		};
 
@@ -186,7 +211,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			description: "TEST DESCRIPTION",
 			date: new Date().toISOString(),
 			capacity: 10,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: []
 		};
 
@@ -207,7 +232,7 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 			location: "Join Location",
 			latitude: 40.7128,
 			longitude: -74.0060,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -224,7 +249,7 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 		// verify user was actually added to attendees in DB
 		const eventInDb = await eventModel.findById(createdId);
 		expect(eventInDb).not.toBeNull();
-		expect(eventInDb?.attendees.map(a => a.toString())).toContain(USER);
+		expect(eventInDb?.attendees.map(a => a.toString())).toContain(testUser._id.toString());
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
@@ -244,8 +269,8 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 			location: "Leave Location",
 			latitude: 51.5074,
 			longitude: -0.1278,
-			createdBy: USER,
-			attendees: [USER],
+			createdBy: testUser._id.toString(),
+			attendees: [testUser._id.toString()],
 			photo: ""
 		};
 		const created = await eventModel.create(newEvent);
@@ -261,7 +286,7 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 		// verify user was actually removed from attendees in DB
 		const eventInDb = await eventModel.findById(createdId);
 		expect(eventInDb).not.toBeNull();
-		expect(eventInDb?.attendees.map(a => a.toString())).not.toContain(USER);
+		expect(eventInDb?.attendees.map(a => a.toString())).not.toContain(testUser._id.toString());
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
@@ -280,7 +305,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Initial Location",
 			latitude: 34.0522,
 			longitude: -118.2437,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -297,7 +322,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Updated Location",
 			latitude: 40.7128,
 			longitude: -74.0060,
-			attendees: [USER],
+			attendees: [testUser._id.toString()],
 			photo: "updated_photo_url"
 		};
 
@@ -320,7 +345,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 		expect(eventInDb?.latitude).toBe(updatedEvent.latitude);
 		expect(eventInDb?.longitude).toBe(updatedEvent.longitude);
 		expect(eventInDb?.photo).toBe(updatedEvent.photo);
-		expect(eventInDb?.attendees.map(a => a.toString())).toContain(USER);
+		expect(eventInDb?.attendees.map(a => a.toString())).toContain(testUser._id.toString());
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
@@ -337,7 +362,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Initial Location",
 			latitude: 34.0522,
 			longitude: -118.2437,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -367,7 +392,7 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 			location: "Test Location",
 			latitude: 37.7749,
 			longitude: -122.4194,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};

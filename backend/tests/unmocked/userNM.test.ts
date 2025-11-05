@@ -15,7 +15,9 @@ import { authenticateToken } from '../../src/middleware/auth.middleware';
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -33,11 +35,13 @@ app.use((req: any, res, next) => {
         return authenticateToken(req, res, next);
     }
     
-    req.user = { 
-        _id: new mongoose.Types.ObjectId(USER),
-        email: 'test@example.com',
-        name: 'Test User'
-    };
+    if (testUser) {
+        req.user = { 
+            _id: testUser._id,
+            email: testUser.email,
+            name: testUser.name
+        };
+    }
     next();
 });
 
@@ -48,9 +52,28 @@ app.use(errorHandler);
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create a test user
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -78,7 +101,7 @@ describe('GET /api/users/profile - unmocked (requires running server)', () => {
         expect(res.body.data.user).toHaveProperty('_id');
 
         // verify returned user is the expected one
-        expect(res.body.data.user._id).toBe(USER);
+        expect(res.body.data.user._id).toBe(testUser._id.toString());
       });
 });
 
@@ -91,7 +114,7 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
   */
   test('returns user by ID (200) when server is available', async () => {
     // call the endpoint
-    const res = await request(app).get(`/api/users/${USER}`);
+    const res = await request(app).get(`/api/users/${testUser._id.toString()}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body).toHaveProperty('data');
@@ -99,7 +122,7 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
     expect(res.body.data.user).toHaveProperty('_id');
 
     // verify returned user is the expected one
-    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user._id).toBe(testUser._id.toString());
   });
 
   /*
@@ -148,7 +171,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
     };
     
     // call the endpoint
-    const res = await request(app).put(`/api/users/${USER}`).send(updateData);
+    const res = await request(app).put(`/api/users/${testUser._id.toString()}`).send(updateData);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body).toHaveProperty('data');
@@ -156,7 +179,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
     expect(res.body.data.user).toHaveProperty('_id');
 
     // verify returned user is the expected one
-    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user._id).toBe(testUser._id.toString());
     expect(res.body.data.user.name).toBe(updateData.name);
     expect(res.body.data.user.age).toBe(updateData.age);
     expect(res.body.data.user.bio).toBe(updateData.bio);
@@ -178,7 +201,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
       name: "Partially Updated Name"
     };
     
-    const res = await request(app).put(`/api/users/${USER}`).send(partialUpdate);
+    const res = await request(app).put(`/api/users/${testUser._id.toString()}`).send(partialUpdate);
     expect(res.status).toBe(200);
     expect(res.body.data.user.name).toBe(partialUpdate.name);
     // Other fields should remain unchanged or be optional
@@ -224,7 +247,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
     
     for (const skillLevel of skillLevels) {
       const updateData: UpdateProfileRequest = { skillLevel };
-      const res = await request(app).put(`/api/users/${USER}`).send(updateData);
+      const res = await request(app).put(`/api/users/${testUser._id.toString()}`).send(updateData);
       expect(res.status).toBe(200);
       expect(res.body.data.user.skillLevel).toBe(skillLevel);
     }
@@ -259,7 +282,7 @@ describe('POST /api/users/ - unmocked (requires running server)', () => {
     expect(res.body.data.user).toHaveProperty('_id');
 
     // verify returned user is the expected one
-    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user._id).toBe(testUser._id.toString());
     expect(res.body.data.user.name).toBe(updateData.name);
     expect(res.body.data.user.age).toBe(updateData.age);
     expect(res.body.data.user.bio).toBe(updateData.bio);

@@ -3,13 +3,15 @@ import { describe, test, expect, beforeAll, afterEach, afterAll, jest } from '@j
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { userModel } from '../../src/models/user.model';
-import { UpdateProfileRequest } from '../../src/types/user.types';
+import { UpdateProfileRequest, CreateUserRequest } from '../../src/types/user.types';
 import express from 'express';
 import userRoutes from '../../src/routes/user.routes';
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -17,11 +19,13 @@ app.use(express.json());
 
 // Mock auth middleware to set req.user
 app.use('/api/users', (req: any, res: any, next: any) => {
-    req.user = { 
-        _id: new mongoose.Types.ObjectId(USER),
-        email: 'test@example.com',
-        name: 'Test User'
-    };
+    if (testUser) {
+        req.user = { 
+            _id: testUser._id,
+            email: testUser.email,
+            name: testUser.name
+        };
+    }
     next();
 }, userRoutes);
 
@@ -34,9 +38,28 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create a test user
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 

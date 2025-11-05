@@ -5,6 +5,7 @@ import { setupTestDB, teardownTestDB } from '../tests.setup';
 import mongoose from 'mongoose';
 // Import User model to register its schema (Chat model references it)
 import { userModel } from '../../src/models/user.model';
+import { CreateUserRequest } from '../../src/types/user.types';
 import { Chat } from '../../src/models/chat.model';
 import { Message } from '../../src/models/message.model';
 import express from 'express';
@@ -12,7 +13,10 @@ import chatRoutes from '../../src/routes/chat.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test users will be created dynamically
+let testUser: any = null;
+let otherTestUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -20,11 +24,13 @@ app.use(express.json());
 
 // Mock auth middleware to set req.user
 app.use('/api/chats', (req: any, res: any, next: any) => {
-  req.user = { 
-    _id: new mongoose.Types.ObjectId(USER),
-    email: 'test@example.com',
-    name: 'Test User'
-  };
+  if (testUser) {
+    req.user = { 
+      _id: testUser._id,
+      email: testUser.email,
+      name: testUser.name
+    };
+  }
   next();
 }, chatRoutes);
 
@@ -36,9 +42,45 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create test users
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
+  
+  const newOtherUser: CreateUserRequest = {
+    email: 'other@example.com',
+    name: 'Other Test User',
+    googleId: `test-google-other-${Date.now()}`,
+    age: 30,
+    profilePicture: 'http://example.com/other-pic.jpg',
+    bio: 'Other test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Expert'
+  };
+  otherTestUser = await userModel.create(newOtherUser);
 });
 
 afterAll(async () => {
+  // Clean up test users
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
+  if (otherTestUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(otherTestUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -200,9 +242,9 @@ describe('POST /api/chats - mocked', () => {
   });
 
   test('returns 400 when trying to create chat with yourself', async () => {
-    // Make request with peerId same as USER
+    // Make request with peerId same as testUser._id
     const res = await request(app).post('/api/chats').send({
-      peerId: USER,
+      peerId: testUser ? testUser._id.toString() : new mongoose.Types.ObjectId().toString(),
       name: 'Self Chat'
     });
 
@@ -276,7 +318,7 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
   test('returns 400 when content is missing', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(testUser._id)] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
 
     // Make request without content
@@ -291,7 +333,7 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
   test('returns 400 when content is empty', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [testUser._id] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
 
     // Make request with empty content
@@ -353,7 +395,7 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
   test('returns 500 when Message.createMessage fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [testUser._id] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
     // Mock Message.createMessage to throw an error
     jest.spyOn(Message, 'createMessage').mockRejectedValue(new Error('Failed to create message'));
@@ -374,10 +416,10 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     const mockChatId = new mongoose.Types.ObjectId();
     const mockMessageId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [testUser._id] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
     // Mock Message.createMessage to return a message
-    const mockMessage = { _id: mockMessageId, content: 'Test message', sender: USER };
+    const mockMessage = { _id: mockMessageId, content: 'Test message', sender: testUser._id.toString() };
     jest.spyOn(Message, 'createMessage').mockResolvedValue(mockMessage as any);
     // Mock Message.getMessageById to throw an error
     jest.spyOn(Message, 'getMessageById').mockRejectedValue(new Error('Failed to fetch message'));
@@ -424,7 +466,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
   test('returns 400 when invalid before timestamp provided', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(testUser._id)] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
 
     // Make request with invalid before timestamp
@@ -454,7 +496,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
   test('returns 500 when Message.getMessagesForChat fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [testUser._id] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
     // Mock Message.getMessagesForChat to throw an error
     jest.spyOn(Message, 'getMessagesForChat').mockRejectedValue(new Error('Failed to fetch messages'));
@@ -472,7 +514,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
   test('returns 500 when database connection fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(testUser._id)] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
     // Mock Message.getMessagesForChat to throw connection error
     jest.spyOn(Message, 'getMessagesForChat').mockRejectedValue(new Error('Database connection failed'));
@@ -489,7 +531,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
   test('returns 500 when timeout occurs', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
-    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(USER)] };
+    const mockChat = { _id: mockChatId, participants: [new mongoose.Types.ObjectId(testUser._id)] };
     jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
     // Mock Message.getMessagesForChat to throw timeout error
     jest.spyOn(Message, 'getMessagesForChat').mockRejectedValue(new Error('Connection timeout'));

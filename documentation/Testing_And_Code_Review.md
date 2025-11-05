@@ -16,10 +16,29 @@
 
 | **Interface**                 | **Describe Group Location, No Mocks**                | **Describe Group Location, With Mocks**            | **Mocked Components**              |
 | ----------------------------- | ---------------------------------------------------- | -------------------------------------------------- | ---------------------------------- |
-| **POST /user/login**          | [`tests/unmocked/authenticationLogin.test.js#L1`](#) | [`tests/mocked/authenticationLogin.test.js#L1`](#) | Google Authentication API, User DB |
-| **POST /study-groups/create** | ...                                                  | ...                                                | Study Group DB                     |
-| ...                           | ...                                                  | ...                                                | ...                                |
-| ...                           | ...                                                  | ...                                                | ...                                |
+| **POST /auth/signup**          | [`tests/unmocked/authNM.test.ts#L1`] | [`tests/mocked/authM.test.ts#L1`] | Google Authentication API/ Auth Service |
+| **POST /auth/signup**          | [`tests/unmocked/authNM.test.ts#L1`] | [`tests/mocked/authM.test.ts#L1`] | Google Authentication API/ Auth Service |
+| **GET /buddy**                 | [`tests/unmocked/buddyNM.test.ts#L1`] | [`tests/mocked/buddyM.test.ts#L1`] | User DB |
+| **GET /chats**                 | [`tests/unmocked/chatNM.test.ts#L1`] | [`tests/mocked/chatM.test.ts#L1`] | Chat DB |
+| **POST /chats**                 | [`tests/unmocked/chatNM.test.ts#L1`] | [`tests/mocked/chatM.test.ts#L1`] | Chat DB |
+| **GET /chats/:chatId**             | [`tests/unmocked/chatNM.test.ts#L1`] | [`tests/mocked/chatM.test.ts#L1`] | Chat DB |
+| **GET /chats/messages/:chatId**      | [`tests/unmocked/chatNM.test.ts#L1`] | [`tests/mocked/chatM.test.ts#L1`] | Chat DB |
+| **POST /chats/:chatId/messages/**     | [`tests/unmocked/chatNM.test.ts#L1`] | [`tests/mocked/chatM.test.ts#L1`] | Chat DB |
+| **GET /events**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **GET /events/:eventId**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **POST /events**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **PUT /events/join/:eventId**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **PUT /events/leave/:eventId**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **PUT /events/:eventId**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **DELETE /events/:eventId**     | [`tests/unmocked/eventNM.test.ts#L1`] | [`tests/mocked/eventM.test.ts#L1`] | Event DB |
+| **POST /media/upload**     | [`tests/unmocked/mediaNM.test.ts#L1`] | [`tests/mocked/mediaM.test.ts#L1`] | Media Service |
+| **GET /users**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
+| **GET /users/profile**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
+| **GET /users/:id**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
+| **DELETE /users/**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
+| **DELETE /users/:id**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
+| **PUT /users/:id**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
+| **PUT /users/**     | [`tests/unmocked/userNM.test.ts#L1`] | [`tests/mocked/userM.test.ts#L1`] | User DB |
 
 #### 2.1.2. Commit Hash Where Tests Run
 

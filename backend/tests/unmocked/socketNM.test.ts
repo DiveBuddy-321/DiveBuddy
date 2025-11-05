@@ -10,10 +10,14 @@ import { SocketService } from '../../src/services/socket.service';
 import { Chat } from '../../src/models/chat.model';
 import { Message } from '../../src/models/message.model';
 import { userModel } from '../../src/models/user.model';
+import { CreateUserRequest } from '../../src/types/user.types';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
-const OTHER_USER = process.env.OTHER_USER_ID as string || new mongoose.Types.ObjectId().toString();
+
+// Test users will be created dynamically
+let testUser: any = null;
+let otherTestUser: any = null;
+
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 
 describe('Socket.IO - unmocked (no mocking)', () => {
@@ -27,6 +31,35 @@ describe('Socket.IO - unmocked (no mocking)', () => {
 
   beforeAll(async () => {
     await setupTestDB();
+    
+    // Create test users
+    const newUser: CreateUserRequest = {
+      email: 'test@example.com',
+      name: 'Test User',
+      googleId: `test-google-${Date.now()}`,
+      age: 25,
+      profilePicture: 'http://example.com/pic.jpg',
+      bio: 'Test bio',
+      location: 'Vancouver, BC',
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Intermediate'
+    };
+    testUser = await userModel.create(newUser);
+    
+    const newOtherUser: CreateUserRequest = {
+      email: 'other@example.com',
+      name: 'Other Test User',
+      googleId: `test-google-other-${Date.now()}`,
+      age: 30,
+      profilePicture: 'http://example.com/other-pic.jpg',
+      bio: 'Other test bio',
+      location: 'Vancouver, BC',
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Expert'
+    };
+    otherTestUser = await userModel.create(newOtherUser);
     
     // Create HTTP server and Socket.IO instance
     httpServer = createServer();
@@ -55,13 +88,13 @@ describe('Socket.IO - unmocked (no mocking)', () => {
     const baseURL = `http://localhost:${port}`;
 
     // Generate JWT tokens for users
-    userToken = jwt.sign({ id: USER }, JWT_SECRET, { expiresIn: '1h' });
-    otherUserToken = jwt.sign({ id: OTHER_USER }, JWT_SECRET, { expiresIn: '1h' });
+    userToken = jwt.sign({ id: testUser._id.toString() }, JWT_SECRET, { expiresIn: '1h' });
+    otherUserToken = jwt.sign({ id: otherTestUser._id.toString() }, JWT_SECRET, { expiresIn: '1h' });
 
     // Create a test chat
     const chat = await Chat.createPair(
-      new mongoose.Types.ObjectId(USER),
-      new mongoose.Types.ObjectId(OTHER_USER),
+      testUser._id,
+      otherTestUser._id,
       'Test Chat'
     );
     chatId = String(chat._id);
@@ -98,6 +131,14 @@ describe('Socket.IO - unmocked (no mocking)', () => {
     if (chatId) {
       await Chat.deleteOne({ _id: chatId });
       await Message.deleteMany({ chat: chatId });
+    }
+    
+    // Clean up test users
+    if (testUser) {
+      await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+    }
+    if (otherTestUser) {
+      await userModel.delete(new mongoose.Types.ObjectId(otherTestUser._id));
     }
     
     await teardownTestDB();
@@ -292,7 +333,7 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       // Create a chat between OTHER_USER and a third user
       const thirdUser = new mongoose.Types.ObjectId().toString();
       const otherChat = await Chat.createPair(
-        new mongoose.Types.ObjectId(OTHER_USER),
+        new mongoose.Types.ObjectId(otherTestUser._id),
         new mongoose.Types.ObjectId(thirdUser),
         'Private Chat'
       );
@@ -451,7 +492,7 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       expect(result.chatId).toBe(chatId);
       expect(result.message).toBeDefined();
       expect(result.message.content).toBe(messageContent);
-      expect(String(result.message.sender._id || result.message.sender)).toBe(USER);
+      expect(String(result.message.sender._id || result.message.sender)).toBe(testUser._id.toString());
 
       // Cleanup
       userClient.disconnect();
