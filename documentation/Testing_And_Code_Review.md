@@ -50,7 +50,7 @@
 
    - Open your terminal and run:
      ```
-     https://github.com/DiveBuddy-321/DiveBuddy.git
+     git clone https://github.com/DiveBuddy-321/DiveBuddy.git
      ```
 
 2. **Enter the Backend Directory**:
@@ -60,16 +60,19 @@
      cd DiveBuddy/backend
      ```
 
-3. **Install Dependencies**:
+3. **Create a .env File**:
+
+   - Create a `.env` file in the root of the `backend` directory with the following content:
+     ```
+     JWT_SECRET=your_test_secret_key
+     MONGODB_URI=mongodb://localhost:27017/
+     ```
+   - Replace `your_test_secret_key` with a valid secret key for testing purposes (can use the same one as in your own project).
+
+4. **Install Dependencies**:
     - Install the required packages using npm:
       ```
       npm install
-      ```
-
-4. **Enter the Test Directory**:
-    - Navigate to the tests directory:
-      ```
-      cd tests
       ```
 
 5. **Run the Tests**:
