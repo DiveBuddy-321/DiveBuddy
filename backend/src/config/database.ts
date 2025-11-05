@@ -10,7 +10,7 @@ export const connectDB = async (): Promise<void> => {
     logger.info(`MongoDB connected successfully`);
 
     mongoose.connection.on('error', error => {
-      logger.error('MongoDB connection error:', error as Error);
+      logger.error('MongoDB connection error:', error);
     });
 
     mongoose.connection.on('disconnected', () => {
@@ -23,12 +23,12 @@ export const connectDB = async (): Promise<void> => {
         logger.info('MongoDB connection closed through app termination');
         process.exitCode = 0;
       } catch (error) {
-        logger.error('Error closing MongoDB connection:', error as Error);
+        logger.error('Error closing MongoDB connection:', error);
         process.exitCode = 1;
       }
     });
   } catch (error) {
-    logger.error('❌ Failed to connect to MongoDB:', error as Error);
+    logger.error('❌ Failed to connect to MongoDB:', error);
     process.exitCode = 1;
   }
 };
@@ -38,6 +38,6 @@ export const disconnectDB = async (): Promise<void> => {
     await mongoose.connection.close();
     logger.info('MongoDB disconnected successfully');
   } catch (error) {
-    logger.error('❌ Error disconnecting from MongoDB:', error as Error);
+    logger.error('❌ Error disconnecting from MongoDB:', error);
   }
 }; 
