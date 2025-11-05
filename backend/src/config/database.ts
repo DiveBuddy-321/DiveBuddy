@@ -7,32 +7,23 @@ function attachConnectionEventHandlers(): void {
   if (handlersAttached) return;
   handlersAttached = true;
 
-  mongoose.connection.on('error', (error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
-    logger.error('MongoDB connection error:', message);
-  });
+  mongoose.connection.on('error', onMongoError);
+  mongoose.connection.on('disconnected', onMongoDisconnected);
+}
 
-  mongoose.connection.on('disconnected', () => {
-    logger.info('MongoDB disconnected');
-  });
+function onMongoError(error: unknown): void {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'string'
+      ? error
+      : (() => {
+          try { return JSON.stringify(error); } catch { return 'Unknown error'; }
+        })();
+  logger.error('MongoDB connection error:', message);
+}
 
-  // Important: non-async handler to satisfy "void expected"
-  process.on('SIGINT', () => {
-    // Do not return the promise; consume it here.
-    mongoose.connection
-      .close()
-      .then(() => {
-        logger.info('MongoDB connection closed through app termination');
-        process.exitCode = 0;
-        return;
-      })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
-        logger.error('Error closing MongoDB connection:', message);
-        process.exitCode = 1;
-        return;
-      });
-  });
+function onMongoDisconnected(): void {
+  logger.info('MongoDB disconnected');
 }
 
 export const connectDB = async (): Promise<void> => {

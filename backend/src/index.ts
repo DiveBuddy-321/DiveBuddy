@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 
-import { connectDB } from './config/database';
+import { connectDB, disconnectDB } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware';
 import router from './routes';
 import { SocketService } from './services/socket.service';
@@ -49,3 +49,13 @@ httpServer.listen(PORT, () => {
 
 // Make socket service available globally (optional, for use in controllers)
 export { socketService }; 
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  void Promise.allSettled([
+    new Promise<void>((resolve) => httpServer.close(() => resolve())),
+    disconnectDB(),
+  ]).finally(() => {
+    process.exitCode = 0;
+  });
+});
