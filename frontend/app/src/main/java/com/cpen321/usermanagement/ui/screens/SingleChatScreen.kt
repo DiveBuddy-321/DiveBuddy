@@ -115,8 +115,7 @@ fun SingleChatScreen(
                 }
             }
         },
-        onBack = onBack,
-        modifier = modifier
+        onBack = onBack
     )
 }
 
@@ -304,12 +303,11 @@ private fun ChatContent(
     listState: androidx.compose.foundation.lazy.LazyListState,
     inputState: androidx.compose.runtime.MutableState<String>,
     onSend: () -> Unit,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    onBack: () -> Unit
 ) {
     val spacing = LocalSpacing.current
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing)
         MessagesList(
