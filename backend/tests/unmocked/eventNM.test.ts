@@ -94,6 +94,16 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
 	});
+
+	test('returns 400 for invalid event ID format', async () => {
+		// Try to fetch an event with an invalid ID format
+		const invalidId = 'invalid-id-format';
+		const res = await request(app).get(`/api/events/${invalidId}`);
+
+		// verify error response
+		expect(res.status).toBe(400);
+		expect(res.body).toHaveProperty('message');
+	});
 });
 
 describe('POST /api/events - unmocked (requires running server)', () => {
@@ -229,6 +239,16 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
 	});
+
+	test('returns 400 for invalid event ID format', async () => {
+		// Try to fetch an event with an invalid ID format
+		const invalidId = 'invalid-id-format';
+		const res = await request(app).put(`/api/events/join/${invalidId}`);
+
+		// verify error response
+		expect(res.status).toBe(400);
+		expect(res.body).toHaveProperty('message');
+	});
 });
 
 describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', () => {
@@ -265,6 +285,16 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
+	});
+
+	test('returns 400 for invalid event ID format', async () => {
+		// Try to fetch an event with an invalid ID format
+		const invalidId = 'invalid-id-format';
+		const res = await request(app).put(`/api/events/leave/${invalidId}`);
+
+		// verify error response
+		expect(res.status).toBe(400);
+		expect(res.body).toHaveProperty('message');
 	});
 });
 
@@ -386,5 +416,14 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		const eventInDb = await eventModel.findById(createdId);
 		expect(eventInDb).toBeNull();
 	});
+
+	test('returns 400 for invalid event ID format', async () => {
+		// Try to fetch an event with an invalid ID format
+		const invalidId = 'invalid-id-format';
+		const res = await request(app).delete(`/api/events/${invalidId}`);
+
+		// verify error response
+		expect(res.status).toBe(400);
+		expect(res.body).toHaveProperty('message');
+	});
 });
-	

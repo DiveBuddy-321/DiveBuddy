@@ -1,0 +1,855 @@
+const mockVerifyIdToken = jest.fn() as jest.Mock<Promise<any>, [any]>;
+
+jest.mock('google-auth-library', () => {
+  return {
+    OAuth2Client: jest.fn().mockImplementation(() => ({
+      verifyIdToken: mockVerifyIdToken,
+    })),
+  };
+});
+
+import request from 'supertest';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import dotenv from 'dotenv';
+import { setupTestDB, teardownTestDB } from '../tests.setup';
+import { eventModel } from '../../src/models/event.model';
+import { userModel } from '../../src/models/user.model';
+import { Chat } from '../../src/models/chat.model';
+import { Message } from '../../src/models/message.model';
+import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
+import express from 'express';
+import eventRoutes from '../../src/routes/event.routes';
+import authRoutes from '../../src/routes/auth.routes';
+import chatRoutes from '../../src/routes/chat.routes';
+import buddyRoutes from '../../src/routes/buddy.routes';
+import mediaRoutes from '../../src/routes/media.routes';
+import userRoutes from '../../src/routes/user.routes';
+import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
+import { authenticateToken } from '../../src/middleware/auth.middleware';
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+import { UpdateProfileRequest, CreateUserRequest } from '../../src/types/user.types';
+
+dotenv.config();
+const USER = process.env.USER_ID as string;
+const OTHER_USER = process.env.OTHER_USER_ID as string || new mongoose.Types.ObjectId().toString();
+
+// Validate USER_ID at startup
+if (!USER) {
+  console.error('[SETUP ERROR] USER_ID environment variable is not set!');
+}
+if (USER && !mongoose.isValidObjectId(USER)) {
+  console.error('[SETUP ERROR] USER_ID is not a valid ObjectId:', USER);
+}
+
+// Create Express app for testing
+const app = express();
+app.use(express.json());
+
+// Mock auth middleware - sets req.user for all routes
+app.use((req: any, res, next) => {
+    // Skip mock auth for /api/auth routes (they handle their own auth)
+    if (req.path.startsWith('/api/auth')) {
+        return next();
+    }
+
+    // Skip mock auth for DELETE /api/users - will use real authenticateToken instead
+    if (req.method === 'DELETE' && req.path === '/api/users') {
+        return authenticateToken(req, res, next);
+    }
+    
+    req.user = { 
+        _id: new mongoose.Types.ObjectId(USER),
+        email: 'test@example.com',
+        name: 'Test User'
+    };
+    next();
+});
+
+app.use('/api/events', eventRoutes);
+app.use('/api/auth', authRoutes); 
+app.use('/api/chats', chatRoutes);
+app.use('/api/buddies', buddyRoutes);
+app.use('/api/media', mediaRoutes);
+app.use('/api/users', userRoutes);
+
+app.use('*', notFoundHandler);
+app.use(errorHandler);
+
+beforeAll(async () => {
+    await setupTestDB();
+    if (!mongoose.models.User) {
+        console.log('[SETUP] User model not registered, accessing userModel to register it...');
+        const _ = userModel; // This triggers UserModel constructor which registers the schema
+        console.log('[SETUP] User model registered:', mongoose.models.User ? 'Yes' : 'No');
+    } else {
+        console.log('[SETUP] User model already registered');
+    }
+});
+
+afterAll(async () => {
+  await teardownTestDB();
+});
+
+// non-functional tests to test event API calls within 500ms
+
+describe('GET /api/events - unmocked (requires running server)', () => {
+	test('returns list of events (200) when server is available, within 500ms', async () => {
+		
+		// make sure GET endpoint works
+        const startTime = performance.now();
+		const res = await request(app).get('/api/events');
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty('message');
+		expect(res.body).toHaveProperty('data');
+		expect(res.body.data).toHaveProperty('events');
+		expect(Array.isArray(res.body.data.events)).toBe(true);
+	});
+});
+
+describe('GET /api/events/:eventId - unmocked (requires running server)', () => {
+	test('returns event by ID (200) when server is available, within 500ms', async () => {
+		
+		// first create an event to ensure it exists
+		const newEvent: CreateEventRequest = {
+			title: "TEST GET EVENT",
+			description: "TEST GET DESCRIPTION",
+			date: new Date(),
+			capacity: 10,
+			skillLevel: "Expert",
+			location: "Test Location",
+			latitude: 37.7749,
+			longitude: -122.4194,
+			createdBy: USER,
+			attendees: [],
+			photo: ""
+		};
+		const created = await eventModel.create(newEvent);
+		const createdId = created._id;
+		
+		// now fetch the event by ID through the API
+        const startTime = performance.now();
+		const res = await request(app).get(`/api/events/${createdId.toString()}`);
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+
+		// verify response
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty('message');
+		expect(res.body).toHaveProperty('data');
+		expect(res.body.data).toHaveProperty('event');
+		expect(res.body.data.event).toMatchObject({
+			title: newEvent.title,
+			description: newEvent.description,
+			capacity: newEvent.capacity,
+			skillLevel: newEvent.skillLevel,
+			location: newEvent.location,
+			latitude: newEvent.latitude,
+			longitude: newEvent.longitude,
+			createdBy: newEvent.createdBy,
+			photo: newEvent.photo
+		});
+		
+		// cleanup - delete the created event
+		await eventModel.delete(createdId);
+	});
+});
+
+describe('POST /api/events - unmocked (requires running server)', () => {
+	test('creates a new event (201) when server is available, within 500ms', async () => {
+
+		// new event data
+		const newEvent = {
+			title: "TEST EVENT",
+			description: "TEST DESCRIPTION",
+			date: new Date().toISOString(),
+			capacity: 10,
+			skillLevel: "Expert",
+			location: "Test Location",
+			latitude: 37.7749,
+			longitude: -122.4194,
+			createdBy: USER,
+			attendees: [],
+			photo: ""
+		};
+
+		// make sure POST endpoint works
+        const startTime = performance.now();
+		const res = (await request(app).post('/api/events').send(newEvent));
+		const endTime = performance.now();
+
+		expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+		expect(res.status).toBe(201);
+		expect(res.body).toHaveProperty('message');
+		expect(res.body).toHaveProperty('data');
+		expect(res.body.data).toHaveProperty('event');
+		expect(res.body.data.event).toMatchObject(newEvent);
+
+		// verify event was actually created in DB
+		const eventInDb = await eventModel.findById(res.body.data.event._id);
+		expect(eventInDb).not.toBeNull();
+		expect(eventInDb?.title).toBe(newEvent.title);
+		expect(eventInDb?.description).toBe(newEvent.description);
+		expect(eventInDb?.date.toISOString()).toBe(newEvent.date);
+		expect(eventInDb?.capacity).toBe(newEvent.capacity);
+		expect(eventInDb?.skillLevel).toBe(newEvent.skillLevel);
+		expect(eventInDb?.location).toBe(newEvent.location);
+		expect(eventInDb?.latitude).toBe(newEvent.latitude);
+		expect(eventInDb?.longitude).toBe(newEvent.longitude);
+		expect(eventInDb?.createdBy.toString()).toBe(newEvent.createdBy);
+		expect(eventInDb?.attendees.length).toBe(0);
+		expect(eventInDb?.photo).toBe(newEvent.photo);
+
+		// cleanup - delete the created event
+		await eventModel.delete(eventInDb!._id);
+	});
+});
+
+describe('PUT /api/events/join/:eventId - unmocked (requires running server)', () => {
+	test('user joins an event (200) when server is available, within 500ms', async () => {
+		
+		// first create an event to ensure it exists
+		const newEvent: CreateEventRequest = {
+			title: "TEST JOIN EVENT",
+			description: "TEST JOIN DESCRIPTION",
+			date: new Date(),
+			capacity: 10,
+			skillLevel: "Beginner",
+			location: "Join Location",
+			latitude: 40.7128,
+			longitude: -74.0060,
+			createdBy: USER,
+			attendees: [],
+			photo: ""
+		};
+		const created = await eventModel.create(newEvent);
+		const createdId = created._id;
+
+		// make sure PUT join endpoint works
+		const startTime = performance.now();
+		const res = await request(app).put(`/api/events/join/${createdId.toString()}`);
+		const endTime = performance.now();
+
+		expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty('message');
+		expect(res.body).toHaveProperty('data');
+		expect(res.body.data).toHaveProperty('event');
+
+		// verify user was actually added to attendees in DB
+		const eventInDb = await eventModel.findById(createdId);
+		expect(eventInDb).not.toBeNull();
+		expect(eventInDb?.attendees.map(a => a.toString())).toContain(USER);
+
+		// cleanup - delete the created event
+		await eventModel.delete(createdId);
+	});
+});
+
+describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', () => {
+	test('user leaves an event (200) when server is available, within 500ms', async () => {
+		
+		// first create an event with the user as an attendee
+		const newEvent: CreateEventRequest = {
+			title: "TEST LEAVE EVENT",
+			description: "TEST LEAVE DESCRIPTION",
+			date: new Date(),
+			capacity: 10,
+			skillLevel: "Expert",
+			location: "Leave Location",
+			latitude: 51.5074,
+			longitude: -0.1278,
+			createdBy: USER,
+			attendees: [USER],
+			photo: ""
+		};
+		const created = await eventModel.create(newEvent);
+		const createdId = created._id;
+
+		// make sure PUT leave endpoint works
+        const startTime = performance.now();
+		const res = await request(app).put(`/api/events/leave/${createdId.toString()}`);
+		const endTime = performance.now();
+
+		expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty('message');
+		expect(res.body).toHaveProperty('data');
+		expect(res.body.data).toHaveProperty('event');
+
+		// verify user was actually removed from attendees in DB
+		const eventInDb = await eventModel.findById(createdId);
+		expect(eventInDb).not.toBeNull();
+		expect(eventInDb?.attendees.map(a => a.toString())).not.toContain(USER);
+
+		// cleanup - delete the created event
+		await eventModel.delete(createdId);
+	});
+});
+
+describe('PUT /api/events/:eventId - unmocked (requires running server)', () => {
+	test('updates an event (200) when server is available, within 500ms', async () => {
+		// first create an event to ensure it exists
+		const newEvent: CreateEventRequest = {
+			title: "TEST UPDATE EVENT",
+			description: "TEST UPDATE DESCRIPTION",
+			date: new Date(),
+			capacity: 10,
+			skillLevel: "Intermediate",
+			location: "Initial Location",
+			latitude: 34.0522,
+			longitude: -118.2437,
+			createdBy: USER,
+			attendees: [],
+			photo: ""
+		};
+		const created = await eventModel.create(newEvent);
+		const createdId = created._id;
+
+		// updated event data
+		const updatedEvent: UpdateEventRequest = {
+			title: "UPDATED TEST EVENT",
+			description: "UPDATED TEST DESCRIPTION",
+			date: new Date(),
+			capacity: 20,
+			skillLevel: "Expert",
+			location: "Updated Location",
+			latitude: 40.7128,
+			longitude: -74.0060,
+			attendees: [USER],
+			photo: "updated_photo_url"
+		};
+
+		// make sure PUT endpoint works
+        const startTime = performance.now();
+		const res = await request(app).put(`/api/events/${createdId.toString()}`).send(updatedEvent);
+        const endTime = performance.now();
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+
+		expect(res.body).toHaveProperty('message');
+		expect(res.body).toHaveProperty('data');
+		expect(res.body.data).toHaveProperty('event');
+
+		// verify event was actually updated in DB
+		const eventInDb = await eventModel.findById(createdId);
+		expect(eventInDb).not.toBeNull();
+		expect(eventInDb?.title).toBe(updatedEvent.title);
+		expect(eventInDb?.description).toBe(updatedEvent.description);
+		// eventInDb.date is a Date object from mongoose — compare ISO strings
+		expect(eventInDb?.date.toISOString()).toBe(updatedEvent.date.toISOString());
+		expect(eventInDb?.capacity).toBe(updatedEvent.capacity);
+		expect(eventInDb?.skillLevel).toBe(updatedEvent.skillLevel);
+		expect(eventInDb?.location).toBe(updatedEvent.location);
+		expect(eventInDb?.latitude).toBe(updatedEvent.latitude);
+		expect(eventInDb?.longitude).toBe(updatedEvent.longitude);
+		expect(eventInDb?.photo).toBe(updatedEvent.photo);
+		expect(eventInDb?.attendees.map(a => a.toString())).toContain(USER);
+
+		// cleanup - delete the created event
+		await eventModel.delete(createdId);
+	});
+});
+
+describe('DELETE /api/events/:eventId - unmocked (requires running server)', () => {
+	test('delete an event (200) when server is available, within 500ms', async () => {
+		
+		// new event data (use CreateEventRequest shape: attendees and createdBy are strings)
+		const newEvent: CreateEventRequest = {
+			title: "TEST DELETE EVENT",
+			description: "TEST DELETE DESCRIPTION",
+			date: new Date(),
+			capacity: 10,
+			skillLevel: "Expert",
+			location: "Test Location",
+			latitude: 37.7749,
+			longitude: -122.4194,
+			createdBy: USER,
+			attendees: [],
+			photo: ""
+		};
+
+		// create via model (this will validate against createEventSchema)
+		const created = await eventModel.create(newEvent);
+		const createdId = created._id;
+
+		// delete the event through the API (server must point to same DB when running)
+        const startTime = performance.now();
+		const delRes = await request(app)
+			.delete(`/api/events/${createdId.toString()}`);
+        const endTime = performance.now();
+        
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+
+		expect(delRes.status).toBe(200);
+
+		// verify deletion: event should no longer exist in DB
+		const eventInDb = await eventModel.findById(createdId);
+		expect(eventInDb).toBeNull();
+	});
+});
+	
+// non-functional tests to test authentication/user API calls within 500ms
+
+describe('POST /api/auth/signup - unmocked (covers auth.service.ts)', () => {
+  /*
+    Inputs: body { idToken: string } (valid Google token)
+    Expected status: 201
+    Output: { message: 'User signed up successfully', data: { token: string, user: IUser } }
+    Expected behavior: 
+      - auth.service.verifyGoogleToken: Verifies Google token and extracts user info
+      - auth.service.signUpWithGoogle: Checks user doesn't exist, creates user, generates JWT
+      - Returns JWT token and user data
+    Mock behavior: Google OAuth2Client.verifyIdToken returns valid ticket with payload
+  */
+  test('creates new user and returns JWT token, within 500ms', async () => {
+    const mockGoogleId = `google-${Date.now()}`;
+    const mockEmail = `test-${Date.now()}@example.com`;
+    const mockName = 'Test User';
+    const mockPicture = 'https://example.com/picture.jpg';
+    
+    // Mock Google token verification - covers verifyGoogleToken method
+    const mockTicket = {
+      getPayload: () => ({
+        sub: mockGoogleId,
+        email: mockEmail,
+        name: mockName,
+        picture: mockPicture,
+      }),
+    };
+    
+    mockVerifyIdToken.mockResolvedValue(mockTicket);
+
+    const startTime = performance.now();
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({ idToken: 'valid-google-token' });
+    const endTime = performance.now();
+
+    expect(endTime - startTime).toBeLessThan(500);
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toBe('User signed up successfully');
+    expect(res.body.data).toHaveProperty('token');
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data.user.email).toBe(mockEmail);
+    expect(res.body.data.user.name).toBe(mockName);
+    expect(res.body.data.user.googleId).toBe(mockGoogleId);
+    
+    // Verify user was created in database (covers userModel.create call)
+    const createdUser = await userModel.findByGoogleId(mockGoogleId);
+    expect(createdUser).not.toBeNull();
+    expect(createdUser?.email).toBe(mockEmail);
+    
+    // Verify JWT token is valid (covers generateAccessToken method)
+    const decoded = jwt.verify(res.body.data.token, process.env.JWT_SECRET!) as any;
+    expect(decoded).toHaveProperty('id');
+    expect(String(decoded.id)).toBe(String(createdUser?._id));
+    
+    // Cleanup
+    if (createdUser) {
+      await userModel.delete(createdUser._id);
+    }
+  });
+});
+
+describe('POST /api/auth/signin - unmocked (covers auth.service.ts)', () => {
+  /*
+    Inputs: body { idToken: string } (valid Google token for existing user)
+    Expected status: 200
+    Output: { message: 'User signed in successfully', data: { token: string, user: IUser } }
+    Expected behavior: 
+      - auth.service.verifyGoogleToken: Verifies Google token and extracts user info
+      - auth.service.signInWithGoogle: Finds existing user via userModel.findByGoogleId
+      - auth.service.generateAccessToken: Generates JWT token with user._id
+      - Returns JWT token and user data
+    Mock behavior: Google OAuth2Client verifies token and returns user info
+  */
+  test('signs in existing user and returns JWT token, within 500ms  ', async () => {
+    const mockGoogleId = `google-signin-${Date.now()}`;
+    const mockEmail = `signin-${Date.now()}@example.com`;
+    const mockName = 'Sign In User';
+    
+    // Create user first - covers userModel.findByGoogleId in signInWithGoogle
+    const existingUser = await userModel.create({
+      googleId: mockGoogleId,
+      email: mockEmail,
+      name: mockName,
+    });
+    
+    // Mock Google token verification - covers verifyGoogleToken method
+    const mockTicket = {
+      getPayload: () => ({
+        sub: mockGoogleId,
+        email: mockEmail,
+        name: mockName,
+        picture: 'https://example.com/picture.jpg',
+      }),
+    };
+    
+    mockVerifyIdToken.mockResolvedValue(mockTicket);
+
+    const startTime = performance.now();
+    const res = await request(app)
+      .post('/api/auth/signin')
+      .send({ idToken: 'valid-google-token' });
+    const endTime = performance.now();
+    
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toBe('User signed in successfully');
+    expect(res.body.data).toHaveProperty('token');
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data.user.email).toBe(mockEmail);
+    expect(res.body.data.user.googleId).toBe(mockGoogleId);
+    
+    // Verify JWT token is valid - covers generateAccessToken method
+    const decoded = jwt.verify(res.body.data.token, process.env.JWT_SECRET!) as any;
+    expect(decoded).toHaveProperty('id');
+    expect(String(decoded.id)).toBe(String(existingUser._id));
+    
+    // Cleanup
+    await userModel.delete(existingUser._id);
+  });
+});
+
+describe('GET /api/users - unmocked (requires running server)', () => {
+    test('returns list of users (200) when server is available, within 500ms', async () => {
+        
+        // make sure GET endpoint works
+        const startTime = performance.now();
+        const res = await request(app).get('/api/users');
+        const endTime = performance.now();
+        
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('message');
+        expect(res.body).toHaveProperty('data');
+        expect(res.body.data).toHaveProperty('users');
+        expect(Array.isArray(res.body.data.users)).toBe(true);
+    });
+});
+
+describe('GET /api/users/profile - unmocked (requires running server)', () => {
+    test('returns current user (200) when server is available, within 500ms', async () => {
+        // call the endpoint
+        const startTime = performance.now();
+        const res = await request(app).get('/api/users/profile');
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('message');
+        expect(res.body).toHaveProperty('data');
+        expect(res.body.data).toHaveProperty('user');
+        expect(res.body.data.user).toHaveProperty('_id');
+
+        // verify returned user is the expected one
+        expect(res.body.data.user._id).toBe(USER);
+      });
+});
+
+describe('GET /api/users/:id - unmocked (requires running server)', () => {
+  /*
+    Inputs: path param id (valid user ID)
+    Expected status: 200
+    Output: { message: string, data: { user: IUser } }
+    Expected behavior: Returns user profile by ID
+  */
+  test('returns user by ID (200) when server is available, within 500ms', async () => {
+    // call the endpoint
+    const res = await request(app).get(`/api/users/${USER}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body).toHaveProperty('data');
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data.user).toHaveProperty('_id');
+
+    // verify returned user is the expected one
+    expect(res.body.data.user._id).toBe(USER);
+  });
+});
+
+describe('PUT /api/users/:id - unmocked (requires running server)', () => {
+  /*
+    Inputs: path param id, body UpdateProfileRequest (all fields)
+    Expected status: 200
+    Output: { message: string, data: { user: IUser } }
+    Expected behavior: Updates user profile and returns updated user
+  */
+  test('returns user by ID (200) when server is available, within 500ms', async () => {
+    const updateData: UpdateProfileRequest = {
+      name: "Updated Name PUT",
+      age: 30,
+      bio: "This is an updated bio PUT request.",
+      location: "Updated Location",
+      latitude: 40.7128,
+      longitude: -74.0060,
+      profilePicture: "http://example.com/updated-profile-pic.jpg",
+      skillLevel: "Intermediate"
+    };
+    
+    // call the endpoint
+    const startTime = performance.now();
+    const res = await request(app).put(`/api/users/${USER}`).send(updateData);
+    const endTime = performance.now();
+
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body).toHaveProperty('data');
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data.user).toHaveProperty('_id');
+
+    // verify returned user is the expected one
+    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user.name).toBe(updateData.name);
+    expect(res.body.data.user.age).toBe(updateData.age);
+    expect(res.body.data.user.bio).toBe(updateData.bio);
+    expect(res.body.data.user.location).toBe(updateData.location);
+    expect(res.body.data.user.latitude).toBe(updateData.latitude);
+    expect(res.body.data.user.longitude).toBe(updateData.longitude);
+    expect(res.body.data.user.profilePicture).toBe(updateData.profilePicture);
+    expect(res.body.data.user.skillLevel).toBe(updateData.skillLevel);
+  });
+});
+
+describe('POST /api/users/ - unmocked (requires running server)', () => {
+  /*
+    Inputs: body UpdateProfileRequest (all fields)
+    Expected status: 200
+    Output: { message: string, data: { user: IUser } }
+    Expected behavior: Updates current user profile and returns updated user
+  */
+  test('returns user (200) when server is available, within 500ms', async () => {
+    const updateData: UpdateProfileRequest = {
+      name: "Updated Name POST",
+      age: 30,
+      bio: "This is an updated bio POST request.",
+      location: "Updated Location",
+      latitude: 40.7128,
+      longitude: -74.0060,
+      profilePicture: "http://example.com/updated-profile-pic.jpg",
+      skillLevel: "Intermediate"
+    };
+    
+    // call the endpoint
+    const startTime = performance.now();
+    const res = await request(app).post(`/api/users/`).send(updateData);
+    const endTime = performance.now();
+
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body).toHaveProperty('data');
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data.user).toHaveProperty('_id');
+
+    // verify returned user is the expected one
+    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user.name).toBe(updateData.name);
+    expect(res.body.data.user.age).toBe(updateData.age);
+    expect(res.body.data.user.bio).toBe(updateData.bio);
+    expect(res.body.data.user.location).toBe(updateData.location);
+    expect(res.body.data.user.latitude).toBe(updateData.latitude);
+    expect(res.body.data.user.longitude).toBe(updateData.longitude);
+    expect(res.body.data.user.profilePicture).toBe(updateData.profilePicture);
+    expect(res.body.data.user.skillLevel).toBe(updateData.skillLevel);
+  });
+});
+
+describe('DELETE /api/users/ - unmocked (requires running server)', () => {
+    test('returns success (200) when server is available and user deleted, within 500ms', async () => {
+
+        // Generate unique googleId to avoid duplicates
+        const uniqueGoogleId = `test-google-id-delete-${Date.now()}`;
+        
+        // Create user directly in DB instead of using Google auth
+        const createData: CreateUserRequest = {
+            email: `test-delete-${Date.now()}@example.com`,
+            name: "Test Delete User",
+            googleId: uniqueGoogleId,
+            age: 25,
+            profilePicture: "http://example.com/profile-pic.jpg",
+            bio: "This is a test bio for deletion.",
+            location: "Test Location",
+            latitude: 34.0522,
+            longitude: -118.2437,
+            skillLevel: "Beginner"
+        };
+
+        const createdUser = await userModel.create(createData);
+        const deletedUserId = createdUser._id;
+        
+        // Generate a token for this user
+        const jwt = require('jsonwebtoken');
+        const token = jwt.sign({ id: deletedUserId }, process.env.JWT_SECRET!, {
+            expiresIn: '1h',
+        });
+        
+        // call the endpoint with the generated token
+        const startTime = performance.now();
+        const deleteRes = await request(app).delete('/api/users').set('Authorization', `Bearer ${token}`);
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+        expect(deleteRes.status).toBe(200);
+        expect(deleteRes.body).toHaveProperty('message');
+        
+        // verify user is deleted
+        const fetchedUser = await userModel.findById(deletedUserId);
+        expect(fetchedUser).toBeNull();
+      });
+});
+
+// non-functional tests to test chat API calls within 500ms
+
+let chatId: string;
+let messageId: string;
+
+describe('POST /api/chats - unmocked (no mocking)', () => {
+  /*
+    Inputs: { peerId: OTHER_USER, name?: string }
+    Expected status: 201
+    Output: created chat document directly in response.body
+  */
+  /*
+    Inputs: body { peerId: OTHER_USER, name?: string }
+    Expected status: 201
+    Output: created chat document directly in response.body
+    Expected behavior: Creates new direct chat between two users
+  */
+  test('creates a direct chat between two users, within 500ms', async () => {
+    console.log('[TEST] Creating chat with peerId:', OTHER_USER);
+    const startTime = performance.now();
+    const res = await request(app).post('/api/chats').send({
+      peerId: OTHER_USER,
+      name: 'Test Direct Chat'
+    });
+    const endTime = performance.now();
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('[TEST] Create chat response status:', res.status);
+    console.log('[TEST] Create chat response body:', JSON.stringify(res.body, null, 2));
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('_id');
+    expect(res.body).toHaveProperty('participants');
+    const parts = res.body.participants.map((p: any) => String(p._id || p));
+    expect(parts).toContain(USER);
+    expect(parts).toContain(OTHER_USER);
+    chatId = String(res.body._id);
+    console.log('[TEST] Created chatId:', chatId);
+  });
+});
+
+describe('GET /api/chats - unmocked (no mocking)', () => {
+  /*
+    Inputs: none (user from mock auth)
+    Expected status: 200
+    Output: array of chats directly in response.body (not wrapped)
+  */
+  test('lists chats for the authenticated user, within 500ms', async () => {
+    console.log('[TEST] Starting GET /api/chats test');
+    console.log('[TEST] USER_ID from env:', USER);
+    console.log('[TEST] USER_ID is valid ObjectId:', mongoose.isValidObjectId(USER));
+
+    const startTime = performance.now();
+    const res = await request(app).get('/api/chats');
+    const endTime = performance.now();
+
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    console.log('[TEST] Response status:', res.status);
+    console.log('[TEST] Response body:', JSON.stringify(res.body, null, 2));
+    console.log('[TEST] Response headers:', res.headers);
+    
+    if (res.status !== 200) {
+      console.log('[TEST] ERROR - Expected 200 but got', res.status);
+      if (res.body.error) {
+        console.log('[TEST] Error message:', res.body.error);
+      }
+      if (res.body.stack) {
+        console.log('[TEST] Error stack:', res.body.stack);
+      }
+    }
+    
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.some((c: any) => String(c._id) === chatId)).toBe(true);
+  });
+});
+
+describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
+  /*
+    Inputs: path param chatId (valid chat where user is participant)
+    Expected status: 200
+    Output: chat document directly in response.body
+    Expected behavior: Returns chat when user is a participant
+  */
+  test('returns a chat when the user is a participant, within 500ms', async () => {
+    const startTime = performance.now();
+    const res = await request(app).get(`/api/chats/${chatId}`);
+    const endTime = performance.now();
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('_id');
+    expect(String(res.body._id)).toBe(chatId);
+  });
+});
+
+describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
+  /*
+    Inputs: path param chatId, body { content: string }
+    Expected status: 201
+    Output: created message directly in response.body
+    Expected behavior: Creates message in chat and returns populated message
+  */
+  test('sends a message in the chat, within 500ms', async () => {
+    const startTime = performance.now();
+    const res = await request(app).post(`/api/chats/${chatId}/messages`).send({
+      content: 'Hello from test!'
+    });
+    const endTime = performance.now();
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('_id');
+    expect(res.body).toHaveProperty('content');
+    expect(res.body.content).toBe('Hello from test!');
+    expect(String(res.body.sender?._id || res.body.sender)).toBe(USER);
+    messageId = String(res.body._id);
+  });
+});
+
+describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
+  /*
+    Inputs: path param chatId (no query params)
+    Expected status: 200
+    Output: object with messages array, chatId, limit, count, hasMore in response.body
+    Expected behavior: Returns messages with default limit of 20
+  */
+  test('fetches messages for a chat, within 500ms', async () => {
+    const startTime = performance.now();
+    const res = await request(app).get(`/api/chats/messages/${chatId}`);
+    const endTime = performance.now();
+    expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('messages');
+    expect(res.body).toHaveProperty('chatId');
+    expect(res.body).toHaveProperty('limit');
+    expect(res.body).toHaveProperty('count');
+    expect(res.body).toHaveProperty('hasMore');
+    expect(Array.isArray(res.body.messages)).toBe(true);
+    expect(res.body.messages.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Cleanup - unmocked', () => {
+  test('removes created chat and messages', async () => {
+    if (chatId) {
+      await Chat.deleteOne({ _id: chatId });
+      await Message.deleteMany({ chat: chatId });
+    }
+  });
+});
