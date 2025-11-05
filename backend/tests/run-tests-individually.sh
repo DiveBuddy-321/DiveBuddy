@@ -37,6 +37,8 @@ unmocked/eventNM.test.ts
 unmocked/mediaNM.test.ts
 unmocked/socketNM.test.ts
 unmocked/userNM.test.ts
+nfr/nfr1.test.ts
+nfr/nfr2.test.ts
 "
 
 # Run each test file

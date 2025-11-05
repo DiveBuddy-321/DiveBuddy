@@ -38,8 +38,6 @@ jobs:
             JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
             GOOGLE_CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}
             GEOCODING_API=${{ secrets.PROD_GEOCODING_API }}
-            USER_ID=${{ secrets.TEST_USER_1 }}
-            OTHER_USER_ID=${{ secrets.TEST_USER_2 }}
             EOF
 
             # give .env permissions
@@ -50,16 +48,3 @@ jobs:
             docker-compose --env-file .env build
             docker-compose --env-file .env up -d
 
-      # - name: Run tests on deployed server
-      #   uses: appleboy/ssh-action@master
-      #   with:
-      #     host: ${{ secrets.EC2_HOST }}
-      #     username: ${{ secrets.EC2_USER }}
-      #     key: ${{ secrets.EC2_KEY }}
-      #     script: |
-      #       cd /home/ubuntu/divebuddy
-      #       docker exec cpen321_app sh -c "npm install --include=dev && npx jest --runInBand --coverage" || { echo "Tests failed!"; exit 1; }
-
-      # - name: Notify test results
-      #   if: failure()
-      #   run: echo "⚠️ Tests failed after deployment! Check the logs above."

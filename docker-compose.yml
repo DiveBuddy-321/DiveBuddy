@@ -23,8 +23,6 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GEOCODING_API=${GEOCODING_API}
-      - USER_ID=${USER_ID}
-      - OTHER_USER_ID=${OTHER_USER_ID}
     ports:
       - "${PORT}:${PORT}"
     depends_on:
