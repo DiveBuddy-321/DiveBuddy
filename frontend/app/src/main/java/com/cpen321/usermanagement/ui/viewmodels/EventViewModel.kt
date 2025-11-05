@@ -349,4 +349,4 @@ class EventViewModel @Inject constructor(
         val currentUser = _uiState.value.currentUser
         return currentUser != null && event.createdBy == currentUser._id
     }
-}
+} 

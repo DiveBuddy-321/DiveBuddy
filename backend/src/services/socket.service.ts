@@ -235,4 +235,4 @@ export class SocketService {
   public emitToChat<T>(chatId: string, event: string, data: T) {
     this.io.to(`chat:${chatId}`).emit(event, data);
   }
-}
+} 

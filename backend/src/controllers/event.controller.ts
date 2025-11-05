@@ -239,4 +239,4 @@ export class EventController {
       next(error);
     }
   }
-}
+} 

@@ -317,5 +317,5 @@ class SocketManager @Inject constructor() {
         Log.w(TAG, "Failed to parse date: $value, defaulting to now")
         return java.util.Date()
     }
-}
+} 
 

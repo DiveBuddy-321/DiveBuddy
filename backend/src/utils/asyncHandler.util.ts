@@ -16,5 +16,5 @@ export const asyncHandler = <P = any, ResBody = any, ReqBody = any, ReqQuery = P
       result.catch(next);
     }
   };
-};
+}; 
 
