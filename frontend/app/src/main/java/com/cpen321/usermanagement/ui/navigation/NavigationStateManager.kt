@@ -185,7 +185,7 @@ class NavigationStateManager @Inject constructor(
                     isLoading = false
                 )
                 navigateToAuthWithMessage("Logged out successfully!")
-            } } catch (e: java.net.SocketTimeoutException) {
+            } catch (e: java.net.SocketTimeoutException) {
                 Log.e(TAG, "Network timeout while logging out", e)
                 _navigationState.value = _navigationState.value.copy(isNavigating = false)
             } catch (e: java.net.UnknownHostException) {
