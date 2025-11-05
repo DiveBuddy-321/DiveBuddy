@@ -294,10 +294,6 @@ class EventViewModel @Inject constructor(
         )
     }
 
-    fun refreshCurrentUser() {
-        loadCurrentUser()
-    }
-
     fun deleteEvent(eventId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
