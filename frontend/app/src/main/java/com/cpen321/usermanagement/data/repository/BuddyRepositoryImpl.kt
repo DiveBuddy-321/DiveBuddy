@@ -31,8 +31,8 @@ class BuddyRepositoryImpl @Inject constructor(
                 targetMaxAge = targetMaxAge
             ) // Auth header is handled by interceptor
             if (response.isSuccessful && response.body()?.data != null) {
-                val randomized = response.body()!!.data!!.buddies.shuffled()
-                Result.success(randomized)
+                val result = response.body()!!.data!!.buddies
+                Result.success(result)
             } else {
                 val errorBodyString = response.errorBody()?.string()
                 val errorMessage = parseErrorMessage(errorBodyString, "Failed to fetch buddies.")
