@@ -45,11 +45,14 @@ class ChatRepositoryImpl @Inject constructor(
                 Result.failure(IllegalStateException("Failed to get messages"))
             }
         } catch (e: java.net.SocketTimeoutException) {
-            Log.e(TAG, "Network timeout while connecting to socket", e)
+            Log.e(TAG, "Network timeout while getting messages", e)
+            return Result.failure(e)
         } catch (e: java.net.UnknownHostException) {
-            Log.e(TAG, "Network connection failed while connecting to socket", e)
+            Log.e(TAG, "Network connection failed while getting messages", e)
+            return Result.failure(e)
         } catch (e: java.io.IOException) {
-            Log.e(TAG, "IO error while connecting to socket", e)
+            Log.e(TAG, "IO error while getting messages", e)
+            return Result.failure(e)
         }
     }
 

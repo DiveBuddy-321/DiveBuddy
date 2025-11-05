@@ -107,7 +107,12 @@ export class SocketService {
       }
 
       // Verify user is a participant in this chat
-      const chat = await Chat.getForUser(chatId, socket.user?._id! as mongoose.Types.ObjectId);
+      const currentUserId = socket.user?._id;
+      if (!currentUserId) {
+        socket.emit("error", { message: "User not authenticated" });
+        return;
+      }
+      const chat = await Chat.getForUser(chatId, String(currentUserId));
       
       if (!chat) {
         socket.emit("error", { message: "Chat not found or access denied" });
@@ -149,15 +154,16 @@ export class SocketService {
       }
 
       // Verify user is a participant
-
-      //fix not implemented as the suggested fix will result in a forbidden not null assertion. 
-      // Also, we specifically need it to return mongoose.Types.ObjectId based on what is returned from the database.
-      const userId = socket.user?._id! as mongoose.Types.ObjectId; 
-      
-      const chat = await Chat.getForUser(chatId, userId);
+      const currentUserId = socket.user?._id;
+      if (!currentUserId) {
+        socket.emit("error", { message: "User not authenticated" });
+        return;
+      }
+      const userIdStr = String(currentUserId);
+      const chat = await Chat.getForUser(chatId, userIdStr);
       
       if (!chat) {
-        logger.error("Chat not found or user not a participant:", { userId, chatId });
+        logger.error("Chat not found or user not a participant:", { userId: userIdStr, chatId });
         socket.emit("error", { message: "Chat not found or access denied" });
         return;
       }
