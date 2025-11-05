@@ -78,9 +78,12 @@ class ChatRepositoryImpl @Inject constructor(
                 Log.e(TAG, "Failed to create chat: ${'$'}errorText")
                 Result.failure(IllegalStateException("Failed to create chat"))
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error creating chat", e)
+        } catch (e: java.net.SocketTimeoutException) {
             Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+           Result.failure(e)
         }
     }
 
@@ -98,9 +101,12 @@ class ChatRepositoryImpl @Inject constructor(
                 Log.e(TAG, "Failed to send message: ${'$'}err")
                 Result.failure(IllegalStateException("Failed to send message"))
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error sending message", e)
+        } catch (e: java.net.SocketTimeoutException) {
             Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+           Result.failure(e)
         }
     }
 }

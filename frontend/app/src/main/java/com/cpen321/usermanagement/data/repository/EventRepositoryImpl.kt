@@ -36,9 +36,6 @@ class EventRepositoryImpl @Inject constructor(
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while fetching events", e)
             Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error while fetching events", e)
-            Result.failure(e)
         }
     }
 
