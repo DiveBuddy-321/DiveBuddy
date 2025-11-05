@@ -7,8 +7,9 @@ function attachConnectionEventHandlers(): void {
   if (handlersAttached) return;
   handlersAttached = true;
 
-  mongoose.connection.on('error', (error: Error) => {
-    logger.error('MongoDB connection error:', error?.message ?? 'Unknown error');
+  mongoose.connection.on('error', (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+    logger.error('MongoDB connection error:', message);
   });
 
   mongoose.connection.on('disconnected', () => {
@@ -22,11 +23,14 @@ function attachConnectionEventHandlers(): void {
       .close()
       .then(() => {
         logger.info('MongoDB connection closed through app termination');
-        process.exit(0);
+        process.exitCode = 0;
+        return;
       })
-      .catch((error) => {
-        logger.error('Error closing MongoDB connection:', error);
-        process.exit(1);
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+        logger.error('Error closing MongoDB connection:', message);
+        process.exitCode = 1;
+        return;
       });
   });
 }
