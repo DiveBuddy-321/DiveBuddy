@@ -66,19 +66,14 @@ fun SingleChatScreen(
     val listState = rememberLazyListState()
     val isLoadingMore = remember { mutableStateOf(false) }
     val messageText = remember { mutableStateOf("") }
-
     val otherUserName = chatVm.getOtherUserName(chat)
-
 	ChatInitializationEffects(chatId = chat._id, chatVm = chatVm)
-
 	MessagesCollector(
 		chatId = chat._id,
 		messagesByChat = uiState.messagesByChat,
 		onMessagesChanged = { newMessages -> messages.value = newMessages }
 	)
 	// Detect when user scrolls near the top to load more older messages
-	// With reverseLayout, index 0 is at bottom (newest), high indices are at top (oldest)
-	// Backend returns messages sorted newest first, so lastOrNull() gives us the oldest
 	LaunchedEffect(listState) {
 		snapshotFlow {
 			val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
@@ -87,12 +82,9 @@ fun SingleChatScreen(
 		}
 			.distinctUntilChanged()
 			.collect { (lastVisibleIndex, totalItems) ->
-				if (lastVisibleIndex != null &&
-					totalItems > 0 &&
-					lastVisibleIndex >= totalItems - 3 &&
-					!isLoadingMore.value &&
-					messages.value.isNotEmpty()
-				) {
+                val canLoadMore = !isLoadingMore.value && messages.value.isNotEmpty() && totalItems > 0;
+                val isItemsOK = lastVisibleIndex != null && lastVisibleIndex >= totalItems - 3 && canLoadMore;
+				if (isItemsOK && canLoadMore) {
 					isLoadingMore.value = true
 					// Backend returns messages newest first, so last item is the oldest
 					val oldestMessage = messages.value.lastOrNull()
@@ -101,42 +93,31 @@ fun SingleChatScreen(
 							timeZone = java.util.TimeZone.getTimeZone("UTC")
 						}.format(it)
 					}
-
 					chat._id?.let { id ->
 						chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
 					}
-
 					kotlinx.coroutines.delay(1000)
 					isLoadingMore.value = false
 				}
 			}
 	}
-
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
-        ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing)
-        MessagesList(
-            messages = messages.value,
-            currentUserId = uiState.currentUserId,
-            spacing = spacing,
-            listState = listState,
-            modifier = Modifier.weight(1f)
-        )
-        MessageInputBar(
-            message = messageText.value,
-            onMessageChange = { messageText.value = it },
-            onSend = {
-                if (messageText.value.trim().isNotEmpty()) {
-                    chat._id?.let { chatId ->
-                        chatVm.sendMessage(chatId, messageText.value.trim())
-                        messageText.value = ""
-                    }
+    ChatContent(
+        otherUserName = otherUserName,
+        messages = messages.value,
+        currentUserId = uiState.currentUserId,
+        listState = listState,
+        inputState = messageText,
+        onSend = {
+            if (messageText.value.trim().isNotEmpty()) {
+                chat._id?.let { chatId ->
+                    chatVm.sendMessage(chatId, messageText.value.trim())
+                    messageText.value = ""
                 }
-            },
-            spacing = spacing
-        )
-    }
+            }
+        },
+        onBack = onBack,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -191,8 +172,6 @@ private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: com.c
 		)
 	}
 }
-
-
 
 @Composable
 private fun MessagesList(
@@ -315,4 +294,36 @@ private fun MessageInputBar(
 			)
 		}
 	}
+}
+
+@Composable
+private fun ChatContent(
+    otherUserName: String,
+    messages: List<Message>,
+    currentUserId: String?,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    inputState: androidx.compose.runtime.MutableState<String>,
+    onSend: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing)
+        MessagesList(
+            messages = messages,
+            currentUserId = currentUserId,
+            spacing = spacing,
+            listState = listState,
+            modifier = Modifier.weight(1f)
+        )
+        MessageInputBar(
+            message = inputState.value,
+            onMessageChange = { inputState.value = it },
+            onSend = onSend,
+            spacing = spacing
+        )
+    }
 }
