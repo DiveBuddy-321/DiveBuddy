@@ -19,13 +19,18 @@ const storage = multer.diskStorage({
     cb(null, IMAGES_DIR);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(crypto.randomBytes(8).readUInt32LE(0));
+    const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(8).readUInt32LE(0);
     const stringName = String(file.originalname);
     if (!path.extname(stringName)) {
       cb(new Error('Invalid file extension'), '');
       return;
     }
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
+    if (typeof stringName !== 'string') {
+      cb(new Error('Invalid file name'), '');
+      return;
+    } else {
+      cb(null, `${uniqueSuffix}${path.extname(stringName)}`);
+    }
   },
 });
 
