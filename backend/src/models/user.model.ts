@@ -82,8 +82,8 @@ export class UserModel {
     try {
       const validatedData = createUserSchema.parse(userInfo);
       // If client provided a location but no coordinates, try to geocode
-      if (validatedData.location && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
-        const coords = await getCoordinatesFromLocation(validatedData.location);
+      if (validatedData.location && typeof(validatedData.location) === 'string' && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
+        const coords = await getCoordinatesFromLocation(String(validatedData.location));
         if (coords) {
           validatedData.latitude = coords.latitude;
           validatedData.longitude = coords.longitude;
