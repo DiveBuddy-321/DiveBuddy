@@ -115,52 +115,49 @@ class BuddyViewModel @Inject constructor(
                 errorMessage = null,
                 successMessage = null
             )
-
-            // validate filters before calling API
-            validateFilters()?.let { err ->
+    
+            val err = validateFilters()
+            if (err != null) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = err
                 )
-                return@launch
-            }
-
-            val s = _uiState.value
-            val result = buddyRepository.getBuddies(
-                targetMinLevel = s.targetMinLevel,
-                targetMaxLevel = s.targetMaxLevel,
-                targetMinAge = s.targetMinAge,
-                targetMaxAge = s.targetMaxAge
-            )
-
-            if (result.isSuccess) {
-                val buddies = result.getOrNull()!!
-                if (buddies.isEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        buddies = emptyList(),
-                        errorMessage = "No buddies found",
-                        successMessage = null,
-                        showMatches = false
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        buddies = buddies,
-                        successMessage = "Found ${buddies.size} buddies!",
-                        showMatches = true
-                    )
-                    // Immediately navigate to match screen if we have buddies
-                    onNavigateToMatch?.invoke()
-                }
             } else {
-                val error = result.exceptionOrNull()
-                Log.e(TAG, "Failed to fetch buddies", error)
-                val errorMessage = error?.message ?: "Failed to fetch buddies"
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = errorMessage
+                val s = _uiState.value
+                val result = buddyRepository.getBuddies(
+                    targetMinLevel = s.targetMinLevel,
+                    targetMaxLevel = s.targetMaxLevel,
+                    targetMinAge = s.targetMinAge,
+                    targetMaxAge = s.targetMaxAge
                 )
+    
+                if (result.isSuccess) {
+                    val buddies = result.getOrNull().orEmpty()
+                    if (buddies.isEmpty()) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            buddies = emptyList(),
+                            errorMessage = "No buddies found",
+                            successMessage = null,
+                            showMatches = false
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            buddies = buddies,
+                            successMessage = "Found ${buddies.size} buddies!",
+                            showMatches = true
+                        )
+                        onNavigateToMatch?.invoke()
+                    }
+                } else {
+                    val errorMessage = result.exceptionOrNull()?.message ?: "Failed to fetch buddies"
+                    Log.e(TAG, "Failed to fetch buddies", result.exceptionOrNull())
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = errorMessage
+                    )
+                }
             }
         }
     }
