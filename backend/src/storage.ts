@@ -2,6 +2,7 @@ import { Express, Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
+import crypto from 'crypto';
 
 import { IMAGES_DIR } from './constants/statics';
 
@@ -18,7 +19,7 @@ const storage = multer.diskStorage({
     cb(null, IMAGES_DIR);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(crypto.randomBytes(8).readUInt32LE(0));
     const stringName = String(file.originalname);
     if (!path.extname(stringName)) {
       cb(new Error('Invalid file extension'), '');
