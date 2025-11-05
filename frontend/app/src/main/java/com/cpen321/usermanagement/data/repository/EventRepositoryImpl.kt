@@ -82,9 +82,6 @@ class EventRepositoryImpl @Inject constructor(
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while updating event", e)
             Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error while updating event", e)
-            Result.failure(e)
         }
     }
 
