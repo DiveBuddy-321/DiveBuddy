@@ -10,13 +10,13 @@ import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
 app.use(express.json());
-
-let testUser: any = null;
 
 // Mock auth middleware - BYPASSES real authenticateToken middleware
 // Sets req.user directly so we don't need JWT tokens for testing
@@ -25,13 +25,6 @@ app.use((req: any, res, next) => {
   // Use the test user from database (set in beforeAll)
   if (testUser) {
     req.user = testUser;
-  } else {
-    // Fallback
-    req.user = {
-      _id: new mongoose.Types.ObjectId(USER),
-      email: 'test@example.com',
-      name: 'Test User'
-    };
   }
   next();
 });
@@ -43,40 +36,27 @@ app.use(errorHandler);
 beforeAll(async () => {
   await setupTestDB();
   
-  // Ensure the test user exists with complete profile
-  try {
-    const existingUser = await userModel.findById(new mongoose.Types.ObjectId(USER));
-    if (!existingUser) {
-      // Create a test user with complete profile
-      const newUser: CreateUserRequest = {
-        email: 'test@example.com',
-        name: 'Test User',
-        googleId: `test-google-${USER}`,
-        age: 25,
-        profilePicture: 'http://example.com/pic.jpg',
-        bio: 'Test bio',
-        location: 'Vancouver, BC',
-        latitude: 49.2827,
-        longitude: -123.1207,
-        skillLevel: 'Intermediate'
-      };
-      testUser = await userModel.create(newUser);
-    } else {
-      // Update existing user to ensure complete profile
-      await userModel.update(new mongoose.Types.ObjectId(USER), {
-        age: 25,
-        latitude: 49.2827,
-        longitude: -123.1207,
-        skillLevel: 'Intermediate'
-      });
-      testUser = await userModel.findById(new mongoose.Types.ObjectId(USER));
-    }
-  } catch (error) {
-    console.error('Error setting up test user:', error);
-  }
+  // Create a test user with complete profile
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 

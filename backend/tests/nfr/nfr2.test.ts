@@ -31,16 +31,10 @@ import jwt from 'jsonwebtoken';
 import { UpdateProfileRequest, CreateUserRequest } from '../../src/types/user.types';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
-const OTHER_USER = process.env.OTHER_USER_ID as string || new mongoose.Types.ObjectId().toString();
 
-// Validate USER_ID at startup
-if (!USER) {
-  console.error('[SETUP ERROR] USER_ID environment variable is not set!');
-}
-if (USER && !mongoose.isValidObjectId(USER)) {
-  console.error('[SETUP ERROR] USER_ID is not a valid ObjectId:', USER);
-}
+// Test users will be created dynamically
+let testUser: any = null;
+let otherTestUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -58,11 +52,13 @@ app.use((req: any, res, next) => {
         return authenticateToken(req, res, next);
     }
     
-    req.user = { 
-        _id: new mongoose.Types.ObjectId(USER),
-        email: 'test@example.com',
-        name: 'Test User'
-    };
+    if (testUser) {
+        req.user = { 
+            _id: testUser._id,
+            email: testUser.email,
+            name: testUser.name
+        };
+    }
     next();
 });
 
@@ -78,6 +74,36 @@ app.use(errorHandler);
 
 beforeAll(async () => {
     await setupTestDB();
+    
+    // Create test users
+    const newUser: CreateUserRequest = {
+        email: 'test@example.com',
+        name: 'Test User',
+        googleId: `test-google-${Date.now()}`,
+        age: 25,
+        profilePicture: 'http://example.com/pic.jpg',
+        bio: 'Test bio',
+        location: 'Vancouver, BC',
+        latitude: 49.2827,
+        longitude: -123.1207,
+        skillLevel: 'Intermediate'
+    };
+    testUser = await userModel.create(newUser);
+    
+    const newOtherUser: CreateUserRequest = {
+        email: 'other@example.com',
+        name: 'Other Test User',
+        googleId: `test-google-other-${Date.now()}`,
+        age: 30,
+        profilePicture: 'http://example.com/other-pic.jpg',
+        bio: 'Other test bio',
+        location: 'Vancouver, BC',
+        latitude: 49.2827,
+        longitude: -123.1207,
+        skillLevel: 'Expert'
+    };
+    otherTestUser = await userModel.create(newOtherUser);
+    
     if (!mongoose.models.User) {
         console.log('[SETUP] User model not registered, accessing userModel to register it...');
         const _ = userModel; // This triggers UserModel constructor which registers the schema
@@ -88,7 +114,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await teardownTestDB();
+    // Clean up test users
+    if (testUser) {
+        await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+    }
+    if (otherTestUser) {
+        await userModel.delete(new mongoose.Types.ObjectId(otherTestUser._id));
+    }
+    await teardownTestDB();
 });
 
 // non-functional tests to test event API calls within 500ms
@@ -123,7 +156,7 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Test Location",
 			latitude: 37.7749,
 			longitude: -122.4194,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -172,7 +205,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			location: "Test Location",
 			latitude: 37.7749,
 			longitude: -122.4194,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -222,7 +255,7 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 			location: "Join Location",
 			latitude: 40.7128,
 			longitude: -74.0060,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -243,7 +276,7 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 		// verify user was actually added to attendees in DB
 		const eventInDb = await eventModel.findById(createdId);
 		expect(eventInDb).not.toBeNull();
-		expect(eventInDb?.attendees.map(a => a.toString())).toContain(USER);
+		expect(eventInDb?.attendees.map(a => a.toString())).toContain(testUser._id.toString());
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
@@ -263,8 +296,8 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 			location: "Leave Location",
 			latitude: 51.5074,
 			longitude: -0.1278,
-			createdBy: USER,
-			attendees: [USER],
+			createdBy: testUser._id.toString(),
+			attendees: [testUser._id.toString()],
 			photo: ""
 		};
 		const created = await eventModel.create(newEvent);
@@ -284,7 +317,7 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 		// verify user was actually removed from attendees in DB
 		const eventInDb = await eventModel.findById(createdId);
 		expect(eventInDb).not.toBeNull();
-		expect(eventInDb?.attendees.map(a => a.toString())).not.toContain(USER);
+		expect(eventInDb?.attendees.map(a => a.toString())).not.toContain(testUser._id.toString());
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
@@ -303,7 +336,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Initial Location",
 			latitude: 34.0522,
 			longitude: -118.2437,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -320,7 +353,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 			location: "Updated Location",
 			latitude: 40.7128,
 			longitude: -74.0060,
-			attendees: [USER],
+			attendees: [testUser._id.toString()],
 			photo: "updated_photo_url"
 		};
 
@@ -347,7 +380,7 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 		expect(eventInDb?.latitude).toBe(updatedEvent.latitude);
 		expect(eventInDb?.longitude).toBe(updatedEvent.longitude);
 		expect(eventInDb?.photo).toBe(updatedEvent.photo);
-		expect(eventInDb?.attendees.map(a => a.toString())).toContain(USER);
+		expect(eventInDb?.attendees.map(a => a.toString())).toContain(testUser._id.toString());
 
 		// cleanup - delete the created event
 		await eventModel.delete(createdId);
@@ -367,7 +400,7 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 			location: "Test Location",
 			latitude: 37.7749,
 			longitude: -122.4194,
-			createdBy: USER,
+			createdBy: testUser._id.toString(),
 			attendees: [],
 			photo: ""
 		};
@@ -549,7 +582,7 @@ describe('GET /api/users/profile - unmocked (requires running server)', () => {
         expect(res.body.data.user).toHaveProperty('_id');
 
         // verify returned user is the expected one
-        expect(res.body.data.user._id).toBe(USER);
+        expect(res.body.data.user._id).toBe(testUser._id.toString());
       });
 });
 
@@ -562,7 +595,7 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
   */
   test('returns user by ID (200) when server is available, within 500ms', async () => {
     // call the endpoint
-    const res = await request(app).get(`/api/users/${USER}`);
+    const res = await request(app).get(`/api/users/${testUser._id.toString()}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message');
     expect(res.body).toHaveProperty('data');
@@ -570,7 +603,7 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
     expect(res.body.data.user).toHaveProperty('_id');
 
     // verify returned user is the expected one
-    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user._id).toBe(testUser._id.toString());
   });
 });
 
@@ -595,7 +628,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
     
     // call the endpoint
     const startTime = performance.now();
-    const res = await request(app).put(`/api/users/${USER}`).send(updateData);
+    const res = await request(app).put(`/api/users/${testUser._id}`).send(updateData);
     const endTime = performance.now();
 
     expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout
@@ -606,7 +639,7 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
     expect(res.body.data.user).toHaveProperty('_id');
 
     // verify returned user is the expected one
-    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user._id).toBe(testUser._id.toString());
     expect(res.body.data.user.name).toBe(updateData.name);
     expect(res.body.data.user.age).toBe(updateData.age);
     expect(res.body.data.user.bio).toBe(updateData.bio);
@@ -650,7 +683,7 @@ describe('POST /api/users/ - unmocked (requires running server)', () => {
     expect(res.body.data.user).toHaveProperty('_id');
 
     // verify returned user is the expected one
-    expect(res.body.data.user._id).toBe(USER);
+    expect(res.body.data.user._id).toBe(testUser._id.toString());
     expect(res.body.data.user.name).toBe(updateData.name);
     expect(res.body.data.user.age).toBe(updateData.age);
     expect(res.body.data.user.bio).toBe(updateData.bio);
@@ -724,10 +757,10 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     Expected behavior: Creates new direct chat between two users
   */
   test('creates a direct chat between two users, within 500ms', async () => {
-    console.log('[TEST] Creating chat with peerId:', OTHER_USER);
+    console.log('[TEST] Creating chat with peerId:', otherTestUser._id);
     const startTime = performance.now();
     const res = await request(app).post('/api/chats').send({
-      peerId: OTHER_USER,
+      peerId: otherTestUser._id,
       name: 'Test Direct Chat'
     });
     const endTime = performance.now();
@@ -738,8 +771,8 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('_id');
     expect(res.body).toHaveProperty('participants');
     const parts = res.body.participants.map((p: any) => String(p._id || p));
-    expect(parts).toContain(USER);
-    expect(parts).toContain(OTHER_USER);
+    expect(parts).toContain(testUser._id.toString());
+    expect(parts).toContain(otherTestUser._id.toString());
     chatId = String(res.body._id);
     console.log('[TEST] Created chatId:', chatId);
   });
@@ -753,8 +786,8 @@ describe('GET /api/chats - unmocked (no mocking)', () => {
   */
   test('lists chats for the authenticated user, within 500ms', async () => {
     console.log('[TEST] Starting GET /api/chats test');
-    console.log('[TEST] USER_ID from env:', USER);
-    console.log('[TEST] USER_ID is valid ObjectId:', mongoose.isValidObjectId(USER));
+    console.log('[TEST] USER_ID from env:', testUser._id);
+    console.log('[TEST] USER_ID is valid ObjectId:', mongoose.isValidObjectId(testUser._id));
 
     const startTime = performance.now();
     const res = await request(app).get('/api/chats');
@@ -817,7 +850,7 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('_id');
     expect(res.body).toHaveProperty('content');
     expect(res.body.content).toBe('Hello from test!');
-    expect(String(res.body.sender?._id || res.body.sender)).toBe(USER);
+    expect(String(res.body.sender?._id || res.body.sender)).toBe(testUser._id.toString());
     messageId = String(res.body._id);
   });
 });
