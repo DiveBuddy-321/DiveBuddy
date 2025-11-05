@@ -49,6 +49,7 @@ import com.cpen321.usermanagement.ui.components.ExperienceLevel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon as M3Icon
+import androidx.compose.ui.window.PopupProperties
 
 @Composable
 fun ProfilePictureCard(
@@ -193,7 +194,12 @@ fun ExposedDropdownMenuBoxScope.CitySuggestionsDropdown(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier
     ) {
-    DropdownMenu(expanded = expanded && showMenu, onDismissRequest = onDismissRequest, modifier = modifier) {
+    DropdownMenu(
+        expanded = expanded && showMenu,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        properties = PopupProperties(focusable = false)
+    ) {
         suggestions.take(8).forEach { s ->
             DropdownMenuItem(text = { Text(s) }, onClick = { onSelect(s) })
         }
