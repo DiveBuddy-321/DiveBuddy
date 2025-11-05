@@ -44,9 +44,14 @@ class ChatRepositoryImpl @Inject constructor(
                 Log.e(TAG, "Failed to get messages: ${'$'}err")
                 Result.failure(IllegalStateException("Failed to get messages"))
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting messages", e)
-            Result.failure(e)
+        } catch (e: URISyntaxException) {
+            Log.e(TAG, "Invalid server URL", e)
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while connecting to socket", e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while connecting to socket", e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while connecting to socket", e)
         }
     }
 

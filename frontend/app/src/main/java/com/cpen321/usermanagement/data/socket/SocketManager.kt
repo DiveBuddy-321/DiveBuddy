@@ -107,8 +107,14 @@ class SocketManager @Inject constructor() {
                         Log.d(TAG, "Auto-joining room after connect: $roomChatId")
                         emit("join_room", data)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to auto-join rooms", e)
+                } catch (e: URISyntaxException) {
+                    Log.e(TAG, "Invalid server URL", e)
+                } catch (e: java.net.SocketTimeoutException) {
+                    Log.e(TAG, "Network timeout while connecting to socket", e)
+                } catch (e: java.net.UnknownHostException) {
+                    Log.e(TAG, "Network connection failed while connecting to socket", e)
+                } catch (e: java.io.IOException) {
+                    Log.e(TAG, "IO error while connecting to socket", e)
                 }
             }
             

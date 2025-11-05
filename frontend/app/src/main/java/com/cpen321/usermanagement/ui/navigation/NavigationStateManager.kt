@@ -220,10 +220,15 @@ class NavigationStateManager @Inject constructor(
                     _navigationState.value = _navigationState.value.copy(isNavigating = false)
                     // Could add error handling here, for now just reset navigation state
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception while deleting account", e)
+            } catch (e: java.net.SocketTimeoutException) {
+                Log.e(TAG, "Network timeout while deleting account", e)
                 _navigationState.value = _navigationState.value.copy(isNavigating = false)
-                // Could add error handling here, for now just reset navigation state
+            } catch (e: java.net.UnknownHostException) {
+                Log.e(TAG, "Network connection failed while deleting account", e)
+                _navigationState.value = _navigationState.value.copy(isNavigating = false)
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "IO error while deleting account", e)
+                _navigationState.value = _navigationState.value.copy(isNavigating = false)
             }
         }
     }
