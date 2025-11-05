@@ -1,42 +1,94 @@
 import fs from 'fs';
 import path from 'path';
 
-import { IMAGES_DIR } from '../constants/statics';
+const IMAGES_DIR = path.resolve('./public/images'); // adjust as needed
+const UPLOADS_DIR = path.resolve('./uploads');
+
+const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
+const DOTS_SPACES = /[. ]+$/;
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
+
+function sanitizeFilename(input: string, keepExt = true): string {
+  const raw = input.normalize('NFKC').trim();
+  const ext = keepExt ? path.extname(raw).toLowerCase() : '';
+  let base = keepExt ? path.basename(raw, ext) : path.basename(raw);
+
+  base = base.replace(ILLEGAL_CHARS, ' ').replace(/\s{2,}/g, ' ').trim();
+  base = base.replace(DOTS_SPACES, '');
+  if (!base || WINDOWS_RESERVED.test(base)) base = 'file';
+  if (base.length > 80) base = base.slice(0, 80);
+
+  const safeExt = keepExt && ALLOWED_EXTS.has(ext) ? ext : '';
+  return `${base}${safeExt}`;
+}
+
+function ensureInside(baseDir: string, absPath: string): void {
+  const base = path.resolve(baseDir) + path.sep;
+  const abs  = path.resolve(absPath);
+  if (!abs.startsWith(base)) throw new Error('Path traversal attempt');
+}
+
+function safeJoin(baseDir: string, filename: string): string {
+  const onlyName = sanitizeFilename(filename, true);
+  const abs = path.resolve(baseDir, onlyName);
+  ensureInside(baseDir, abs);
+  return abs;
+}
 
 export class MediaService {
-  // Validate that a path is within the expected directory
+  // Keep for compatibility; upgraded to use trailing sep check
   private static isPathSafe(filePath: string, baseDir: string): boolean {
-    const resolvedPath = path.resolve(filePath);
-    const resolvedBase = path.resolve(baseDir);
-    return resolvedPath.startsWith(resolvedBase);
+    try {
+      ensureInside(baseDir, filePath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   static saveImage(filePath: string, userId: string): string {
     try {
-      // Validate input path is safe
-      const uploadsDir = path.resolve('./uploads');
-      if (!this.isPathSafe(filePath, uploadsDir)) {
-        throw new Error('Invalid file path');
+      // 1) Verify the source really lives under UPLOADS_DIR
+      const srcAbs = path.resolve(filePath);
+      ensureInside(UPLOADS_DIR, srcAbs);
+
+      // 2) Enforce/whitelist extension based on the actual source file
+      const ext = path.extname(srcAbs).toLowerCase();
+      if (!ALLOWED_EXTS.has(ext)) {
+        throw new Error(`Unsupported file type: ${ext}`);
       }
 
-      const fileExtension = path.extname(filePath);
-      const fileName = `${userId}-${Date.now()}${fileExtension}`;
-      const newPath = path.join(IMAGES_DIR, fileName);
+      // 3) Build a safe destination filename and path under IMAGES_DIR
+      const destFileName = sanitizeFilename(`${userId}-${Date.now()}${ext}`, true);
+      const destAbs = safeJoin(IMAGES_DIR, destFileName);
 
-      fs.renameSync(filePath, newPath);
+      // 4) Move the file (sync; swap to async if you prefer)
+      fs.renameSync(srcAbs, destAbs);
 
-      return newPath.split(path.sep).join('/');
+      // 5) Return a normalized public path (assuming ./public is web root)
+      const publicRoot = path.resolve('./public').split(path.sep).join('/');
+      const normalizedDest = destAbs.split(path.sep).join('/');
+      const publicPath = normalizedDest.startsWith(publicRoot + '/')
+        ? normalizedDest.slice(publicRoot.length)
+        : normalizedDest; // fallback if IMAGES_DIR not under ./public
+
+      return publicPath;
     } catch (error) {
-      // Clean up uploaded file on error
+      // Best-effort cleanup of temp upload if it still exists
       try {
-        const uploadsDir = path.resolve('./uploads');
-        if (this.isPathSafe(filePath, uploadsDir)) {
-          fs.unlinkSync(filePath);
+        const srcAbs = path.resolve(filePath);
+        if (this.isPathSafe(srcAbs, UPLOADS_DIR) && fs.existsSync(srcAbs)) {
+          fs.unlinkSync(srcAbs);
         }
       } catch {
-        // Ignore cleanup errors
+        // ignore cleanup errors
       }
-      throw new Error(`Failed to save profile picture: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to save profile picture: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 

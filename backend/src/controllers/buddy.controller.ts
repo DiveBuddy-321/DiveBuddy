@@ -27,7 +27,7 @@ export class BuddyController {
 
       const filters = this.parseFilters(req, currentUser);
       const query = this.buildMongoQuery(currentUser, filters);
-      const otherUsers = await (userModel as any).find(query).lean().limit(1000);
+      const otherUsers = await userModel.findByQuery(query as any, 1000);
 
       const currentLong = currentUser.longitude;
       const currentLat = currentUser.latitude;
