@@ -136,6 +136,70 @@ class BuddyTests {
         // The last buddy (Charlie) is displayed, confirming we can view the full list
     }
 
+    @Test
+    fun success_scenario_matching_with_user() {
+        // Given: We have a buddy's profile displayed on MatchScreen
+        val testBuddies = createTestBuddies()
+        val firstBuddy = testBuddies[0] // Alice
+        val expectedChatId = "chat-${firstBuddy.user._id}"
+        
+        var chatNavigationInvoked = false
+        var chatIdReceived: String? = null
+
+        // Set up the fake chat repository to return a chat ID
+        val fakeChatRepository = FakeChatRepository()
+        fakeChatRepository.setChatIdToReturn(expectedChatId)
+        
+        val testMatchViewModel = TestMatchViewModel(fakeChatRepository)
+        
+        // Initialize MatchViewModel with buddies
+        testMatchViewModel.initializeWithBuddies(testBuddies)
+        
+        // Set up navigation callback to track chat creation
+        testMatchViewModel.onNavigateToChat = { chatId ->
+            chatNavigationInvoked = true
+            chatIdReceived = chatId
+        }
+
+        // When: MatchScreen is displayed with the first buddy's profile
+        composeTestRule.setContent {
+            UserManagementTheme {
+                ProvideSpacing {
+                    MatchScreen(viewModel = testMatchViewModel)
+                }
+            }
+        }
+
+        composeTestRule.waitForIdle()
+
+        // Verify we're on the MatchScreen and first buddy's profile is displayed
+        composeTestRule.onNodeWithText("Alice").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Age: 25").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Level: Intermediate").assertIsDisplayed()
+        composeTestRule.onNodeWithText("I love diving", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Vancouver, BC").assertIsDisplayed()
+
+        // Verify the "Match" button is displayed
+        composeTestRule.onNodeWithText("Match").assertIsDisplayed()
+
+        // Click on the "Match" button
+        composeTestRule.onNodeWithText("Match").performClick()
+
+        composeTestRule.waitForIdle()
+
+        // Wait for async operation (chat creation) to complete
+        composeTestRule.waitForIdle()
+
+        // Then: Verify that a chat was created and navigation was triggered
+        assert(chatNavigationInvoked) { "Chat navigation should be invoked after matching" }
+        assert(chatIdReceived == expectedChatId) { 
+            "Expected chat ID $expectedChatId but got $chatIdReceived" 
+        }
+        
+        // Verify that the chat creation was successful by checking the callback was invoked
+        // with the correct chat ID (which represents the created chat between the user and the match)
+    }
+
     // Helper function to create test buddies
     private fun createTestBuddies(): List<Buddy> {
         return listOf(
@@ -238,12 +302,20 @@ class BuddyTests {
      * Fake ChatRepository implementation for testing
      */
     private class FakeChatRepository : ChatRepository {
+        private var chatIdToReturn: String? = null
+
+        fun setChatIdToReturn(chatId: String) {
+            chatIdToReturn = chatId
+        }
+
         override suspend fun listChats(): Result<List<com.cpen321.usermanagement.data.remote.dto.Chat>> {
             return Result.success(emptyList())
         }
 
         override suspend fun createChat(peerId: String, name: String?): Result<String> {
-            return Result.success("chat-$peerId")
+            // Return the set chat ID if available, otherwise use default pattern
+            val chatId = chatIdToReturn ?: "chat-$peerId"
+            return Result.success(chatId)
         }
 
         override suspend fun getMessages(
