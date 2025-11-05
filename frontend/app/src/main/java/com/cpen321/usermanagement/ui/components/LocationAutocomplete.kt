@@ -29,7 +29,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -96,6 +99,34 @@ fun LocationAutocomplete(
     }
 }
 
+@Composable
+private fun PredictionsFetcher(
+    query: String,
+    placesClient: PlacesClient,
+    onLoadingChange: (Boolean) -> Unit,
+    onPredictionsChange: (List<AutocompletePrediction>) -> Unit
+) {
+    LaunchedEffect(query) {
+        if (query.length >= 2) {
+            onLoadingChange(true)
+            try {
+                val results = withContext(Dispatchers.IO) {
+                    findAutocompletePredictions(placesClient, query)
+                }
+                Log.d("LocationSearchDialog", "Predictions: $results")
+                onPredictionsChange(results)
+            } catch (e: Exception) {
+                Log.e("LocationSearchDialog", "Error finding predictions: ${e.message}")
+                onPredictionsChange(emptyList())
+            } finally {
+                onLoadingChange(false)
+            }
+        } else {
+            onPredictionsChange(emptyList())
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LocationSearchDialog(
@@ -103,47 +134,31 @@ private fun LocationSearchDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
     var searchQuery by remember { mutableStateOf("") }
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     
     val placesClient = remember { Places.createClient(context) }
     
-    // Search for predictions when query changes
-    LaunchedEffect(searchQuery) {
-        if (searchQuery.length >= 2) {
-            isLoading = true
-            try {
-                val request = FindAutocompletePredictionsRequest.builder()
-                    .setQuery(searchQuery)
-                    .setSessionToken(AutocompleteSessionToken.newInstance())
-                    .build()
-                
-                val response = withContext(Dispatchers.IO) {
-                    suspendCancellableCoroutine { continuation ->
-                        placesClient.findAutocompletePredictions(request)
-                            .addOnSuccessListener { result ->
-                                continuation.resume(result)
-                            }
-                            .addOnFailureListener { exception ->
-                                continuation.resumeWithException(exception)
-                            }
-                    }
-                }
-                
-                predictions = response.autocompletePredictions
-                Log.d("LocationSearchDialog", "Predictions: $predictions")
-            } catch (e: Exception) {
-                Log.e("LocationSearchDialog", "Error finding predictions: ${e.message}")
-                predictions = emptyList()
-            } finally {
-                isLoading = false
-            }
-        } else {
-            predictions = emptyList()
-        }
+    PredictionsFetcher(
+        query = searchQuery,
+        placesClient = placesClient,
+        onLoadingChange = { isLoading = it },
+        onPredictionsChange = { predictions = it }
+    )
+
+    // Ensure the input keeps focus and keyboard stays visible
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
     }
-    
+    LaunchedEffect(predictions) {
+        // Re-request focus after results update to avoid IME hiding
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -151,60 +166,18 @@ private fun LocationSearchDialog(
         },
         text = {
             Column {
-                OutlinedTextField(
+                SearchInput(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text(stringResource(R.string.type_location)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search"
-                        )
-                    }
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
                 )
-            
-                if (isLoading) {
-                    Text(
-                        text = stringResource(R.string.searching),
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else if (predictions.isNotEmpty()) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(predictions.take(10)) { prediction ->
-                            PredictionItem(
-                                prediction = prediction,
-                                onClick = {
-                                    // Fetch place details
-                                    fetchPlaceDetails(placesClient, prediction.placeId) { locationResult ->
-                                        onLocationSelected(locationResult)
-                                    }
-                                }
-                            )
-                            
-                            if (prediction != predictions.last()) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-                            }
-                        }
-                    }
-                } else if (searchQuery.length >= 2) {
-                    Text(
-                        text = stringResource(R.string.no_results),
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
+                PredictionsSection(
+                    isLoading = isLoading,
+                    predictions = predictions,
+                    searchQuery = searchQuery,
+                    placesClient = placesClient,
+                    onLocationSelected = onLocationSelected
+                )
             }
         },
         confirmButton = {
@@ -213,6 +186,111 @@ private fun LocationSearchDialog(
             }
         }
     )
+}
+
+@Composable
+private fun SearchInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(stringResource(R.string.type_location)) },
+        modifier = modifier,
+        singleLine = true,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search"
+            )
+        }
+    )
+}
+
+@Composable
+private fun PredictionsSection(
+    isLoading: Boolean,
+    predictions: List<AutocompletePrediction>,
+    searchQuery: String,
+    placesClient: PlacesClient,
+    onLocationSelected: (LocationResult) -> Unit
+) {
+    if (isLoading) {
+        Text(
+            text = stringResource(R.string.searching),
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    } else if (predictions.isNotEmpty()) {
+        PredictionsList(
+            predictions = predictions.take(10),
+            placesClient = placesClient,
+            onLocationSelected = onLocationSelected
+        )
+    } else if (searchQuery.length >= 2) {
+        Text(
+            text = stringResource(R.string.no_results),
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+private fun PredictionsList(
+    predictions: List<AutocompletePrediction>,
+    placesClient: PlacesClient,
+    onLocationSelected: (LocationResult) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 300.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        items(predictions) { prediction ->
+            PredictionItem(
+                prediction = prediction,
+                onClick = {
+                    fetchPlaceDetails(placesClient, prediction.placeId) { locationResult ->
+                        onLocationSelected(locationResult)
+                    }
+                }
+            )
+
+            if (prediction != predictions.last()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+            }
+        }
+    }
+}
+
+private suspend fun findAutocompletePredictions(
+    placesClient: PlacesClient,
+    query: String
+): List<AutocompletePrediction> {
+    val request = FindAutocompletePredictionsRequest.builder()
+        .setQuery(query)
+        .setSessionToken(AutocompleteSessionToken.newInstance())
+        .build()
+
+    val response = suspendCancellableCoroutine<com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse> { continuation ->
+        placesClient.findAutocompletePredictions(request)
+            .addOnSuccessListener { result ->
+                continuation.resume(result)
+            }
+            .addOnFailureListener { exception ->
+                continuation.resumeWithException(exception)
+            }
+    }
+
+    return response.autocompletePredictions
 }
 
 @Composable
