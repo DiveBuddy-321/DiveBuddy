@@ -35,16 +35,21 @@ export class AuthService {
         name: payload.name,
         profilePicture: payload.picture,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Google token verification failed:', error);
       throw new Error('Invalid Google token');
     }
   }
 
   private generateAccessToken(user: IUser): string {
-    return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT secret not configured');
+    }
+    const token: string = jwt.sign({ id: user._id }, secret, {
       expiresIn: '19h',
     });
+    return token;
   }
 
   async signUpWithGoogle(idToken: string): Promise<AuthResult> {
@@ -64,9 +69,9 @@ export class AuthService {
       const token = this.generateAccessToken(user);
 
       return { token, user };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Sign up failed:', error);
-      throw error;
+      throw (error instanceof Error ? error : new Error('Sign up failed'));
     }
   }
 
@@ -83,9 +88,9 @@ export class AuthService {
       const token = this.generateAccessToken(user);
 
       return { token, user };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Sign in failed:', error);
-      throw error;
+      throw (error instanceof Error ? error : new Error('Sign in failed'));
     }
   }
 }

@@ -1,7 +1,7 @@
 import { IUser } from './user.types';
 
 
-export type GetAllBuddiesResponse = {
+export interface GetAllBuddiesResponse {
   message: string;
   data?: {
     buddies: { user: IUser; distance: number }[];

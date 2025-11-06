@@ -8,3 +8,7 @@ test-chat.html
 .vscode/
 # macOS system files
 .DS_Store
+
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc

@@ -41,12 +41,17 @@ export class EventController {
 
   async createEvent(req: Request<unknown, unknown, CreateEventRequest>, res: Response<GetEventResponse>, next: NextFunction) {
     try {
-      const requester = req.user!;
-      const payload = req.body as any;
+      const requester = req.user;
+      if (!requester?._id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
-      payload.createdBy = requester._id.toString();
+      const payload = {
+        ...req.body,
+        createdBy: requester._id.toString(),
+      };
 
-      const created = await eventModel.create(payload);
+      const created = await eventModel.create(payload as CreateEventRequest);
 
       res.status(201).json({ message: 'Event created successfully', data: { event: created } });
     } catch (error) {
@@ -74,7 +79,7 @@ export class EventController {
         return res.status(404).json({ message: 'Event not found' });
       }
 
-      const updated = await eventModel.update(eventId, req.body as Partial<any>);
+      const updated = await eventModel.update(eventId, req.body as unknown as Partial<IEvent>);
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update event' });
       }
@@ -96,7 +101,10 @@ export class EventController {
   async joinEvent(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params as { id: string };
-      const requester = req.user!;
+      const requester = req.user;
+      if (!requester?._id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
       
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid event id' });
@@ -119,14 +127,15 @@ export class EventController {
 
       existing.attendees.push(requester._id);
 
-      const { __v, createdAt, updatedAt, createdBy, _id, ...rest } = existing.toObject();
+      const eventObject = existing.toObject() as IEvent & { __v?: number };
+      const { ...rest } = eventObject;
 
       const updateBody = {
         ...rest,
-        attendees: existing.attendees.map((a: any) => a.toString()),
+        attendees: existing.attendees.map((attendeeId) => attendeeId.toString()),
       };
 
-      const updated = await eventModel.update(eventId, updateBody);
+      const updated = await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update event' });
       }
@@ -148,7 +157,10 @@ export class EventController {
   async leaveEvent(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params as { id: string };
-      const requester = req.user!;
+      const requester = req.user;
+      if (!requester?._id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid event id' });
@@ -167,14 +179,15 @@ export class EventController {
 
       existing.attendees = existing.attendees.filter((attendeeId) => !attendeeId.equals(requester._id));
 
-      const { __v, createdAt, updatedAt, createdBy, _id, ...rest } = existing.toObject();
+      const eventObject = existing.toObject() as IEvent & { __v?: number };
+      const { ...rest } = eventObject;
 
       const updateBody = {
         ...rest,
-        attendees: existing.attendees.map((a: any) => a.toString()),
+        attendees: existing.attendees.map((attendeeId) => attendeeId.toString()),
       };
 
-      const updated = await eventModel.update(eventId, updateBody);
+      const updated = await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update event' });
       }
@@ -208,7 +221,7 @@ export class EventController {
 
       // delete related media if any
       if (existing.photo) {
-        await MediaService.deleteImage(existing.photo);
+        MediaService.deleteImage(existing.photo);
       }
 
       await eventModel.delete(eventId);
@@ -226,4 +239,4 @@ export class EventController {
       next(error);
     }
   }
-}
+} 
