@@ -199,25 +199,16 @@ exposed backend APIs, so their coverage is low as well.
 
 ### 5.1. Commit Hash Where Codacy Ran
 
-`[Insert Commit SHA here]`
+`a97a33a65cbd4bdae90eb20c647a90aebf6fb6d1`
 
 ### 5.2. Unfixed Issues per Codacy Category
-
-_(Placeholder for screenshots of Codacy's Category Breakdown table in Overview)_
+No issues remaining as per screenshot below:
+![codacy results](../documentation/images/codacy.png)
 
 ### 5.3. Unfixed Issues per Codacy Code Pattern
 
-_(Placeholder for screenshots of Codacy's Issues page)_
+- Not applicable, no issues remaining as per screenshot in section above
 
 ### 5.4. Justifications for Unfixed Issues
 
-- **Code Pattern: [Usage of Deprecated Modules](#)**
-
-  1. **Issue**
-
-     - **Location in Git:** [`src/services/chatService.js#L31`](#)
-     - **Justification:** ...
-
-  2. ...
-
-- ...
+- Not Applicable
