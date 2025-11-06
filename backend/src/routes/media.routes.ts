@@ -14,4 +14,5 @@ router.post(
   mediaController.uploadImage
 );
 
-export default router;
+export default router; 
+
