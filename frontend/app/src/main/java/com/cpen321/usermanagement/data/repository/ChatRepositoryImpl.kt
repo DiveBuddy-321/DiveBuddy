@@ -69,11 +69,11 @@ class ChatRepositoryImpl @Inject constructor(
             if (!response.isSuccessful) {
                 val errorText = response.errorBody()?.string()
                 Log.e(TAG, "Failed to create chat (code=${'$'}{response.code()}): ${'$'}errorText")
-
-                if (response.code() == 409 || (errorText?.contains("exists", ignoreCase = true) == true)) {
-                    val existing = findExistingDirectChatId(peerId)
-                    if (existing != null) return Result.success(existing)
-                }
+                
+                //try finding existing chat for all instances of errors 
+                val existing = findExistingDirectChatId(peerId)
+                if (existing != null) return Result.success(existing)
+                
                 return Result.failure(IllegalStateException("Failed to create chat"))
             }
 
