@@ -1,23 +1,25 @@
-import { Router } from 'express';
-
+// routes/media.routes.ts
+import { Router, type RequestHandler } from 'express';
 import { upload } from '../storage';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { MediaController } from '../controllers/media.controller';
-import type { UploadImageRequest, UploadImageResponse } from '../types/media.types';
+import type { UploadImageResponse } from '../types/media.types';
 import { asyncHandler } from '../utils/asyncHandler.util';
 
 const router = Router();
 const mediaController = new MediaController();
 
-router.post(
+// Params = {}, ResBody = UploadImageResponse, ReqBody = unknown (multer-compatible)
+router.post<
+  Record<string, never>,
+  UploadImageResponse,
+  unknown
+>(
   '/upload',
-  authenticateToken,
-  upload.single('media'),
-  asyncHandler<unknown, UploadImageResponse, UploadImageRequest>(
-    (req, res, next) => {
-      mediaController.uploadImage(req, res, next);
-    }
-  )
+  authenticateToken as RequestHandler,             // (optional) align types
+  upload.single('media') as unknown as RequestHandler, // (optional) align types
+  asyncHandler(mediaController.uploadImage)        // no extra wrapper, no generics here
 );
 
 export default router;
+
