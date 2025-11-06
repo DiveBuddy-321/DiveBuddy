@@ -55,18 +55,73 @@ fun BuddiesScreen(
         BuddiesContent(
             modifier = modifier.padding(padding),
             isLoading = uiState.isLoading,
-            errorMessage = uiState.errorMessage,
-            targetMinLevel = uiState.targetMinLevel,
-            targetMaxLevel = uiState.targetMaxLevel,
-            targetMinAge = uiState.targetMinAge,
-            targetMaxAge = uiState.targetMaxAge,
-            onMatchClick = { 
-                viewModel.fetchBuddies()
-            },
-            onFiltersChange = { minLevel, maxLevel, minAge, maxAge ->
-                viewModel.setFilters(minLevel, maxLevel, minAge, maxAge)
-            }
+            state = BuddiesContentState(
+                targetMinLevel = uiState.targetMinLevel ?: Constants.BEGINNER_LEVEL,
+                targetMaxLevel = uiState.targetMaxLevel ?: Constants.ADVANCED_LEVEL,
+                targetMinAge = uiState.targetMinAge ?: Constants.MIN_AGE,
+                targetMaxAge = uiState.targetMaxAge ?: Constants.MAX_AGE,
+                errorMessage = uiState.errorMessage
+            ),
+            callbacks = BuddiesContentCallbacks(
+                onMatchClick = { viewModel.fetchBuddies() },
+                onFiltersChange = { minLevel, maxLevel, minAge, maxAge ->
+                    viewModel.setFilters(minLevel, maxLevel, minAge, maxAge)
+                }
+            )
         )
+    }
+}
+
+private data class BuddiesContentState(
+    val targetMinLevel: Int = Constants.BEGINNER_LEVEL,
+    val targetMaxLevel: Int = Constants.ADVANCED_LEVEL,
+    val targetMinAge: Int = Constants.MIN_AGE,
+    val targetMaxAge: Int = Constants.MAX_AGE,
+    val errorMessage: String? = null
+)
+
+private data class BuddiesContentCallbacks(
+    val onMatchClick: () -> Unit = {},
+    val onFiltersChange: (Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _ -> }
+)
+
+@Composable
+private fun FilterSlider(
+    label: String,
+    minValue: Int,
+    maxValue: Int,
+    valueRange: ClosedFloatingPointRange<Float>,
+    onValueChange: (ClosedFloatingPointRange<Float>) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
+    
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "$label: $minValue - $maxValue",
+            style = MaterialTheme.typography.bodyLarge
+        )
+        RangeSlider(
+            value = minValue.toFloat()..maxValue.toFloat(),
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            modifier = Modifier.padding(horizontal = spacing.large)
+        )
+    }
+}
+
+@Composable
+private fun MatchButton(
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        fullWidth = false
+    ) {
+        Text(text = "Match with Buddies")
     }
 }
 
@@ -74,88 +129,103 @@ fun BuddiesScreen(
 private fun BuddiesContent(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    errorMessage: String? = null,
-    targetMinLevel: Int? = null,
-    targetMaxLevel: Int? = null,
-    targetMinAge: Int? = null,
-    targetMaxAge: Int? = null,
-    onMatchClick: () -> Unit = {},
-    onFiltersChange: (Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _ -> }
+    state: BuddiesContentState,
+    callbacks: BuddiesContentCallbacks
 ) {
     val spacing = LocalSpacing.current
-
-    var minLevel by remember { mutableStateOf(targetMinLevel ?: Constants.BEGINNER_LEVEL) }
-    var maxLevel by remember { mutableStateOf(targetMaxLevel ?: Constants.ADVANCED_LEVEL) }
-    var minAge by remember { mutableStateOf(targetMinAge ?: Constants.MIN_AGE) }
-    var maxAge by remember { mutableStateOf(targetMaxAge ?: Constants.MAX_AGE) }
 
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
-            modifier = Modifier.padding(top = spacing.large).fillMaxHeight(),
+            modifier = Modifier
+                .padding(top = spacing.large)
+                .fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "Buddies",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            BuddiesHeader()
             
             if (isLoading) {
                 CircularProgressIndicator()
             } else {
-                Column(
-                    modifier = Modifier.padding(bottom = spacing.large),
-                    verticalArrangement = Arrangement.spacedBy(spacing.small),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = "Filters", style = MaterialTheme.typography.headlineSmall)
-
-                    // Level range slider
-                    Text(text = "Level: ${getLevelLabel(minLevel, maxLevel)}", style = MaterialTheme.typography.bodyLarge)
-                    RangeSlider(
-                        value = minLevel.toFloat()..maxLevel.toFloat(),
-                        onValueChange = { range ->
-                            val start = range.start.roundToInt().coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
-                            val end = range.endInclusive.roundToInt().coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
-                            minLevel = minOf(start, end)
-                            maxLevel = maxOf(start, end)
-                            onFiltersChange(minLevel, maxLevel, minAge, maxAge)
-                        },
-                        valueRange = Constants.BEGINNER_LEVEL.toFloat()..Constants.ADVANCED_LEVEL.toFloat(),
-                        steps = 1,
-                        modifier = Modifier.padding(horizontal = spacing.large)
-                    )
-
-                    // Age range slider
-                    Text(text = "Age: $minAge - $maxAge", style = MaterialTheme.typography.bodyLarge)
-                    RangeSlider(
-                        value = minAge.toFloat()..maxAge.toFloat(),
-                        onValueChange = { range ->
-                            val start = range.start.roundToInt().coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
-                            val end = range.endInclusive.roundToInt().coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
-                            minAge = minOf(start, end)
-                            maxAge = maxOf(start, end)
-                            onFiltersChange(minLevel, maxLevel, minAge, maxAge)
-                        },
-                        valueRange = Constants.MIN_AGE.toFloat()..Constants.MAX_AGE.toFloat(),
-                        modifier = Modifier.padding(horizontal = spacing.large)
-                    )
-
-                    Button(
-                        onClick = onMatchClick,
-                        fullWidth = false
-                    ) {
-                        Text(text = "Match with Buddies")
-                    }
-                    
-                }
+                BuddiesFiltersSection(
+                    state = state,
+                    callbacks = callbacks
+                )
             }
+            
+            MatchButton(onClick = callbacks.onMatchClick)
         }
+    }
+}
+
+@Composable
+private fun BuddiesHeader() {
+    Text(
+        text = "Buddies",
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun BuddiesFiltersSection(
+    state: BuddiesContentState,
+    callbacks: BuddiesContentCallbacks
+) {
+    val spacing = LocalSpacing.current
+    var minLevel by remember { mutableStateOf(state.targetMinLevel) }
+    var maxLevel by remember { mutableStateOf(state.targetMaxLevel) }
+    var minAge by remember { mutableStateOf(state.targetMinAge) }
+    var maxAge by remember { mutableStateOf(state.targetMaxAge) }
+
+    Column(
+        modifier = Modifier.padding(bottom = spacing.large),
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Filters",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        FilterSlider(
+            label = "Experience Level",
+            minValue = minLevel,
+            maxValue = maxLevel,
+            valueRange = Constants.BEGINNER_LEVEL.toFloat()..Constants.ADVANCED_LEVEL.toFloat(),
+            onValueChange = { range ->
+                minLevel = range.start.roundToInt()
+                    .coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
+                maxLevel = range.endInclusive.roundToInt()
+                    .coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
+                callbacks.onFiltersChange(minLevel, maxLevel, minAge, maxAge)
+            }
+        )
+
+        Text(
+            text = getLevelLabel(minLevel, maxLevel),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        FilterSlider(
+            label = "Age Range",
+            minValue = minAge,
+            maxValue = maxAge,
+            valueRange = Constants.MIN_AGE.toFloat()..Constants.MAX_AGE.toFloat(),
+            onValueChange = { range ->
+                minAge = range.start.roundToInt()
+                    .coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
+                maxAge = range.endInclusive.roundToInt()
+                    .coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
+                callbacks.onFiltersChange(minLevel, maxLevel, minAge, maxAge)
+            }
+        )
     }
 }
 

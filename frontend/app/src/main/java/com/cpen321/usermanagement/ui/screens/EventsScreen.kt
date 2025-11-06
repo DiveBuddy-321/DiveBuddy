@@ -38,6 +38,48 @@ import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+
+private data class EventNavigationState(
+    val selectedEvent: Event? = null,
+    val showCreateEventForm: Boolean = false,
+    val showEditEventForm: Event? = null
+)
+
+@Composable
+private fun HandleEventMessages(
+    uiState: EventUiState,
+    snackbarHostState: SnackbarHostState,
+    eventViewModel: EventViewModel
+) {
+    LaunchedEffect(uiState.joinSuccessMessage) {
+        uiState.joinSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            eventViewModel.clearJoinEventState()
+        }
+    }
+    
+    LaunchedEffect(uiState.leaveSuccessMessage) {
+        uiState.leaveSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            eventViewModel.clearLeaveEventState()
+        }
+    }
+    
+    LaunchedEffect(uiState.updateSuccessMessage) {
+        uiState.updateSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            eventViewModel.clearUpdateEventState()
+        }
+    }
+    
+    LaunchedEffect(uiState.deleteSuccessMessage) {
+        uiState.deleteSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            eventViewModel.clearDeleteEventState()
+        }
+    }
+}
+
 @Composable
 fun EventsScreen(
     modifier: Modifier = Modifier,
@@ -49,89 +91,150 @@ fun EventsScreen(
     val uiState by eventViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Handle success messages
-    LaunchedEffect(uiState.joinSuccessMessage) {
-        uiState.joinSuccessMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            // Clear only the success message, not the entire state
-            eventViewModel.clearJoinEventState()
-        }
-    }
-    
-    LaunchedEffect(uiState.leaveSuccessMessage) {
-        uiState.leaveSuccessMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            // Clear only the success message, not the entire state
-            eventViewModel.clearLeaveEventState()
-        }
-    }
-    
-    LaunchedEffect(uiState.updateSuccessMessage) {
-        uiState.updateSuccessMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            // Clear only the success message, not the entire state
-            eventViewModel.clearUpdateEventState()
-        }
-    }
-    
-    LaunchedEffect(uiState.deleteSuccessMessage) {
-        uiState.deleteSuccessMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            // Clear only the success message, not the entire state
-            eventViewModel.clearDeleteEventState()
-        }
-    }
+    HandleEventMessages(uiState, snackbarHostState, eventViewModel)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        when {
-            showCreateEventForm -> {
-                CreateEventScreen(
-                    onDismiss = {
-                        showCreateEventForm = false
-                    },
-                    eventViewModel = eventViewModel
-                )
+        EventNavigationContent(
+            modifier = modifier.padding(paddingValues),
+            navigationState = EventNavigationState(
+                selectedEvent = selectedEvent,
+                showCreateEventForm = showCreateEventForm,
+                showEditEventForm = showEditEventForm
+            ),
+            uiState = uiState,
+            eventViewModel = eventViewModel,
+            onNavigationChange = { navState ->
+                selectedEvent = navState.selectedEvent
+                showCreateEventForm = navState.showCreateEventForm
+                showEditEventForm = navState.showEditEventForm
             }
-            showEditEventForm != null -> {
-                CreateEventScreen(
-                    event = showEditEventForm!!,
-                    onDismiss = {
-                        showEditEventForm = null
-                    },
-                    eventViewModel = eventViewModel
-                )
-            }
-            selectedEvent != null -> {
-                SingleEventScreen(
-                    event = selectedEvent!!,
-                    onBack = {
-                        selectedEvent = null
-                    },
-                    onEditEvent = { event ->
-                        showEditEventForm = event
-                    },
-                    eventViewModel = eventViewModel
-                )
-            }
-            else -> {
-                EventsContent(
-                    modifier = modifier.padding(paddingValues),
-                    uiState = uiState,
-                    onCreateEventClick = {
-                        showCreateEventForm = true
-                    },
-                    onEventClick = { event ->
-                        selectedEvent = event
-                    },
-                    onRefresh = {
-                        eventViewModel.refreshEvents()
-                    }
-                )
-            }
+        )
+    }
+}
+
+@Composable
+private fun EventNavigationContent(
+    modifier: Modifier,
+    navigationState: EventNavigationState,
+    uiState: EventUiState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    when {
+        navigationState.showCreateEventForm -> {
+            CreateEventScreen(
+                onDismiss = {
+                    onNavigationChange(navigationState.copy(showCreateEventForm = false))
+                },
+                eventViewModel = eventViewModel
+            )
+        }
+        navigationState.showEditEventForm != null -> {
+            CreateEventScreen(
+                event = navigationState.showEditEventForm,
+                onDismiss = {
+                    onNavigationChange(navigationState.copy(showEditEventForm = null))
+                },
+                eventViewModel = eventViewModel
+            )
+        }
+        navigationState.selectedEvent != null -> {
+            SingleEventScreen(
+                event = navigationState.selectedEvent,
+                onBack = {
+                    onNavigationChange(navigationState.copy(selectedEvent = null))
+                },
+                onEditEvent = { event ->
+                    onNavigationChange(navigationState.copy(showEditEventForm = event))
+                },
+                eventViewModel = eventViewModel
+            )
+        }
+        else -> {
+            EventsContent(
+                modifier = modifier,
+                uiState = uiState,
+                onCreateEventClick = {
+                    onNavigationChange(navigationState.copy(showCreateEventForm = true))
+                },
+                onEventClick = { event ->
+                    onNavigationChange(navigationState.copy(selectedEvent = event))
+                },
+                onRefresh = {
+                    eventViewModel.refreshEvents()
+                }
+            )
         }
     }
+}
+
+@Composable
+private fun CreateEventButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
+    Button(
+        onClick = onClick,
+        modifier = modifier.padding(spacing.small, spacing.small)
+    ) {
+        Text(
+            text = "Create Event",
+            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+private fun RefreshEventsButton(
+    onClick: () -> Unit
+) {
+    Button(onClick = onClick) {
+        Text(
+            text = "Refresh Events",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimary
+        )
+    }
+}
+
+@Composable
+private fun ErrorMessage(
+    error: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        modifier = modifier.fillMaxSize()
+    ) {
+        Text(
+            text = "Error: $error",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Button(onClick = onClick) {
+            Text("Retry")
+        }
+    }
+}
+
+@Composable
+private fun NoEventsMessage(
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = "No events available",
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -147,81 +250,63 @@ private fun EventsContent(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(spacing.medium),
-        modifier = modifier
-            .fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
-        Button(
-            onClick = {
-                onCreateEventClick()
-            },
-            modifier = Modifier.padding(spacing.large, spacing.medium),
-        ) {
-            Text(
-                text = "Create Event",
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
+        CreateEventButton(onClick = onCreateEventClick)
+        EventsHeader(onRefresh = onRefresh)
+        EventsListContent(
+            uiState = uiState,
+            onEventClick = onEventClick,
+            onRefresh = onRefresh
+        )
+    }
+}
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(spacing.medium)
-        ) {
-            Text(
-                text = "Upcoming Events",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = spacing.small)
-            )
-            Button(
-                onClick = onRefresh
+@Composable
+private fun EventsHeader(onRefresh: () -> Unit) {
+    val spacing = LocalSpacing.current
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(spacing.medium)
+    ) {
+        Text(
+            text = "Upcoming Events",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = spacing.small)
+        )
+        RefreshEventsButton(onClick = onRefresh)
+    }
+}
+
+@Composable
+private fun EventsListContent(
+    uiState: EventUiState,
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit
+) {
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Refresh Events",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                CircularProgressIndicator()
             }
         }
-        
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            uiState.error != null -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing.medium)
-                ) {
-                    Text(
-                        text = "Error: ${uiState.error}",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Button(onClick = onRefresh) {
-                        Text("Retry")
-                    }
-                }
-            }
-            uiState.events.isEmpty() -> {
-                Text(
-                    text = "No events available",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            else -> {
-                EventsColumn(
-                    onEventClick = onEventClick,
-                    uiState = uiState
-                )
-            }
+        uiState.error != null -> {
+            ErrorMessage(error = uiState.error, onClick = onRefresh)
+        }
+        uiState.events.isEmpty() -> {
+            NoEventsMessage()
+        }
+        else -> {
+            EventsColumn(
+                onEventClick = onEventClick,
+                uiState = uiState
+            )
         }
     }
 }

@@ -50,7 +50,7 @@ class BuddyViewModel @Inject constructor(
         val maxLevel: Int? = savedStateHandle.get<Int?>(KEY_MAX_LEVEL)
         val minAge: Int? = savedStateHandle.get<Int?>(KEY_MIN_AGE)
         val maxAge: Int? = savedStateHandle.get<Int?>(KEY_MAX_AGE)
-        if (minLevel != null || maxLevel != null || minAge != null || maxAge != null) {
+        if (listOfNotNull(minLevel, maxLevel, minAge, maxAge).isNotEmpty()) {
             _uiState.value = _uiState.value.copy(
                 targetMinLevel = minLevel,
                 targetMaxLevel = maxLevel,
@@ -85,18 +85,24 @@ class BuddyViewModel @Inject constructor(
         val minAge = s.targetMinAge
         val maxAge = s.targetMaxAge
 
-        if ((minLevel != null && (minLevel < Constants.BEGINNER_LEVEL || minLevel > Constants.ADVANCED_LEVEL)) ||
-            (maxLevel != null && (maxLevel < Constants.BEGINNER_LEVEL || maxLevel > Constants.ADVANCED_LEVEL))) {
+        if (minLevel == null || maxLevel == null) {
+            return "Level is required"
+        }
+        if (minAge == null || maxAge == null) {
+            return "Age is required"
+        }
+
+        if (!(Constants.BEGINNER_LEVEL..Constants.ADVANCED_LEVEL).contains(minLevel) || 
+        !(Constants.BEGINNER_LEVEL..Constants.ADVANCED_LEVEL).contains(maxLevel)) {
             return "Level must be between ${Constants.BEGINNER_LEVEL} and ${Constants.ADVANCED_LEVEL}"
         }
-        if (minLevel != null && maxLevel != null && minLevel > maxLevel) {
+        if (minLevel > maxLevel) {
             return "Min level cannot exceed max level"
         }
-        if ((minAge != null && (minAge < Constants.MIN_AGE || minAge > Constants.MAX_AGE)) ||
-            (maxAge != null && (maxAge < Constants.MIN_AGE || maxAge > Constants.MAX_AGE))) {
+        if (!(Constants.MIN_AGE..Constants.MAX_AGE).contains(minAge) || !(Constants.MIN_AGE..Constants.MAX_AGE).contains(maxAge)) {
             return "Age must be between ${Constants.MIN_AGE} and ${Constants.MAX_AGE}"
         }
-        if (minAge != null && maxAge != null && minAge > maxAge) {
+        if (minAge > maxAge) {
             return "Min age cannot exceed max age"
         }
         return null
@@ -109,52 +115,49 @@ class BuddyViewModel @Inject constructor(
                 errorMessage = null,
                 successMessage = null
             )
-
-            // validate filters before calling API
-            validateFilters()?.let { err ->
+    
+            val err = validateFilters()
+            if (err != null) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = err
                 )
-                return@launch
-            }
-
-            val s = _uiState.value
-            val result = buddyRepository.getBuddies(
-                targetMinLevel = s.targetMinLevel,
-                targetMaxLevel = s.targetMaxLevel,
-                targetMinAge = s.targetMinAge,
-                targetMaxAge = s.targetMaxAge
-            )
-
-            if (result.isSuccess) {
-                val buddies = result.getOrNull()!!
-                if (buddies.isEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        buddies = emptyList(),
-                        errorMessage = "No buddies found",
-                        successMessage = null,
-                        showMatches = false
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        buddies = buddies,
-                        successMessage = "Found ${buddies.size} buddies!",
-                        showMatches = true
-                    )
-                    // Immediately navigate to match screen if we have buddies
-                    onNavigateToMatch?.invoke()
-                }
             } else {
-                val error = result.exceptionOrNull()
-                Log.e(TAG, "Failed to fetch buddies", error)
-                val errorMessage = error?.message ?: "Failed to fetch buddies"
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = errorMessage
+                val s = _uiState.value
+                val result = buddyRepository.getBuddies(
+                    targetMinLevel = s.targetMinLevel,
+                    targetMaxLevel = s.targetMaxLevel,
+                    targetMinAge = s.targetMinAge,
+                    targetMaxAge = s.targetMaxAge
                 )
+    
+                if (result.isSuccess) {
+                    val buddies = result.getOrNull().orEmpty()
+                    if (buddies.isEmpty()) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            buddies = emptyList(),
+                            errorMessage = "No buddies found",
+                            successMessage = null,
+                            showMatches = false
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            buddies = buddies,
+                            successMessage = "Found ${buddies.size} buddies!",
+                            showMatches = true
+                        )
+                        onNavigateToMatch?.invoke()
+                    }
+                } else {
+                    val errorMessage = result.exceptionOrNull()?.message ?: "Failed to fetch buddies"
+                    Log.e(TAG, "Failed to fetch buddies", result.exceptionOrNull())
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = errorMessage
+                    )
+                }
             }
         }
     }

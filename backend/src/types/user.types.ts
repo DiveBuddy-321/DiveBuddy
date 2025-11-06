@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
-import { SKILL_LEVELS, SkillLevel, MIN_AGE, MAX_AGE } from '../constants/statics';
+import { SKILL_LEVELS, SkillLevel } from '../constants/statics';
 
 // User model
 // ------------------------------------------------------------
@@ -51,23 +51,24 @@ export const updateProfileSchema = z.object({
 
 // Request types
 // ------------------------------------------------------------
-export type GetProfileResponse = {
+export interface GetProfileResponse {
   message: string;
   data?: {
     user: IUser;
   };
-};
+}
 
 export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;
+export type CreateUserRequest = z.infer<typeof createUserSchema>;
 
 // Generic types
 // ------------------------------------------------------------
-export type GoogleUserInfo = {
+export interface GoogleUserInfo {
   googleId: string;
   email: string;
   name: string;
   profilePicture?: string;
-};
+}
 
 // Helper functions
 // ------------------------------------------------------------

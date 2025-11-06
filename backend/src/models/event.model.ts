@@ -99,7 +99,7 @@ export class EventModel {
     event: Partial<IEvent>
   ): Promise<IEvent | null> {
     try {
-      const validatedData = updateEventSchema.parse(event);
+      const validatedData = updateEventSchema.parse(event) as mongoose.UpdateQuery<IEvent>;
 
       const updatedEvent = await this.event.findByIdAndUpdate(
         eventId,
@@ -110,6 +110,10 @@ export class EventModel {
       );
       return updatedEvent;
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Validation error:', error.issues);
+        throw new Error('Invalid update data');
+      }
       logger.error('Error updating event:', error);
       throw new Error('Failed to update event');
     }

@@ -12,7 +12,3 @@ test-chat.html
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
-
-
-#Ignore cursor AI rules
-.cursor\rules\codacy.mdc

@@ -34,7 +34,6 @@ data class SocketErrorEvent(
 
 @Singleton
 class SocketManager @Inject constructor() {
-    
     private var socket: Socket? = null
     // We parse JSON manually to avoid Date adapter issues across threads/instances
     private val roomsToJoin: MutableSet<String> = mutableSetOf()
@@ -58,13 +57,11 @@ class SocketManager @Inject constructor() {
     companion object {
         private const val TAG = "SocketManager"
     }
-    
     fun connect(token: String) {
         if (socket?.connected() == true) {
             Log.d(TAG, "Socket already connected")
             return
         }
-        
         try {
             // Remove /api suffix if present - Socket.IO connects to root, not /api
             var serverUrl = BuildConfig.API_BASE_URL
@@ -75,7 +72,6 @@ class SocketManager @Inject constructor() {
                 serverUrl = serverUrl.removeSuffix("/api/")
             }
             Log.d(TAG, "Connecting to WebSocket at $serverUrl")
-            
             val options = IO.Options().apply {
                 auth = mapOf("token" to token)
                 transports = arrayOf("websocket", "polling")
@@ -83,123 +79,165 @@ class SocketManager @Inject constructor() {
                 reconnectionDelay = 1000
                 reconnectionAttempts = 5
             }
-            
             socket = IO.socket(serverUrl, options)
-            
             setupEventListeners()
             socket?.connect()
-            
+        
         } catch (e: URISyntaxException) {
             Log.e(TAG, "Invalid server URL", e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error connecting to socket", e)
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while connecting to socket", e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while connecting to socket", e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while connecting to socket", e)
         }
     }
     
     private fun setupEventListeners() {
-        socket?.apply {
-            on(Socket.EVENT_CONNECT) {
-                Log.d(TAG, "Socket connected: ${id()}")
-                _connectionStateFlow.tryEmit(true)
-                // Auto-join any rooms that were requested before connection
-                try {
-                    val roomsSnapshot = roomsToJoin.toList()
-                    for (roomChatId in roomsSnapshot) {
-                        val data = JSONObject().apply { put("chatId", roomChatId) }
-                        Log.d(TAG, "Auto-joining room after connect: $roomChatId")
-                        emit("join_room", data)
+        registerConnectListener()
+        registerDisconnectListener()
+        registerConnectErrorListener()
+        registerJoinedRoomListener()
+        registerLeftRoomListener()
+        registerNewMessageListener()
+        registerChatUpdatedListener()
+        registerServerErrorListener()
+    }
+
+    private fun registerConnectListener() {
+        socket?.on(Socket.EVENT_CONNECT) {
+            Log.d(TAG, "Socket connected: ${socket?.id()}")
+            _connectionStateFlow.tryEmit(true)
+            autoJoinQueuedRooms()
+        }
+    }
+
+    private fun autoJoinQueuedRooms() {
+        try {
+            val roomsSnapshot = roomsToJoin.toList()
+            for (roomChatId in roomsSnapshot) {
+                val data = JSONObject().apply { put("chatId", roomChatId) }
+                Log.d(TAG, "Auto-joining room after connect: $roomChatId")
+                socket?.emit("join_room", data)
+            }
+        } catch (e: URISyntaxException) {
+            Log.e(TAG, "Invalid server URL", e)
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while connecting to socket", e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while connecting to socket", e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while connecting to socket", e)
+        }
+    }
+
+    private fun registerDisconnectListener() {
+        socket?.on(Socket.EVENT_DISCONNECT) { args ->
+            val reason = if (args.isNotEmpty()) args[0].toString() else "unknown"
+            Log.d(TAG, "Socket disconnected: $reason")
+            _connectionStateFlow.tryEmit(false)
+        }
+    }
+
+    private fun registerConnectErrorListener() {
+        socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
+            val error = if (args.isNotEmpty()) args[0].toString() else "Unknown error"
+            Log.e(TAG, "Connection error: $error")
+            _connectionStateFlow.tryEmit(false)
+        }
+    }
+
+    private fun registerJoinedRoomListener() {
+        socket?.on("joined_room") { args ->
+            try {
+                if (args.isNotEmpty()) {
+                    val data = args[0] as JSONObject
+                    val chatId = data.getString("chatId")
+                    Log.d(TAG, "Joined room: $chatId")
+                    synchronized(joinedRooms) {
+                        joinedRooms.add(chatId)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to auto-join rooms", e)
+                    _joinedRoomFlow.tryEmit(JoinedRoomEvent(chatId))
                 }
+            } catch (e: org.json.JSONException) {
+                Log.e(TAG, "Error parsing joined_room event", e)
+            } catch (e: ClassCastException) {
+                Log.e(TAG, "Malformed payload for joined_room event", e)
             }
-            
-            on(Socket.EVENT_DISCONNECT) { args ->
-                val reason = if (args.isNotEmpty()) args[0].toString() else "unknown"
-                Log.d(TAG, "Socket disconnected: $reason")
-                _connectionStateFlow.tryEmit(false)
-            }
-            
-            on(Socket.EVENT_CONNECT_ERROR) { args ->
-                val error = if (args.isNotEmpty()) args[0].toString() else "Unknown error"
-                Log.e(TAG, "Connection error: $error")
-                _connectionStateFlow.tryEmit(false)
-            }
-            
-            on("joined_room") { args ->
-                try {
-                    if (args.isNotEmpty()) {
-                        val data = args[0] as JSONObject
-                        val chatId = data.getString("chatId")
-                        Log.d(TAG, "Joined room: $chatId")
-                        synchronized(joinedRooms) {
-                            joinedRooms.add(chatId)
-                        }
-                        _joinedRoomFlow.tryEmit(JoinedRoomEvent(chatId))
+        }
+    }
+
+    private fun registerLeftRoomListener() {
+        socket?.on("left_room") { args ->
+            try {
+                if (args.isNotEmpty()) {
+                    val data = args[0] as JSONObject
+                    val chatId = data.getString("chatId")
+                    Log.d(TAG, "Left room: $chatId")
+                    synchronized(joinedRooms) {
+                        joinedRooms.remove(chatId)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing joined_room event", e)
                 }
+            } catch (e: org.json.JSONException) {
+                Log.e(TAG, "Error parsing left_room event", e)
+            } catch (e: ClassCastException) {
+                Log.e(TAG, "Malformed payload for left_room event", e)
             }
-            
-            on("left_room") { args ->
-                try {
-                    if (args.isNotEmpty()) {
-                        val data = args[0] as JSONObject
-                        val chatId = data.getString("chatId")
-                        Log.d(TAG, "Left room: $chatId")
-                        synchronized(joinedRooms) {
-                            joinedRooms.remove(chatId)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing left_room event", e)
+        }
+    }
+
+    private fun registerNewMessageListener() {
+        socket?.on("new_message") { args ->
+            try {
+                if (args.isNotEmpty()) {
+                    val data = args[0] as JSONObject
+                    val chatId = data.getString("chatId")
+                    val messageJson = data.getJSONObject("message")
+                    val message = parseMessage(messageJson)
+                    Log.d(TAG, "New message in chat $chatId: ${message.content}")
+                    _newMessageFlow.tryEmit(NewMessageEvent(chatId, message))
                 }
+            } catch (e: org.json.JSONException) {
+                Log.e(TAG, "Error parsing new_message event", e)
+            } catch (e: ClassCastException) {
+                Log.e(TAG, "Malformed payload for new_message event", e)
             }
-            
-            on("new_message") { args ->
-                try {
-                    if (args.isNotEmpty()) {
-                        val data = args[0] as JSONObject
-                        val chatId = data.getString("chatId")
-                        val messageJson = data.getJSONObject("message")
-                        val message = parseMessage(messageJson)
-                        Log.d(TAG, "New message in chat $chatId: ${message.content}")
-                        
-                        _newMessageFlow.tryEmit(NewMessageEvent(chatId, message))
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing new_message event", e)
+        }
+    }
+
+    private fun registerChatUpdatedListener() {
+        socket?.on("chat_updated") { args ->
+            try {
+                if (args.isNotEmpty()) {
+                    val data = args[0] as JSONObject
+                    val chatId = data.getString("chatId")
+                    val lastMessageJson = data.getJSONObject("lastMessage")
+                    val lastMessage = parseMessage(lastMessageJson)
+                    Log.d(TAG, "Chat updated: $chatId")
+                    _chatUpdatedFlow.tryEmit(ChatUpdatedEvent(chatId, lastMessage))
                 }
+            } catch (e: org.json.JSONException) {
+                Log.e(TAG, "Error parsing chat_updated event", e)
+            } catch (e: ClassCastException) {
+                Log.e(TAG, "Malformed payload for chat_updated event", e)
             }
-            
-            on("chat_updated") { args ->
-                try {
-                    if (args.isNotEmpty()) {
-                        val data = args[0] as JSONObject
-                        val chatId = data.getString("chatId")
-                        val lastMessageJson = data.getJSONObject("lastMessage")
-                        val lastMessage = parseMessage(lastMessageJson)
-                        Log.d(TAG, "Chat updated: $chatId")
-                        
-                        _chatUpdatedFlow.tryEmit(ChatUpdatedEvent(chatId, lastMessage))
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing chat_updated event", e)
+        }
+    }
+
+    private fun registerServerErrorListener() {
+        socket?.on("error") { args ->
+            try {
+                if (args.isNotEmpty()) {
+                    val data = args[0] as JSONObject
+                    val message = data.getString("message")
+                    Log.e(TAG, "Server error: $message")
+                    _errorFlow.tryEmit(SocketErrorEvent(message))
                 }
-            }
-            
-            on("error") { args ->
-                try {
-                    if (args.isNotEmpty()) {
-                        val data = args[0] as JSONObject
-                        val message = data.getString("message")
-                        Log.e(TAG, "Server error: $message")
-                        _errorFlow.tryEmit(SocketErrorEvent(message))
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing error event", e)
-                }
+            } catch (e: org.json.JSONException) {
+                Log.e(TAG, "Error parsing error event", e)
+            } catch (e: ClassCastException) {
+                Log.e(TAG, "Malformed payload for error event", e)
             }
         }
     }
@@ -313,5 +351,5 @@ class SocketManager @Inject constructor() {
         Log.w(TAG, "Failed to parse date: $value, defaulting to now")
         return java.util.Date()
     }
-}
+} 
 
