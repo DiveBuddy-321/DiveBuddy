@@ -507,30 +507,30 @@ private fun buildManageProfileActions(
         onSaveClick = {
             if (!formState.canSave()) {
                 setFormState(formState.copy(showErrors = true))
-                return@ManageProfileScreenActions
-            }
-            scope.launch {
-                try {
-                    val editingCity = formState.cityQuery.isNotBlank() ||
-                            formState.selectedCity?.trim() != formState.originalCityDisplay?.trim()
-                    val pid = formState.selectedCityPlaceId
-                    val resolved = if (editingCity && pid != null) profileViewModel.resolveCity(pid) else null
-                    val safeName = formState.name.trim()
-                    val safeBio  = formState.bioText.trim()
-                    val safeAge  = formState.ageOrNull
-                    val skill    = formState.experience?.label
-                    profileViewModel.updateProfile(
-                        ProfileUpdateParams(
-                            name = safeName,
-                            bio = safeBio.ifEmpty { null },
-                            age = safeAge,
-                            location  = resolved?.display,
-                            latitude  = resolved?.lat,
-                            longitude = resolved?.lng,
-                            skillLevel = skill
+            } else {
+                scope.launch {
+                    try {
+                        val editingCity = formState.cityQuery.isNotBlank() ||
+                                formState.selectedCity?.trim() != formState.originalCityDisplay?.trim()
+                        val pid = formState.selectedCityPlaceId
+                        val resolved = if (editingCity && pid != null) profileViewModel.resolveCity(pid) else null
+                        val safeName = formState.name.trim()
+                        val safeBio  = formState.bioText.trim()
+                        val safeAge  = formState.ageOrNull
+                        val skill    = formState.experience?.label
+                        profileViewModel.updateProfile(
+                            ProfileUpdateParams(
+                                name = safeName,
+                                bio = safeBio.ifEmpty { null },
+                                age = safeAge,
+                                location  = resolved?.display,
+                                latitude  = resolved?.lat,
+                                longitude = resolved?.lng,
+                                skillLevel = skill
+                            )
                         )
-                    )
-                } catch (_: Exception) { }
+                    } catch (_: Exception) { }
+                }
             }
         },
         onImagePickerDismiss = { setShowImagePickerDialog(false) },

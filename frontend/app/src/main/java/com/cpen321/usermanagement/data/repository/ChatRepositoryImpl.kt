@@ -65,28 +65,28 @@ class ChatRepositoryImpl @Inject constructor(
                 authHeader = "",
                 request = CreateChatRequest(peerId = peerId, name = name)
             ) // Auth header is added by interceptor
-            if (response.isSuccessful) {
-                val chat = response.body()
-                val chatId = chat?._id
-                if (!chatId.isNullOrEmpty()) {
-                    Result.success(chatId)
-                } else {
-                    Log.e(TAG, "Missing chat id in response")
-                    Result.failure(IllegalStateException("Missing chat id"))
-                }
-            } else {
+
+            if (!response.isSuccessful) {
                 val errorText = response.errorBody()?.string()
                 Log.e(TAG, "Failed to create chat (code=${'$'}{response.code()}): ${'$'}errorText")
-                // If backend signals duplicate chat (e.g., 409), try to find existing chat
+
                 if (response.code() == 409 || (errorText?.contains("exists", ignoreCase = true) == true)) {
-                    findExistingDirectChatId(peerId)?.let { return Result.success(it) }
+                    val existing = findExistingDirectChatId(peerId)
+                    if (existing != null) return Result.success(existing)
                 }
-                Result.failure(IllegalStateException("Failed to create chat"))
+                return Result.failure(IllegalStateException("Failed to create chat"))
             }
+
+            val chatId = response.body()?._id
+            if (chatId.isNullOrEmpty()) {
+                Log.e(TAG, "Missing chat id in response")
+                return Result.failure(IllegalStateException("Missing chat id"))
+            }
+            Result.success(chatId)
         } catch (e: JsonSyntaxException) {
-            // Chat may already exist, so try to find it
             Log.w(TAG, "JSON parsing failed for createChat; attempting fallback lookup", e)
-            findExistingDirectChatId(peerId)?.let { return Result.success(it) }
+            val existing = findExistingDirectChatId(peerId)
+            if (existing != null) return Result.success(existing)
             Result.failure(e)
         } catch (e: java.net.SocketTimeoutException) {
             Result.failure(e)
