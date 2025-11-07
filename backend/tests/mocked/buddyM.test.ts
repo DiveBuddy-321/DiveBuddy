@@ -64,9 +64,9 @@ afterEach(() => {
 });
 
 describe('GET /api/buddy - mocked', () => {
-  test('returns 500 when userModel.findAll fails', async () => {
-    // Mock userModel.findAll to throw an error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Database connection failed'));
+  test('returns 500 when userModel.findByQuery fails', async () => {
+    // Mock userModel.findByQuery to throw an error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Database connection failed'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -74,12 +74,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when unexpected error occurs', async () => {
-    // Mock userModel.findAll to throw an unexpected error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Unexpected error'));
+    // Mock userModel.findByQuery to throw an unexpected error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Unexpected error'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -87,12 +87,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when database timeout occurs', async () => {
-    // Mock userModel.findAll to throw a timeout error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Connection timeout'));
+    // Mock userModel.findByQuery to throw a timeout error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Connection timeout'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -100,12 +100,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when null pointer exception occurs', async () => {
-    // Mock userModel.findAll to throw null error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new TypeError('Cannot read property of null'));
+    // Mock userModel.findByQuery to throw null error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new TypeError('Cannot read property of null'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -113,12 +113,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when network error occurs', async () => {
-    // Mock userModel.findAll to throw a network error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Network error'));
+    // Mock userModel.findByQuery to throw a network error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Network error'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -126,12 +126,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when memory error occurs', async () => {
-    // Mock userModel.findAll to throw a memory error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Out of memory'));
+    // Mock userModel.findByQuery to throw a memory error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Out of memory'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -139,7 +139,7 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 });
 

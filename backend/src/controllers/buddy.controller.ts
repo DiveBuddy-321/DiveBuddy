@@ -3,9 +3,10 @@ import { NextFunction, Request, Response } from 'express';
 import logger from '../utils/logger.util';
 import { GetAllBuddiesResponse } from '../types/buddy.types';
 import { buddyAlgorithm } from '../utils/buddyAlgorithm.util';
-import { isUserReadyForBuddyMatching } from '../types/user.types';
+import { isUserReadyForBuddyMatching, IUser } from '../types/user.types';
 import { userModel } from '../models/user.model';
 import { SKILL_LEVELS } from '../constants/statics';
+import { FilterQuery } from 'mongoose';
 
 export class BuddyController {
   async getAllBuddies(
@@ -27,7 +28,7 @@ export class BuddyController {
 
       const filters = this.parseFilters(req, currentUser);
       const query = this.buildMongoQuery(currentUser, filters);
-      const otherUsers = await userModel.findByQuery(query as any, 1000);
+      const otherUsers = await this.getUsers(query);
 
       const currentLong = currentUser.longitude;
       const currentLat = currentUser.latitude;
@@ -73,9 +74,19 @@ export class BuddyController {
     }
   }
 
+  private async getUsers(query: Record<string, unknown>): Promise<IUser[]> {
+    try {
+      const result = await userModel.findByQuery(query as unknown as FilterQuery<IUser>, 1000);
+      return result;
+    } catch (error) {
+      logger.error('Failed to fetch buddies:', error);
+      throw new Error('Failed to fetch buddies');
+    }
+  }
+
   private parseFilters(
     req: Request,
-    currentUser: any
+    currentUser: IUser
   ): {
     targetMinLevel?: number;
     targetMaxLevel?: number;
@@ -118,7 +129,7 @@ export class BuddyController {
   }
 
   private buildMongoQuery(
-    currentUser: any,
+    currentUser: IUser,
     filters: {
       allowedSkillLevels: string[];
       ageFilter: Record<string, number>;
@@ -143,8 +154,8 @@ export class BuddyController {
   }
 
   private toBuddyResponse(
-    sortedBuddies: Array<[any, number]>
-  ): Array<{ user: any; distance: number }> {
+    sortedBuddies: Array<[IUser, number]>
+  ): Array<{ user: IUser; distance: number }> {
     return sortedBuddies.map(([user, distance]) => ({ user, distance }));
   }
 }
