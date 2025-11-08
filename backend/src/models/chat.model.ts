@@ -128,27 +128,27 @@ chatSchema.statics.findDirectPair = function (
 // Note: Message queries are handled by Message model for better separation of concerns
 
 // 5) Leave a chat; delete if it becomes empty
-chatSchema.statics.leave = async function (
-  chatId: string,
-  userId: mongoose.Types.ObjectId
-): Promise<"left" | "deleted" | "noop"> {
-  const chat = await this.findById(chatId).exec();
-  if (!chat) return "noop";
+// chatSchema.statics.leave = async function (
+//   chatId: string,
+//   userId: mongoose.Types.ObjectId
+// ): Promise<"left" | "deleted" | "noop"> {
+//   const chat = await this.findById(chatId).exec();
+//   if (!chat) return "noop";
 
-  const before = chat.participants.length;
-  chat.participants = chat.participants.filter((p) => String(p) !== String(userId));
+//   const before = chat.participants.length;
+//   chat.participants = chat.participants.filter((p) => String(p) !== String(userId));
 
-  if (chat.participants.length === 0) {
-    await this.deleteOne({ _id: chat._id });
-    return "deleted";
-  }
+//   if (chat.participants.length === 0) {
+//     await this.deleteOne({ _id: chat._id });
+//     return "deleted";
+//   }
 
-  if (chat.participants.length !== before) {
-    chat.updatedAt = new Date();
-    await chat.save();
-    return "left";
-  }
-  return "noop";
-};
+//   if (chat.participants.length !== before) {
+//     chat.updatedAt = new Date();
+//     await chat.save();
+//     return "left";
+//   }
+//   return "noop";
+// };
 
 export const Chat = mongoose.model<IChatDocument, IChatModel>("Chat", chatSchema);

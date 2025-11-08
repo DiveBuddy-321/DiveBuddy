@@ -442,6 +442,37 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		expect(eventInDb).toBeNull();
 	});
 
+	test('delete an event (200) when server is available', async () => {
+		// new event data (use CreateEventRequest shape: attendees and createdBy are strings)
+		const newEvent: CreateEventRequest = {
+			title: "TEST DELETE EVENT",
+			description: "TEST DELETE DESCRIPTION",
+			date: new Date(),
+			capacity: 10,
+			skillLevel: "Expert",
+			location: "Test Location",
+			latitude: 37.7749,
+			longitude: -122.4194,
+			createdBy: testUser._id.toString(),
+			attendees: [],
+			photo: "uploads/images/test.jpg"  // use a non-empty string to differ from previous test
+		};
+
+		// create via model (this will validate against createEventSchema)
+		const created = await eventModel.create(newEvent);
+		const createdId = created._id;
+
+		// delete the event through the API (server must point to same DB when running)
+		const delRes = await request(app)
+			.delete(`/api/events/${createdId.toString()}`);
+
+		expect(delRes.status).toBe(200);
+
+		// verify deletion: event should no longer exist in DB
+		const eventInDb = await eventModel.findById(createdId);
+		expect(eventInDb).toBeNull();
+	});
+
 	test('returns 400 for invalid event ID format', async () => {
 		// Try to fetch an event with an invalid ID format
 		const invalidId = 'invalid-id-format';

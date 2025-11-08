@@ -113,8 +113,14 @@ export class BuddyController {
     if (targetMaxAge !== undefined) ageFilter.$lte = targetMaxAge;
 
     const locationFilter = {
-      latitude: { $gte: currentUser.latitude - 5, $lte: currentUser.latitude + 5 },
-      longitude: { $gte: currentUser.longitude - 5, $lte: currentUser.longitude + 5 },
+      latitude: { 
+        $gte: (currentUser.latitude ?? 0) - 5, 
+        $lte: (currentUser.latitude ?? 0) + 5 
+      },
+      longitude: { 
+        $gte: (currentUser.longitude ?? 0) - 5, 
+        $lte: (currentUser.longitude ?? 0) + 5 
+      },
     };
 
     return {

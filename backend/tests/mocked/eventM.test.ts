@@ -3,7 +3,7 @@ import { describe, test, expect, beforeAll, afterEach, afterAll, jest } from '@j
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { eventModel } from '../../src/models/event.model';
-import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
+import logger from '../../src/utils/logger.util';
 import { CreateUserRequest } from '../../src/types/user.types';
 import { userModel } from '../../src/models/user.model';
 import express from 'express';
@@ -11,7 +11,6 @@ import eventRoutes from '../../src/routes/event.routes';
 import mongoose from 'mongoose';
 
 dotenv.config();
-
 // Test user will be created dynamically
 let testUser: any = null;
 
@@ -122,6 +121,16 @@ describe('GET /api/events - mocked', () => {
         jest.spyOn(Event, 'find').mockReturnValue({ sort: mockSort } as any);
 
         await expect(eventModel.findAll()).rejects.toThrow('Failed to fetch events');
+    });
+
+    test('logger.info throws error when input contains CRLF characters', () => {
+        // Test that logger rejects input with newline characters (CRLF injection attempt)
+        const maliciousInput = 'Normal message\nInjected malicious log entry';
+        
+        // This should throw "CRLF injection attempt detected"
+        expect(() => {
+            logger.info(maliciousInput);
+        }).toThrow('CRLF injection attempt detected');
     });
 });
 

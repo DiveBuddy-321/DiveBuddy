@@ -286,6 +286,25 @@ describe('POST /api/users - mocked', () => {
         await expect(userModel.create(validUserInfo)).rejects.toThrow('Failed to create user');
     });
 
+    test('create throws error when location provided without coordinates and geocoding fails', async () => {
+        // Test the case where location is provided but no coordinates
+        // and geocoding fails (no GEOCODING_API or API failure)
+        const userWithLocationNoCoords: CreateUserRequest = {
+            email: 'test-geocode@example.com',
+            name: 'Test User',
+            googleId: `test-google-${Date.now()}`,
+            age: 25,
+            profilePicture: 'http://example.com/pic.jpg',
+            bio: 'Test bio',
+            location: 'Vancouver, BC',
+            skillLevel: 'Intermediate'
+            // Note: Missing latitude and longitude
+        };
+
+        // This should throw an error because geocoding will fail
+        await expect(userModel.create(userWithLocationNoCoords)).rejects.toThrow('Failed to geocode location');
+    });
+
     test('findByGoogleId throws "Failed to find user" when database operation fails', async () => {
         // Mock the User model's findOne method directly
         const User = mongoose.model('User');
