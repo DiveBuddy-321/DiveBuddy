@@ -326,13 +326,116 @@ Before running any test, make sure the following are satisfied:
 
 ---
 
-Continue writing other tests here:
+#### Buddy Matching use cases
+
+- **Use Case 1: Buddy Matching and Viewing Matches** (Success Scenario)
+
+  - **Description:**
+  Verifies that a user can successfully navigate to the **Buddies** tab, request matches from the real backend, and view the resulting **Match Screen**. The test ensures that buddies are fetched from the backend database, that navigation between screens functions correctly, and that the match view allows navigation through multiple buddy profiles when available.
+
+  - **Expected Behaviors:**
+    | **Scenario Steps** | **Test Case Steps** |
+    | ------------------ | ------------------- |
+    | 1. The user is on the main screen and navigates to the Buddies tab. | Launch the app and ensure the Buddies tab is selected. Wait for the UI to stabilize before proceeding. |
+    | 2. The Buddies screen should display. | Confirm that the Buddies screen title and the Match with Buddies button are visible on screen. |
+    | 3. The user initiates the buddy matching process. | Select the Match with Buddies button to start the matching process. Wait for the system to complete the request. |
+    | 4. The backend returns buddy data. | Wait for the backend to respond. If no data appears, allow additional time for the response. Check that no error message is shown on screen. |
+    | 5. The app successfully fetches buddies. | Verify that at least one buddy profile appears in the results. |
+    | 6. Navigation to the Match screen is triggered. | Confirm that the app transitions from the Buddies screen to the Match screen after fetching buddy data. |
+    | 7. The Match screen becomes visible. | Verify that the Match screen is displayed, showing its title and interactive elements. |
+    | 8. The Match screen displays key UI elements. | Check that the Match and Back buttons are visible and responsive. |
+    | 9. The user can view multiple buddies (if available). | If multiple buddy profiles exist, confirm that the Next button is visible and that selecting it displays the next profile while keeping the Match screen active. |
+    | 10. Validation of test success. | Ensure that buddies were retrieved, navigation between screens occurred as expected, and the Match screen functions correctly for single or multiple profiles. |
+
+  - **Test Logs:**
+    ```
+    Test: success_scenario_finding_buddies_and_viewing_matches
+    Status: [PASSED]
+    Duration: ~7 seconds
+    ```
+
+- **Use Case 2: Matching with a User and Creating a Chat** (Success Scenario)
+
+  - **Description:**
+    Verifies that a user can successfully view a buddy’s profile on the Match screen and initiate a match that results in a new chat being created via the backend. The test ensures that the backend provides at least one available buddy, that the Match button correctly triggers the chat creation API, and that the resulting chat ID is valid and triggers navigation to the chat screen.
+
+  - **Expected Behaviors:**
+    | **Scenario Steps**                                       | **Test Case Steps**                                                                                                                      |
+    | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+    | 1. The user is ready to match with other users.          | Fetch available buddies from the backend to confirm that at least one user is available to match with.                                   |
+    | 2. The app retrieves a list of available buddies.        | Verify that the backend returns at least one valid buddy profile. If none are found, ensure the backend has other users in the database. |
+    | 3. The Match screen is displayed with a buddy’s profile. | Display the Match screen once buddy data is successfully fetched. Wait for the UI to load and stabilize.                                 |
+    | 4. The Match screen shows essential UI elements.         | Check that the Match and Back buttons are visible on screen.                                                                             |
+    | 5. The user initiates a match.                           | Select the Match button to start the matching process and trigger the backend API call to create a chat.                                 |
+    | 6. The system processes the chat creation request.       | Wait for the asynchronous backend operation to complete while ensuring the Match screen remains active.                                  |
+    | 7. Navigation to the chat screen is triggered.           | Verify that navigation to the chat view occurs after matching, confirming successful backend communication.                              |
+    | 8. A chat ID is returned from the backend.               | Confirm that a valid, non-empty chat ID is received from the backend.                                                                    |
+    | 9. The chat creation process completes successfully.     | Ensure that the chat creation callback is invoked and the chat ID corresponds to a valid conversation between the user and the match.    |
+
+  - **Test Logs:**
+    ```
+    Test: success_scenario_matching_with_user
+    Status: [PASSED]
+    Duration: ~5 seconds
+    ```
 
 ---
 
-## Test Execution Instructions
+#### Chat use cases
 
-### Prerequisites:
+- **Use Case 1: Sending Messages in a Chat** (Success Scenario)
+  - **Description:**
+    Verifies that a logged-in user can successfully send and view messages within an existing chat. The test ensures that chats are properly loaded, the user can select a conversation, enter and send multiple messages, and that each message appears in the chat interface as confirmation of successful backend communication and UI rendering.
+
+  - **Expected Behaviors:**
+    | **Scenario Steps**                                           | **Test Case Steps**                                                                                                                                                          |
+    | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | 1. The user is logged in and has at least one existing chat. | Load the list of chats from the backend and verify that at least one chat is available. If none are found, ensure a chat is created beforehand through the matching feature. |
+    | 2. The app displays the Chat screen.                         | Display the Chat screen and wait until the chat list or an empty state message appears, confirming the view has loaded.                                                      |
+    | 3. The user selects a chat to open.                          | Identify a clickable chat card and open it to access the conversation.                                                                                                       |
+    | 4. The chat view becomes visible.                            | Verify that the chat interface appears with a header (e.g., Direct Message) and a text input field.                                                                          |
+    | 5. The user types and sends the first message.               | Enter the first message in the text field and send it. Wait for the message to appear in the chat view.                                                                      |
+    | 6. The system displays the first message.                    | Confirm that the message is rendered in the chat and visible to the user.                                                                                                    |
+    | 7. The user sends additional messages.                       | Type and send two more messages, one after another, confirming that the send button and message input remain functional.                                                     |
+    | 8. The system updates the chat in real time.                 | Verify that each new message appears sequentially in the chat interface.                                                                                                     |
+    | 9. The chat history displays all messages correctly.         | Ensure that all sent messages are visible and persist in the conversation thread after a short delay.                                                                        |
+
+  - **Test Logs:**
+    ```
+    Test: success_scenario_sending_messages
+    Status: [PASSED]
+    Duration: ~9 seconds
+    ```
+
+- **Use Case 2: Receiving Messages from Another User** (Bidirectional Chat)
+
+  - **Description:**
+    Verifies that real-time, two-way messaging works between two distinct users. Specifically, the test ensures that messages sent by one user are received and displayed correctly on the other user’s device, confirming synchronization and WebSocket functionality across devices.
+
+  - **Expected Behaviors**
+    | **Scenario Steps** | **Test Case Steps** |
+    | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+    | 1. Two users are logged in on separate devices and share an existing chat. | Ensure both User A and User B are logged into the app with a stable internet connection and that a chat exists between them.                    |
+    | 2. User A opens the chat with User B.                                      | Load the chat screen and wait until the chat interface and message input field are visible.                                                     |
+    | 3. User A sends messages to User B.                                        | Enter and send two messages from User A. Verify that each message appears in User A’s chat view after sending.                                  |
+    | 4. User B receives User A’s messages.                                      | Confirm that the same messages appear on User B’s chat interface, indicating successful real-time delivery.                                     |
+    | 5. User B replies to User A.                                               | User B sends a single response message from their device. Wait a few seconds for it to propagate.                                               |
+    | 6. User A receives User B’s reply.                                         | Verify that User A’s chat updates automatically and displays User B’s response without needing a manual refresh.                                |
+    | 7. All messages are displayed in correct order.                            | Check that both User A and User B see the full conversation history in the same order, confirming synchronization.                              |
+    | 8. Validation of test success.                                             | Confirm that both users can send and receive messages bidirectionally in real time and that the chat interface reflects all messages correctly. |
+
+  - **Test Logs:**
+    ```
+    Test: success_scenario_receiving_messages_from_other_user
+    Status: [PASSED]
+    Duration: ~20 seconds
+    ```
+
+---
+
+### Frontend Test Execution Instructions
+
+#### Prerequisites:
 1. **Local Backend Running:**
    - Backend server must be running at `http://10.0.2.2:3000/api/`
    - This is the Android emulator's address for `localhost:3000`
@@ -350,29 +453,18 @@ Continue writing other tests here:
 4. **Test Execution Order:** some tests need to be executed in a particular order
    - `test_02_success_scenario_profile_update` should run after `test_01_success_scenario_profile_completion` (updates existing profile)
 
-### Running Tests:
+#### Running Tests:
 
 ```bash
-# Run all ProfileScreenTest tests
-./gradlew connectedAndroidTest --tests "com.cpen321.usermanagement.ui.screens.ProfileScreenTest"
-
-# Run specific test
-./gradlew connectedAndroidTest --tests "com.cpen321.usermanagement.ui.screens.ProfileScreenTest.test_01_success_scenario_profile_completion"
-
-# Run all tests
+# Run all instrumented tests
 ./gradlew connectedAndroidTest
+
+# Run all tests in a specific class
+./gradlew connectedAndroidTest --tests "com.cpen321.usermanagement.ui.screens.<TestClassName>"
+
+# Run a single specific test method
+./gradlew connectedAndroidTest --tests "com.cpen321.usermanagement.ui.screens.<TestClassName>.<TestMethodName>"
 ```
-
-### Expected Test Results:
-
-| Test Name | Expected Status | Duration | Dependencies |
-|-----------|----------------|----------|--------------|
-| test_01_success_scenario_profile_completion | PASSED | ~15-30s | Backend, Auth |
-| test_02_success_scenario_profile_update | PASSED | ~20-35s | Backend, Auth, Test 1 |
-| test_profile_form_validation | PASSED | ~5-10s | Backend, Auth |
-| test_profile_update_with_changes | PASSED | ~10-15s | Backend, Auth |
-| test_skip_button_profile_completion | PASSED | ~5-10s | Backend, Auth |
-| test_profile_completion_validation_all_fields | PASSED | ~10-15s | Backend, Auth |
 
 ---
 
