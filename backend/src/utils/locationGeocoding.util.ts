@@ -1,16 +1,17 @@
-type GeocodeResult = {
+import logger from './logger.util';
+
+interface GeocodeResult {
   latitude: number;
   longitude: number;
-};
+}
 
-type GeocodeApiResponse = {
+interface GeocodeApiResponse {
   status: string;
-  results: Array<{
+  results: {geometry?: {location?: { lat?: number; lng?: number }}}[]
     geometry?: {
       location?: { lat?: number; lng?: number };
-    };
-  }>;
-};
+    }
+  }
 
 export async function getCoordinatesFromLocation(location: string): Promise<GeocodeResult | null> {
   try {
@@ -22,23 +23,18 @@ export async function getCoordinatesFromLocation(location: string): Promise<Geoc
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`Geocoding request failed for location "${location}": HTTP ${res.status}`);
+      logger.error('Geocoding request failed:', { location, status: res.status });
       return null;
     }
     const data = (await res.json()) as GeocodeApiResponse;
-    if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-      console.log(`Geocoding returned no results for location: ${location}`);
-      return null;
-    }
     const first = data.results[0];
     const loc = first.geometry?.location;
     if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
-      console.log(`Geocoding missing geometry for location: ${location}`);
       return null;
     }
     return { latitude: loc.lat, longitude: loc.lng };
   } catch (error) {
-    console.error('Failed to geocode location', error);
+    logger.error('Failed to geocode location:', error);
     return null;
   }
 }

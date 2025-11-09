@@ -1,46 +1,50 @@
-import { NextFunction, Request, Response } from 'express';
-
+// controllers/media.controller.ts
+import type { RequestHandler } from 'express';
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
-import { UploadImageRequest, UploadImageResponse } from '../types/media.types';
+import type { UploadImageResponse } from '../types/media.types';
 import { sanitizeInput } from '../utils/sanitizeInput.util';
 
 export class MediaController {
-  async uploadImage(
-    req: Request<unknown, unknown, UploadImageRequest>,
-    res: Response<UploadImageResponse>,
-    next: NextFunction
-  ) {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          message: 'No file uploaded',
+  uploadImage: RequestHandler<Record<string, never>, UploadImageResponse, unknown> =
+    async (req, res, next): Promise<void> => {
+      try {
+        if (!req.file) {
+          res.status(400).json({ message: 'No file uploaded' });
+          return;
+        }
+
+        const user = req.user;
+        if (!user?._id) {
+          res.status(401).json({ message: 'Unauthorized' });
+          return;
+        }
+
+        // Multer ensures path is a string; still sanitize
+        const sanitizedFilePath = sanitizeInput(req.file.path);
+
+        const image = await MediaService.saveImage(
+          sanitizedFilePath,
+          user._id.toString()
+        );
+
+        res.status(200).json({
+          message: 'Image uploaded successfully',
+          data: { image },
         });
+        return; // ensure Promise<void>
+      } catch (error) {
+        logger.error('Error uploading profile picture:', error);
+
+        // Option A: map known errors here and return; otherwise next()
+        if (error instanceof Error) {
+          res.status(500).json({
+            message: error.message || 'Failed to upload profile picture',
+          });
+          return;
+        }
+
+        next(error);
       }
-
-      const user = req.user!;
-      const sanitizedFilePath = sanitizeInput(req.file.path);
-      const image = await MediaService.saveImage(
-        sanitizedFilePath,
-        user._id.toString()
-      );
-
-      res.status(200).json({
-        message: 'Image uploaded successfully',
-        data: {
-          image,
-        },
-      });
-    } catch (error) {
-      logger.error('Error uploading profile picture:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: error.message || 'Failed to upload profile picture',
-        });
-      }
-
-      next(error);
-    }
-  }
+    };
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.data.repository.ProfileRepository
+import com.cpen321.usermanagement.data.repository.ProfileUpdateParams
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -223,7 +224,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateProfile(name: String, bio: String, onSuccess: () -> Unit = {}) {
+    fun updateProfile(params: ProfileUpdateParams, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _uiState.value =
                 _uiState.value.copy(
@@ -232,7 +233,7 @@ class ProfileViewModel @Inject constructor(
                     successMessage = null
                 )
 
-            val result = profileRepository.updateProfile(name, bio)
+            val result = profileRepository.updateProfile(params)
             if (result.isSuccess) {
                 val updatedUser = result.getOrNull()!!
                 _uiState.value = _uiState.value.copy(
@@ -252,60 +253,6 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
-
-    fun updateProfileFull(
-        name: String,
-        bio: String?,
-        age: Int?,
-        location: String?,
-        latitude: Double?,
-        longitude: Double?,
-        skillLevel: String?,
-        onSuccess: () -> Unit = {}
-    ) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isSavingProfile = true,
-                errorMessage = null,
-                successMessage = null
-            )
-
-            // Normalize before sending
-            val safeName = name.trim()
-            val safeBio = bio?.take(Constants.MAX_BIO_LENGTH)?.trim()?.takeIf { it.isNotEmpty() }
-            val safeLocation = location?.trim()?.takeIf { it.isNotEmpty() }
-            val safeLat = latitude?.takeIf { !it.isNaN() }
-            val safeLng = longitude?.takeIf { !it.isNaN() }
-            val allowedSkills = setOf("Beginner", "Intermediate", "Expert")
-            val safeSkill = skillLevel?.trim()?.takeIf { it in allowedSkills }
-
-            val result = profileRepository.updateProfileFull(
-                name = safeName,
-                bio = safeBio,
-                age = age,
-                location = safeLocation,
-                latitude = safeLat,
-                longitude = safeLng,
-                skillLevel = safeSkill,
-                profilePicture = null // keep null unless actually updating photo in another flow
-            )
-
-            if (result.isSuccess) {
-                _uiState.value = _uiState.value.copy(
-                    isSavingProfile = false,
-                    user = result.getOrNull(),
-                    successMessage = "Profile updated successfully!"
-                )
-                onSuccess()
-            } else {
-                val msg = result.exceptionOrNull()?.message ?: "Failed to update profile"
-                _uiState.value = _uiState.value.copy(isSavingProfile = false, errorMessage = msg)
-            }
-        }
-    }
-
-
-
     /**
      * Clear all cached profile data (used when account is deleted)
      */

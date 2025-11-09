@@ -38,8 +38,37 @@ import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
+import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.compose.foundation.layout.wrapContentWidth
+
+
+@Composable
+private fun HandleEventMessages(
+    uiState: EventUiState,
+    onBack: () -> Unit,
+    eventViewModel: EventViewModel
+) {
+    LaunchedEffect(uiState.eventJoined) {
+        if (uiState.eventJoined) {
+            onBack()
+            eventViewModel.clearJoinEventFlags()
+        }
+    }
+    LaunchedEffect(uiState.eventLeft) {
+        if (uiState.eventLeft) {
+            onBack()
+            eventViewModel.clearLeaveEventFlags()
+        }
+    }
+    LaunchedEffect(uiState.eventDeleted) {
+        if (uiState.eventDeleted) {
+            onBack()
+            eventViewModel.clearDeleteEventFlags()
+        }
+    }
+}
 
 @Composable
 fun SingleEventScreen(
@@ -49,41 +78,16 @@ fun SingleEventScreen(
     eventViewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
+    val uiState by eventViewModel.uiState.collectAsState()
+    HandleEventMessages(uiState, onBack, eventViewModel)
     val spacing = LocalSpacing.current
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.US)
-    val uiState by eventViewModel.uiState.collectAsState()
-    
-    // Handle join event success/error
-    LaunchedEffect(uiState.eventJoined) {
-        if (uiState.eventJoined) {
-            onBack()
-            eventViewModel.clearJoinEventFlags()
-        }
-    }
-    
-    // Handle leave event success/error
-    LaunchedEffect(uiState.eventLeft) {
-        if (uiState.eventLeft) {
-            onBack()
-            eventViewModel.clearLeaveEventFlags()
-        }
-    }
-    
-    // Handle delete event success/error
-    LaunchedEffect(uiState.eventDeleted) {
-        if (uiState.eventDeleted) {
-            onBack()
-            eventViewModel.clearDeleteEventFlags()
-        }
-    }
-    
+
     // Get the updated event from the ViewModel if it exists, otherwise use the original event
     val updatedEvent = uiState.events.find { it._id == event._id } ?: event
-    
-    // Check if user is attending the event
+
+    // Check user state
     val isUserAttending = eventViewModel.isUserAttendingEvent(event)
-    
-    // Check if user is the creator of the event
     val isUserCreator = eventViewModel.isUserEventCreator(event)
 
     Column(
@@ -92,218 +96,298 @@ fun SingleEventScreen(
             .padding(spacing.large),
         verticalArrangement = Arrangement.spacedBy(spacing.large)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
+        SingleEventTopBar(
+            onBack = onBack,
+            isUserCreator = isUserCreator,
+            event = updatedEvent,
+            eventViewModel = eventViewModel,
+            onEditEvent = onEditEvent
+        )
+        EventTitle(title = updatedEvent.title)
+
+        EventDescriptionCard(description = updatedEvent.description)
+
+        EventDetailsCard(
+            dateText = dateFormatter.format(updatedEvent.date),
+            location = updatedEvent.location,
+            attendeesText = "${updatedEvent.attendees.size} / ${updatedEvent.capacity} people",
+            skillLevel = updatedEvent.skillLevel
+        )
+        Spacer(modifier = Modifier.weight(1f))
+
+        RegisterLeaveButton(
+            isUserAttending = isUserAttending,
+            isBusy = uiState.isJoiningEvent || uiState.isLeavingEvent,
+            enabled = !uiState.isJoiningEvent && !uiState.isLeavingEvent,
+            onClick = {
+                if (isUserAttending) eventViewModel.leaveEvent(updatedEvent._id)
+                else eventViewModel.joinEvent(updatedEvent._id)
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        ErrorMessages(
+            joinError = uiState.joinEventError,
+            leaveError = uiState.leaveEventError
+        )
+    }
+}
+
+@Composable
+private fun SingleEventTopBar(
+    onBack: () -> Unit,
+    isUserCreator: Boolean,
+    event: Event,
+    eventViewModel: EventViewModel,
+    onEditEvent: (Event) -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.CenterStart)
         ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.CenterStart)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to events screen",
-                )
-            }
-
-            Text(
-                text = "Event Details",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back to events screen",
             )
-
-            if (isUserCreator) {
-                OptionsMenu(
-                    event = updatedEvent,
-                    eventViewModel = eventViewModel,
-                    onEditEvent = onEditEvent,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
-            }
         }
 
-        // Event title
         Text(
-            text = updatedEvent.title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            text = "Event Details",
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Event description
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                text = updatedEvent.description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(spacing.medium)
-            )
-        }
-
-        // Event details card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier.padding(spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium)
-            ) {
-                // Date and time
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "📅",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.width(spacing.medium))
-                    Column {
-                        Text(
-                            text = "Date & Time",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = dateFormatter.format(updatedEvent.date),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-
-                // Location
-                if (updatedEvent.location != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "📍",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Spacer(modifier = Modifier.width(spacing.medium))
-                        Column {
-                            Text(
-                                text = "Location",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = updatedEvent.location,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-
-                // Capacity and attendees
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "👥",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.width(spacing.medium))
-                    Column {
-                        Text(
-                            text = "Attendees",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "${updatedEvent.attendees.size} / ${updatedEvent.capacity} people",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-
-                // Skill level
-                if (updatedEvent.skillLevel != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🤿",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Spacer(modifier = Modifier.width(spacing.medium))
-                        Column {
-                            Text(
-                                text = "Skill Level",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = updatedEvent.skillLevel,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Register/Leave button
-        Button(
-            onClick = { 
-                if (isUserAttending) {
-                    eventViewModel.leaveEvent(updatedEvent._id)
-                } else {
-                    eventViewModel.joinEvent(updatedEvent._id)
-                }
-            },
-            enabled = !uiState.isJoiningEvent && !uiState.isLeavingEvent,
-            modifier = Modifier
-                .width(200.dp)
-                .height(56.dp)
-                .align(Alignment.CenterHorizontally),
-        ) {
-            if (uiState.isJoiningEvent || uiState.isLeavingEvent) {
-                CircularProgressIndicator(
-                    modifier = Modifier.width(20.dp).height(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text(
-                    text = if (isUserAttending) "Leave Event" else "Register Event",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-        
-        // Show error message if join/leave failed
-        if (uiState.joinEventError != null) {
-            Text(
-                text = uiState.joinEventError!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-        }
-        
-        if (uiState.leaveEventError != null) {
-            Text(
-                text = uiState.leaveEventError!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+        if (isUserCreator) {
+            OptionsMenu(
+                event = event,
+                eventViewModel = eventViewModel,
+                onEditEvent = onEditEvent,
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = spacing.medium)
             )
         }
     }
+}
+
+@Composable
+private fun EventTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun EventDescriptionCard(description: String) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(spacing.medium)
+        )
+    }
+}
+
+@Composable
+private fun EventDetailsCard(
+    dateText: String,
+    location: String?,
+    attendeesText: String,
+    skillLevel: String?
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium)
+        ) {
+            DetailsRow(icon = "📅", label = "Date & Time", value = dateText)
+            if (location != null) {
+                DetailsRow(icon = "📍", label = "Location", value = location)
+            }
+            DetailsRow(icon = "👥", label = "Attendees", value = attendeesText)
+            if (skillLevel != null) {
+                DetailsRow(icon = "🤿", label = "Skill Level", value = skillLevel)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailsRow(icon: String, label: String, value: String) {
+    val spacing = LocalSpacing.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = icon,
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.width(spacing.medium))
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegisterLeaveButton(
+    isUserAttending: Boolean,
+    isBusy: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .width(200.dp)
+            .height(56.dp),
+    ) {
+        if (isBusy) {
+            CircularProgressIndicator(
+                modifier = Modifier.width(20.dp).height(20.dp),
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        } else {
+            Text(
+                text = if (isUserAttending) "Leave Event" else "Register Event",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessages(
+    joinError: String?,
+    leaveError: String?,
+) {
+    if (joinError != null) {
+        Text(
+            text = joinError,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally)
+        )
+    }
+
+    if (leaveError != null) {
+        Text(
+            text = leaveError,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally)
+        )
+    }
+}
+
+@Composable
+private fun OptionsDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest
+    ) {
+        DropdownMenuItem(
+            text = { Text("Edit") },
+            onClick = {
+                onDismissRequest()
+                onEdit()
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Delete") },
+            onClick = {
+                onDismissRequest()
+                onDelete()
+            }
+        )
+    }
+}
+
+@Composable
+private fun ConfirmDeleteDialog(
+    eventTitle: String,
+    isDeleting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Event") },
+        text = { Text("Are you sure you want to delete \"$eventTitle\"? This action cannot be undone.") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                colors = buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.width(16.dp).height(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Delete")
+                }
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+private fun DeleteErrorDialog(
+    errorMessage: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Error") },
+        text = { Text(errorMessage) },
+        confirmButton = {
+            Button(onClick = onDismiss) { Text("OK") }
+        }
+    )
 }
 
 @Composable
@@ -327,78 +411,32 @@ private fun OptionsMenu(
                 contentDescription = "More options",
             )
         }
-        DropdownMenu(
+        OptionsDropdownMenu(
             expanded = showOptionMenu,
-            onDismissRequest = { showOptionMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Edit") },
-                onClick = { 
-                    showOptionMenu = false
-                    onEditEvent(event)
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Delete") },
-                onClick = { 
-                    showOptionMenu = false
-                    showDeleteDialog = true
-                }
-            )
-        }
+            onDismissRequest = { showOptionMenu = false },
+            onEdit = { onEditEvent(event) },
+            onDelete = { showDeleteDialog = true }
+        )
     }
 
     // Delete confirmation dialog
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Event") },
-            text = { Text("Are you sure you want to delete \"${event.title}\"? This action cannot be undone.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteDialog = false
-                        eventViewModel.deleteEvent(event._id)
-                    },
-                    enabled = !uiState.isDeletingEvent,
-                    colors = buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
-                ) {
-                    if (uiState.isDeletingEvent) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.width(16.dp).height(16.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text("Delete")
-                    }
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = { showDeleteDialog = false }
-                ) {
-                    Text("Cancel")
-                }
+        ConfirmDeleteDialog(
+            eventTitle = event.title,
+            isDeleting = uiState.isDeletingEvent,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                eventViewModel.deleteEvent(event._id)
             }
         )
     }
 
     // Show error message if delete failed
     if (uiState.deleteEventError != null) {
-        AlertDialog(
-            onDismissRequest = { eventViewModel.clearDeleteEventState() },
-            title = { Text("Error") },
-            text = { Text(uiState.deleteEventError!!) },
-            confirmButton = {
-                Button(
-                    onClick = { eventViewModel.clearDeleteEventState() }
-                ) {
-                    Text("OK")
-                }
-            }
+        DeleteErrorDialog(
+            errorMessage = uiState.deleteEventError!!,
+            onDismiss = { eventViewModel.clearDeleteEventState() }
         )
     }
 }

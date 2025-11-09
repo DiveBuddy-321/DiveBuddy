@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, FilterQuery } from 'mongoose';
 import { z } from 'zod';
 
 import {
@@ -82,12 +82,11 @@ export class UserModel {
     try {
       const validatedData = createUserSchema.parse(userInfo);
       // If client provided a location but no coordinates, try to geocode
-      if (validatedData.location && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
-        const coords = await getCoordinatesFromLocation(validatedData.location);
+      if (validatedData.location && typeof(validatedData.location) === 'string' && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
+        const coords = await getCoordinatesFromLocation(String(validatedData.location));
         if (coords) {
           validatedData.latitude = coords.latitude;
           validatedData.longitude = coords.longitude;
-          console.log(`Geocoded location for new user: ${validatedData.location} -> (${coords.latitude}, ${coords.longitude})`);
         } else {
           //geolocation success is mandatory for user creation to succeed.
           throw new Error('Failed to geocode location');
@@ -109,14 +108,13 @@ export class UserModel {
     user: Partial<IUser>
   ): Promise<IUser | null> {
     try {
-      const validatedData = updateProfileSchema.parse(user);
+      const validatedData = updateProfileSchema.parse(user) as mongoose.UpdateQuery<IUser>;
       // If client updated location but did not provide coordinates, try to geocode
-      if (validatedData.location && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
+      if (validatedData.location && typeof validatedData.location === 'string' && (validatedData.latitude === undefined || validatedData.longitude === undefined)) {
         const coords = await getCoordinatesFromLocation(validatedData.location);
         if (coords) {
           validatedData.latitude = coords.latitude;
           validatedData.longitude = coords.longitude;
-          console.log(`Geocoded location for update: ${validatedData.location} -> (${coords.latitude}, ${coords.longitude})`);
         }
       }
 
@@ -179,6 +177,19 @@ export class UserModel {
     } catch (error) {
       logger.error('Error fetching all users:', error);
       throw new Error('Failed to fetch users');
+    }
+  }
+
+  async findByQuery(query: FilterQuery<IUser>, limit?: number): Promise<IUser[]> {
+    try {
+      const cursor = this.user.find(query);
+      if (typeof limit === 'number' && limit > 0) {
+        cursor.limit(limit);
+      }
+      return await cursor.lean().exec();
+    } catch (error) {
+      logger.error('Error fetching users by query:', error);
+      throw new Error('Failed to fetch users by query');
     }
   }
 }

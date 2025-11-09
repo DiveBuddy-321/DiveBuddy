@@ -7,7 +7,7 @@ export const authenticateToken: RequestHandler = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(' ')[1];
@@ -20,17 +20,17 @@ export const authenticateToken: RequestHandler = async (
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: mongoose.Types.ObjectId;
-    };
-
-    if (!decoded || !decoded.id) {
-      res.status(401).json({
-        error: 'Invalid token',
-        message: 'Token verification failed',
+    if (!process.env.JWT_SECRET) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'JWT secret not configured',
       });
       return;
     }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as {
+      id: mongoose.Types.ObjectId;
+    };
 
     const user = await userModel.findById(decoded.id);
 
@@ -64,4 +64,4 @@ export const authenticateToken: RequestHandler = async (
 
     next(error);
   }
-};
+}; 

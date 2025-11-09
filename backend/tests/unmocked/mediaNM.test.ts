@@ -2,6 +2,8 @@ import request from 'supertest';
 import { describe, test, expect, beforeAll, afterAll, afterEach, jest } from '@jest/globals';
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
+import { CreateUserRequest } from '../../src/types/user.types';
+import { userModel } from '../../src/models/user.model';
 import express from 'express';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 import mongoose from 'mongoose';
@@ -10,18 +12,21 @@ import path from 'path';
 import { IMAGES_DIR } from '../../src/constants/statics';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Mock authenticateToken middleware - must be before routes import
-// jest.mock calls are hoisted, so USER_ID is accessed via process.env
 jest.mock('../../src/middleware/auth.middleware', () => ({
   authenticateToken: (req: any, res: any, next: any) => {
     // Set req.user directly - bypasses JWT verification
-    req.user = {
-      _id: new mongoose.Types.ObjectId(process.env.USER_ID as string),
-      email: 'test@example.com',
-      name: 'Test User'
-    };
+    if (testUser) {
+      req.user = {
+        _id: testUser._id,
+        email: testUser.email,
+        name: testUser.name
+      };
+    }
     next();
   }
 }));
@@ -64,6 +69,21 @@ const createTestImage = (): Buffer => {
 beforeAll(async () => {
   await setupTestDB();
   
+  // Create a test user
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
+  
   // Ensure uploads/images directory exists
   if (!fs.existsSync(IMAGES_DIR)) {
     fs.mkdirSync(IMAGES_DIR, { recursive: true });
@@ -72,9 +92,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Clean up any test images
-  if (fs.existsSync(IMAGES_DIR)) {
+  if (fs.existsSync(IMAGES_DIR) && testUser) {
     const files = fs.readdirSync(IMAGES_DIR);
-    const testFiles = files.filter(file => file.includes(USER));
+    const testFiles = files.filter(file => file.includes(testUser._id.toString()));
     testFiles.forEach(file => {
       try {
         fs.unlinkSync(path.join(IMAGES_DIR, file));
@@ -84,14 +104,19 @@ afterAll(async () => {
     });
   }
   
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
+  
   await teardownTestDB();
 });
 
 afterEach(() => {
   // Clean up uploaded files after each test
-  if (fs.existsSync(IMAGES_DIR)) {
+  if (fs.existsSync(IMAGES_DIR) && testUser) {
     const files = fs.readdirSync(IMAGES_DIR);
-    const testFiles = files.filter(file => file.includes(USER));
+    const testFiles = files.filter(file => file.includes(testUser._id.toString()));
     testFiles.forEach(file => {
       try {
         fs.unlinkSync(path.join(IMAGES_DIR, file));
@@ -229,7 +254,7 @@ describe('POST /api/media/upload - unmocked (no mocking)', () => {
     const filename = path.basename(imagePath);
     
     // Filename should start with user ID
-    expect(filename).toContain(USER);
+    expect(filename).toContain(testUser._id.toString());
   });
 });
 

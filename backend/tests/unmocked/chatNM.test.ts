@@ -5,6 +5,7 @@ import { setupTestDB, teardownTestDB } from '../tests.setup';
 import mongoose from 'mongoose';
 // IMPORTANT: Import User model FIRST to ensure its schema is registered before Chat model references it
 import { userModel } from '../../src/models/user.model'; // This registers the 'User' model
+import { CreateUserRequest } from '../../src/types/user.types';
 // Now import Chat and Message models which reference User
 import { Chat } from '../../src/models/chat.model';
 import { Message } from '../../src/models/message.model';
@@ -13,16 +14,10 @@ import chatRoutes from '../../src/routes/chat.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
-const OTHER_USER = process.env.OTHER_USER_ID as string || new mongoose.Types.ObjectId().toString();
 
-// Validate USER_ID at startup
-if (!USER) {
-  console.error('[SETUP ERROR] USER_ID environment variable is not set!');
-}
-if (USER && !mongoose.isValidObjectId(USER)) {
-  console.error('[SETUP ERROR] USER_ID is not a valid ObjectId:', USER);
-}
+// Test users will be created dynamically
+let testUser: any = null;
+let otherTestUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -33,18 +28,20 @@ app.use(express.json());
 // This runs BEFORE routes, so req.user is available to controllers
 // Note: _id as ObjectId matches the IUser interface and real auth middleware behavior
 app.use((req: any, res, next) => {
-  const mockUser = {
-    _id: new mongoose.Types.ObjectId(USER),
-    email: 'test@example.com',
-    name: 'Test User'
-  };
-  req.user = mockUser;
-  console.log('[MOCK AUTH] Setting req.user:', {
-    _id: String(mockUser._id),
-    _idType: typeof mockUser._id,
-    email: mockUser.email,
-    name: mockUser.name
-  });
+  if (testUser) {
+    const mockUser = {
+      _id: testUser._id,
+      email: testUser.email,
+      name: testUser.name
+    };
+    req.user = mockUser;
+    console.log('[MOCK AUTH] Setting req.user:', {
+      _id: String(mockUser._id),
+      _idType: typeof mockUser._id,
+      email: mockUser.email,
+      name: mockUser.name
+    });
+  }
   next();
 });
 
@@ -72,8 +69,38 @@ beforeAll(async () => {
   console.log('[SETUP] Connecting to test database...');
   await setupTestDB();
   console.log('[SETUP] Database connected');
-  console.log('[SETUP] USER_ID:', USER);
-  console.log('[SETUP] OTHER_USER_ID:', OTHER_USER);
+  
+  // Create test users
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
+  
+  const newOtherUser: CreateUserRequest = {
+    email: 'other@example.com',
+    name: 'Other Test User',
+    googleId: `test-google-other-${Date.now()}`,
+    age: 30,
+    profilePicture: 'http://example.com/other-pic.jpg',
+    bio: 'Other test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Expert'
+  };
+  otherTestUser = await userModel.create(newOtherUser);
+  
+  console.log('[SETUP] testUser._id:', testUser._id);
+  console.log('[SETUP] otherTestUser._id:', otherTestUser._id);
   
   // Explicitly ensure User model is registered before Chat operations
   // Access userModel to trigger its constructor which registers the schema
@@ -87,6 +114,13 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Clean up test users
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
+  if (otherTestUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(otherTestUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -115,9 +149,9 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     Expected behavior: Creates new direct chat between two users
   */
   test('creates a direct chat between two users', async () => {
-    console.log('[TEST] Creating chat with peerId:', OTHER_USER);
+    console.log('[TEST] Creating chat with peerId:', otherTestUser._id.toString());
     const res = await request(app).post('/api/chats').send({
-      peerId: OTHER_USER,
+      peerId: otherTestUser._id.toString(),
       name: 'Test Direct Chat'
     });
     console.log('[TEST] Create chat response status:', res.status);
@@ -126,8 +160,8 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('_id');
     expect(res.body).toHaveProperty('participants');
     const parts = res.body.participants.map((p: any) => String(p._id || p));
-    expect(parts).toContain(USER);
-    expect(parts).toContain(OTHER_USER);
+    expect(parts).toContain(testUser._id.toString());
+    expect(parts).toContain(otherTestUser._id.toString());
     chatId = String(res.body._id);
     console.log('[TEST] Created chatId:', chatId);
   });
@@ -140,7 +174,7 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
   */
   test('creates direct chat with null name', async () => {
     const res = await request(app).post('/api/chats').send({
-      peerId: OTHER_USER
+      peerId: otherTestUser._id.toString()
       // name is optional, can be null for direct chats
     });
     expect(res.status).toBeGreaterThanOrEqual(200);
@@ -156,7 +190,7 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
   */
   test('returns existing chat when direct chat already exists', async () => {
     const res = await request(app).post('/api/chats').send({
-      peerId: OTHER_USER,
+      peerId: otherTestUser._id.toString(),
       name: 'Duplicate Test Chat'
     });
     expect(res.status).toBe(200); // Returns existing chat with 200
@@ -202,8 +236,8 @@ describe('GET /api/chats - unmocked (no mocking)', () => {
   */
   test('lists chats for the authenticated user', async () => {
     console.log('[TEST] Starting GET /api/chats test');
-    console.log('[TEST] USER_ID from env:', USER);
-    console.log('[TEST] USER_ID is valid ObjectId:', mongoose.isValidObjectId(USER));
+    console.log('[TEST] testUser._id:', testUser._id.toString());
+    console.log('[TEST] testUser._id is valid ObjectId:', mongoose.isValidObjectId(testUser._id));
     
     const res = await request(app).get('/api/chats');
     
@@ -273,16 +307,16 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
     Expected behavior: Returns 404 when user is not a participant (access denied)
   */
   test('returns 404 when user is not a participant', async () => {
-    // Create a chat between OTHER_USER and a third user
+    // Create a chat between otherTestUser and a third user
     const thirdUser = new mongoose.Types.ObjectId().toString();
     const otherChat = await Chat.createPair(
-      new mongoose.Types.ObjectId(OTHER_USER),
+      otherTestUser._id,
       new mongoose.Types.ObjectId(thirdUser),
       'Private Chat'
     );
     const otherChatId = String(otherChat._id);
 
-    // USER tries to access this chat
+    // testUser tries to access this chat
     const res = await request(app).get(`/api/chats/${otherChatId}`);
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error');
@@ -307,7 +341,7 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
     expect(res.body).toHaveProperty('_id');
     expect(res.body).toHaveProperty('content');
     expect(res.body.content).toBe('Hello from test!');
-    expect(String(res.body.sender?._id || res.body.sender)).toBe(USER);
+    expect(String(res.body.sender?._id || res.body.sender)).toBe(testUser._id.toString());
     messageId = String(res.body._id);
   });
 

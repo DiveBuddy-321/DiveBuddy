@@ -10,21 +10,22 @@ export const authenticateUserSchema = z.object({
 
 // Request types
 // ------------------------------------------------------------
-export type AuthenticateUserRequest = z.infer<typeof authenticateUserSchema>;
+export type AuthenticateUserRequest = z.infer<typeof authenticateUserSchema>; //keep as type due to zod schema
 
-export type AuthenticateUserResponse = {
+export interface AuthenticateUserResponse {
   message: string;
   data?: AuthResult;
-};
+}
 
 // Generic types
 // ------------------------------------------------------------
-export type AuthResult = {
+export interface AuthResult {
   token: string;
   user: IUser;
-};
+}
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: IUser;

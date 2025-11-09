@@ -52,12 +52,13 @@ export const updateEventSchema = z.object({
 
 // Request types
 // ------------------------------------------------------------
-export type GetEventResponse = {
+export interface GetEventResponse {
   message: string;
   data?: {
     event: IEvent;
   };
-};
+}
 
+//these must remain types because they are zod infererred types
 export type UpdateEventRequest = z.infer<typeof updateEventSchema>;
 export type CreateEventRequest = z.infer<typeof createEventSchema>;

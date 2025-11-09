@@ -34,6 +34,15 @@ import com.cpen321.usermanagement.ui.viewmodels.MatchViewModel
 import com.cpen321.usermanagement.ui.theme.LocalFontSizes
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
+private data class MainCallbacks(
+    val onProfileClick: () -> Unit,
+    val onSuccessMessageShown: () -> Unit,
+    val onBottomNavItemClick: (String) -> Unit,
+    val onNavigateToMatch: () -> Unit,
+    val onNavigateBackFromMatch: () -> Unit,
+    val onOpenChat: (String) -> Unit
+)
+
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel,
@@ -45,12 +54,14 @@ fun MainScreen(
     MainContent(
         uiState = uiState,
         snackBarHostState = snackBarHostState,
-        onProfileClick = onProfileClick,
-        onSuccessMessageShown = mainViewModel::clearSuccessMessage,
-        onBottomNavItemClick = mainViewModel::setCurrentScreen,
-        onNavigateToMatch = mainViewModel::navigateToMatchScreen,
-        onNavigateBackFromMatch = mainViewModel::navigateBackFromMatchScreen,
-        onOpenChat = mainViewModel::openChat
+        callbacks = MainCallbacks(
+            onProfileClick = onProfileClick,
+            onSuccessMessageShown = mainViewModel::clearSuccessMessage,
+            onBottomNavItemClick = mainViewModel::setCurrentScreen,
+            onNavigateToMatch = mainViewModel::navigateToMatchScreen,
+            onNavigateBackFromMatch = mainViewModel::navigateBackFromMatchScreen,
+            onOpenChat = mainViewModel::openChat
+        )
     )
 }
 
@@ -58,41 +69,32 @@ fun MainScreen(
 private fun MainContent(
     uiState: MainUiState,
     snackBarHostState: SnackbarHostState,
-    onProfileClick: () -> Unit,
-    onSuccessMessageShown: () -> Unit,
-    onBottomNavItemClick: (String) -> Unit,
-    onNavigateToMatch: () -> Unit,
-    onNavigateBackFromMatch: () -> Unit,
-    onOpenChat: (String) -> Unit,
+    callbacks: MainCallbacks,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            MainTopBar(onProfileClick = onProfileClick)
+            MainTopBar(onProfileClick = callbacks.onProfileClick)
         },
         bottomBar = {
             BottomNavigationBar(
                 currentRoute = uiState.currentScreen,
-                onItemClick = onBottomNavItemClick
+                onItemClick = callbacks.onBottomNavItemClick
             )
         },
         snackbarHost = {
             MainSnackbarHost(
                 hostState = snackBarHostState,
                 successMessage = uiState.successMessage,
-                onSuccessMessageShown = onSuccessMessageShown
+                onSuccessMessageShown = callbacks.onSuccessMessageShown
             )
         }
     ) { paddingValues ->
         MainBody(
             paddingValues = paddingValues,
-            currentScreen = uiState.currentScreen,
-            showMatchScreen = uiState.showMatchScreen,
-            selectedChatId = uiState.selectedChatId,
-            onNavigateToMatch = onNavigateToMatch,
-            onNavigateBackFromMatch = onNavigateBackFromMatch,
-            onOpenChat = onOpenChat
+            uiState = uiState,
+            callbacks = callbacks
         )
     }
 }
@@ -174,12 +176,8 @@ private fun MainSnackbarHost(
 @Composable
 private fun MainBody(
     paddingValues: PaddingValues,
-    currentScreen: String,
-    showMatchScreen: Boolean,
-    selectedChatId: String?,
-    onNavigateToMatch: () -> Unit,
-    onNavigateBackFromMatch: () -> Unit,
-    onOpenChat: (String) -> Unit,
+    uiState: MainUiState,
+    callbacks: MainCallbacks,
     modifier: Modifier = Modifier
 ) {
     val buddyViewModel: BuddyViewModel = hiltViewModel()
@@ -187,21 +185,21 @@ private fun MainBody(
     
     // Set up callbacks
     LaunchedEffect(Unit) {
-        buddyViewModel.onNavigateToMatch = onNavigateToMatch
+        buddyViewModel.onNavigateToMatch = callbacks.onNavigateToMatch
         matchViewModel.onNavigateBack = {
             // Clear states when going back
             buddyViewModel.clearState()
             matchViewModel.clearState()
-            onNavigateBackFromMatch()
+            callbacks.onNavigateBackFromMatch()
         }
         matchViewModel.onNavigateToChat = { chatId ->
-            onOpenChat(chatId)
+            callbacks.onOpenChat(chatId)
         }
     }
     
     // When navigating to match screen, initialize MatchViewModel with buddies
-    LaunchedEffect(showMatchScreen) {
-        if (showMatchScreen) {
+    LaunchedEffect(uiState.showMatchScreen) {
+        if (uiState.showMatchScreen) {
             val buddies = buddyViewModel.uiState.value.buddies
             matchViewModel.initializeWithBuddies(buddies)
         }
@@ -212,13 +210,13 @@ private fun MainBody(
             .fillMaxSize()
             .padding(paddingValues)
     ) {
-        if (showMatchScreen) {
+        if (uiState.showMatchScreen) {
             MatchScreen(
                 modifier = Modifier.fillMaxSize(),
                 viewModel = matchViewModel
             )
         } else {
-            when (currentScreen) {
+            when (uiState.currentScreen) {
                 "events" -> EventsScreen()
                 "buddies" -> BuddiesScreen(
                     viewModel = buddyViewModel

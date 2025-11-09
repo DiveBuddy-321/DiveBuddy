@@ -3,13 +3,16 @@ import { describe, test, expect, beforeAll, afterEach, afterAll, jest } from '@j
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { userModel } from '../../src/models/user.model';
+import { CreateUserRequest } from '../../src/types/user.types';
 import express from 'express';
 import buddyRoutes from '../../src/routes/buddy.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 import mongoose from 'mongoose';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -17,15 +20,9 @@ app.use(express.json());
 
 // Mock auth middleware to set req.user with complete profile
 app.use('/api/buddy', (req: any, res: any, next: any) => {
-  req.user = {
-    _id: new mongoose.Types.ObjectId(USER),
-    email: 'test@example.com',
-    name: 'Test User',
-    age: 25,
-    skillLevel: 'Intermediate',
-    latitude: 49.2827,
-    longitude: -123.1207
-  };
+  if (testUser) {
+    req.user = testUser;
+  }
   next();
 }, buddyRoutes);
 
@@ -37,9 +34,28 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 beforeAll(async () => {
   await setupTestDB();
+  
+  // Create a test user with complete profile
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
 });
 
 afterAll(async () => {
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
+  }
   await teardownTestDB();
 });
 
@@ -48,9 +64,9 @@ afterEach(() => {
 });
 
 describe('GET /api/buddy - mocked', () => {
-  test('returns 500 when userModel.findAll fails', async () => {
-    // Mock userModel.findAll to throw an error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Database connection failed'));
+  test('returns 500 when userModel.findByQuery fails', async () => {
+    // Mock userModel.findByQuery to throw an error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Database connection failed'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -58,12 +74,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when unexpected error occurs', async () => {
-    // Mock userModel.findAll to throw an unexpected error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Unexpected error'));
+    // Mock userModel.findByQuery to throw an unexpected error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Unexpected error'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -71,12 +87,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when database timeout occurs', async () => {
-    // Mock userModel.findAll to throw a timeout error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Connection timeout'));
+    // Mock userModel.findByQuery to throw a timeout error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Connection timeout'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -84,12 +100,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when null pointer exception occurs', async () => {
-    // Mock userModel.findAll to throw null error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new TypeError('Cannot read property of null'));
+    // Mock userModel.findByQuery to throw null error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new TypeError('Cannot read property of null'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -97,12 +113,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when network error occurs', async () => {
-    // Mock userModel.findAll to throw a network error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Network error'));
+    // Mock userModel.findByQuery to throw a network error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Network error'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -110,12 +126,12 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
   test('returns 500 when memory error occurs', async () => {
-    // Mock userModel.findAll to throw a memory error
-    jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Out of memory'));
+    // Mock userModel.findByQuery to throw a memory error
+    jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Out of memory'));
 
     // Make request
     const res = await request(app).get('/api/buddy');
@@ -123,7 +139,7 @@ describe('GET /api/buddy - mocked', () => {
     // Assertions
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(userModel.findAll).toHaveBeenCalledTimes(1);
+    expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -134,7 +150,7 @@ describe('GET /api/buddy - profile validation mocked', () => {
     incompleteApp.use(express.json());
     incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
       req.user = {
-        _id: new mongoose.Types.ObjectId(USER),
+        _id: testUser ? testUser._id : new mongoose.Types.ObjectId(),
         email: 'test@example.com',
         name: 'Test User',
         // Missing age
@@ -161,7 +177,7 @@ describe('GET /api/buddy - profile validation mocked', () => {
     incompleteApp.use(express.json());
     incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
       req.user = {
-        _id: new mongoose.Types.ObjectId(USER),
+        _id: testUser ? testUser._id : new mongoose.Types.ObjectId(),
         email: 'test@example.com',
         name: 'Test User',
         age: 25,
@@ -188,7 +204,7 @@ describe('GET /api/buddy - profile validation mocked', () => {
     incompleteApp.use(express.json());
     incompleteApp.use('/api/buddy', (req: any, res: any, next: any) => {
       req.user = {
-        _id: new mongoose.Types.ObjectId(USER),
+        _id: testUser ? testUser._id : new mongoose.Types.ObjectId(),
         email: 'test@example.com',
         name: 'Test User',
         age: 25,

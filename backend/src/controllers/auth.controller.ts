@@ -4,44 +4,41 @@ import { authService } from '../services/auth.service';
 import {
   AuthenticateUserRequest,
   AuthenticateUserResponse,
+  authenticateUserSchema,
 } from '../types/auth.types';
 import logger from '../utils/logger.util';
 
 export class AuthController {
   async signUp(
-    req: Request<unknown, unknown, AuthenticateUserRequest>,
+    // Keep body as unknown so we *must* validate
+    req: Request<unknown, unknown, unknown>,
     res: Response<AuthenticateUserResponse>,
     next: NextFunction
   ) {
     try {
-      const { idToken } = req.body;
+      // Validate & narrow: idToken is now definitely string
+      const { idToken }: AuthenticateUserRequest = authenticateUserSchema.parse(req.body);
 
       const data = await authService.signUpWithGoogle(idToken);
 
       return res.status(201).json({
-        message: 'User signed up successfully',
+        message: "User signed up successfully",
         data,
       });
     } catch (error) {
-      logger.error('Google sign up error:', error);
+      logger.error("Google sign up error:", error);
 
       if (error instanceof Error) {
-        if (error.message === 'Invalid Google token') {
-          return res.status(401).json({
-            message: 'Invalid Google token',
-          });
+        if (error.message === "Invalid Google token") {
+          return res.status(401).json({ message: "Invalid Google token" });
         }
-
-        if (error.message === 'User already exists') {
-          return res.status(409).json({
-            message: 'User already exists, please sign in instead.',
-          });
+        if (error.message === "User already exists") {
+          return res
+            .status(409)
+            .json({ message: "User already exists, please sign in instead." });
         }
-
-        if (error.message === 'Failed to process user') {
-          return res.status(500).json({
-            message: 'Failed to process user information',
-          });
+        if (error.message === "Failed to process user") {
+          return res.status(500).json({ message: "Failed to process user information" });
         }
       }
 
@@ -55,7 +52,8 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
-      const { idToken } = req.body;
+      // Validate & narrow: idToken is now definitely string
+      const { idToken }: AuthenticateUserRequest = authenticateUserSchema.parse(req.body);
 
       const data = await authService.signInWithGoogle(idToken);
 

@@ -3,6 +3,8 @@ import { describe, test, expect, beforeAll, afterEach, afterAll, jest } from '@j
 import dotenv from 'dotenv';
 import { setupTestDB, teardownTestDB } from '../tests.setup';
 import { MediaService } from '../../src/services/media.service';
+import { userModel } from '../../src/models/user.model';
+import { CreateUserRequest } from '../../src/types/user.types';
 import express from 'express';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 import mongoose from 'mongoose';
@@ -12,7 +14,9 @@ import { upload } from '../../src/storage';
 import { MediaController } from '../../src/controllers/media.controller';
 
 dotenv.config();
-const USER = process.env.USER_ID as string;
+
+// Test user will be created dynamically
+let testUser: any = null;
 
 // Create Express app for testing
 const app = express();
@@ -20,11 +24,13 @@ app.use(express.json());
 
 // Mock auth middleware to set req.user
 app.use((req: any, res, next) => {
-  req.user = { 
-    _id: new mongoose.Types.ObjectId(USER),
-    email: 'test@example.com',
-    name: 'Test User'
-  };
+  if (testUser) {
+    req.user = { 
+      _id: testUser._id,
+      email: testUser.email,
+      name: testUser.name
+    };
+  }
   next();
 });
 
@@ -67,6 +73,21 @@ const createTestImage = (): Buffer => {
 beforeAll(async () => {
   await setupTestDB();
   
+  // Create a test user
+  const newUser: CreateUserRequest = {
+    email: 'test@example.com',
+    name: 'Test User',
+    googleId: `test-google-${Date.now()}`,
+    age: 25,
+    profilePicture: 'http://example.com/pic.jpg',
+    bio: 'Test bio',
+    location: 'Vancouver, BC',
+    latitude: 49.2827,
+    longitude: -123.1207,
+    skillLevel: 'Intermediate'
+  };
+  testUser = await userModel.create(newUser);
+  
   // Ensure uploads/images directory exists
   if (!fs.existsSync(IMAGES_DIR)) {
     fs.mkdirSync(IMAGES_DIR, { recursive: true });
@@ -75,9 +96,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Clean up any test images
-  if (fs.existsSync(IMAGES_DIR)) {
+  if (fs.existsSync(IMAGES_DIR) && testUser) {
     const files = fs.readdirSync(IMAGES_DIR);
-    const testFiles = files.filter(file => file.includes(USER));
+    const testFiles = files.filter(file => file.includes(testUser._id.toString()));
     testFiles.forEach(file => {
       try {
         fs.unlinkSync(require('path').join(IMAGES_DIR, file));
@@ -85,6 +106,11 @@ afterAll(async () => {
         // Ignore errors during cleanup
       }
     });
+  }
+  
+  // Clean up test user
+  if (testUser) {
+    await userModel.delete(new mongoose.Types.ObjectId(testUser._id));
   }
   
   await teardownTestDB();
@@ -96,7 +122,7 @@ afterEach(() => {
   // Clean up uploaded files after each test
   if (fs.existsSync(IMAGES_DIR)) {
     const files = fs.readdirSync(IMAGES_DIR);
-    const testFiles = files.filter(file => file.includes(USER));
+    const testFiles = files.filter(file => file.includes(testUser._id.toString()));
     testFiles.forEach(file => {
       try {
         fs.unlinkSync(require('path').join(IMAGES_DIR, file));

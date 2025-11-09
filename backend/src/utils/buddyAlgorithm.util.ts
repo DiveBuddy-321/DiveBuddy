@@ -29,7 +29,7 @@ export const buddyAlgorithm = (
     if (targetMinLevel !== undefined && targetMaxLevel !== undefined) {
         const filteredUsers = eligibleUsers.filter(user => {
             const numericLevel = getNumericLevel(user);
-            return numericLevel !== undefined && (numericLevel as number) >= targetMinLevel && (numericLevel as number) <= targetMaxLevel;
+            return numericLevel !== undefined && (numericLevel) >= targetMinLevel && (numericLevel) <= targetMaxLevel;
         });
         eligibleUsers = filteredUsers;
     }
