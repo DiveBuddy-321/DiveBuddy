@@ -255,33 +255,48 @@ class ProfileScreenTest {
     }
 
     private fun clickCitySuggestion(suggestion: String, allSuggestions: List<String>) {
-        try {
+        if (tryClickSuggestionWithUnmergedTree(suggestion)) {
+            return
+        }
+        if (tryClickSuggestion(suggestion)) {
+            return
+        }
+        tryClickAlternativeSuggestions(suggestion, allSuggestions)
+    }
+
+    private fun tryClickSuggestionWithUnmergedTree(suggestion: String): Boolean {
+        return try {
             composeTestRule.onAllNodesWithText(suggestion, substring = false, useUnmergedTree = true)
                 .get(0)
                 .performClick()
+            true
         } catch (e: Exception) {
-            try {
-                composeTestRule.onAllNodesWithText(suggestion, substring = false)
-                    .get(0)
-                    .performClick()
-            } catch (e2: Exception) {
-                val filteredSuggestions = allSuggestions.filter {
-                    it == suggestion || (it.contains(suggestion.split(",").first()) &&
-                        !it.contains("West") && !it.contains("North"))
-                }
-                for (altSuggestion in filteredSuggestions) {
-                    try {
-                        composeTestRule.onAllNodesWithText(altSuggestion, substring = false, useUnmergedTree = true)
-                            .get(0)
-                            .performClick()
-                        return
-                    } catch (e3: Exception) {
-                        // Try next suggestion
-                    }
-                }
-                throw AssertionError("Could not click any city suggestion")
+            false
+        }
+    }
+
+    private fun tryClickSuggestion(suggestion: String): Boolean {
+        return try {
+            composeTestRule.onAllNodesWithText(suggestion, substring = false)
+                .get(0)
+                .performClick()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun tryClickAlternativeSuggestions(suggestion: String, allSuggestions: List<String>) {
+        val filteredSuggestions = allSuggestions.filter {
+            it == suggestion || (it.contains(suggestion.split(",").first()) &&
+                !it.contains("West") && !it.contains("North"))
+        }
+        for (altSuggestion in filteredSuggestions) {
+            if (tryClickSuggestionWithUnmergedTree(altSuggestion)) {
+                return
             }
         }
+        throw AssertionError("Could not click any city suggestion")
     }
 
     private fun waitForSaveToComplete(maxWaitTime: Long = 10000) {
