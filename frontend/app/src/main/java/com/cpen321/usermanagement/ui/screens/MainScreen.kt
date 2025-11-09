@@ -225,7 +225,6 @@ private fun MainBody(
                 )
                 "chat" -> ChatScreen(
                     modifier = Modifier,
-                    chatId = selectedChatId
                 )
                 else -> EventsScreen()
             }
