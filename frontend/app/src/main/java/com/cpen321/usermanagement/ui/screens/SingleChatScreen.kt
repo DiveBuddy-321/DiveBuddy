@@ -57,10 +57,11 @@ import com.cpen321.usermanagement.R
 fun SingleChatScreen(
     chat: Chat,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    chatViewModel: ChatViewModel = hiltViewModel()
 ) {
     val spacing = LocalSpacing.current
-    val chatVm: ChatViewModel = hiltViewModel()
+    val chatVm: ChatViewModel = chatViewModel
     val uiState by chatVm.uiState.collectAsState()
     val messages = remember { mutableStateOf<List<Message>>(emptyList()) }
     val listState = rememberLazyListState()

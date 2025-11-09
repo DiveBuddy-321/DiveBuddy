@@ -31,16 +31,15 @@ import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
 @Composable
 fun ChatScreen(
     modifier: Modifier = Modifier,
-    chatId: String? = null
+    chatViewModel: ChatViewModel = hiltViewModel(),
 ) {
-    val vm: ChatViewModel = hiltViewModel()
-    val uiState = vm.uiState.collectAsState()
-    LaunchedEffect(Unit) { vm.loadChats() }
+    val uiState = chatViewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) { chatViewModel.loadChats() }
     ChatContent(
         modifier = modifier,
         isLoading = uiState.value.isLoading,
         chats = uiState.value.chats,
-        viewModel = vm
+        viewModel = chatViewModel
     )
 }
 
@@ -61,7 +60,8 @@ private fun ChatContent(
             chat = selectedChat!!,
             onBack = {
                 showSelectedChat = false
-            }
+            },
+            chatViewModel = viewModel
         )
     } else {
         if (isLoading) {

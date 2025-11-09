@@ -27,7 +27,7 @@ data class BuddyUiState(
 )
 
 @HiltViewModel
-class BuddyViewModel @Inject constructor(
+open class BuddyViewModel @Inject constructor(
     private val buddyRepository: BuddyRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {

@@ -42,7 +42,7 @@ data class EventUiState(
 )
 
 @HiltViewModel
-class EventViewModel @Inject constructor(
+open class EventViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val authRepository: AuthRepository
 ) : ViewModel() {

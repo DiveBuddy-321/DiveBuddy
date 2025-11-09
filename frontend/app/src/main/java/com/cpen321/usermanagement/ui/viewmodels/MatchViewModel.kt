@@ -28,7 +28,7 @@ data class MatchUiState(
 )
 
 @HiltViewModel
-class MatchViewModel @Inject constructor(
+open class MatchViewModel @Inject constructor(
     private val buddyRepository: BuddyRepository,
     private val chatRepository: ChatRepository,
     private val savedStateHandle: SavedStateHandle
