@@ -85,10 +85,6 @@ class ProfileScreenTest {
         }
     }
 
-    /**
-     * Helper method to ensure user is authenticated before running a test
-     * Throws AssertionError if not authenticated or backend is not accessible
-     */
     private fun ensureAuthenticated() {
         runBlocking {
             val token = tokenManager.getTokenSync()
