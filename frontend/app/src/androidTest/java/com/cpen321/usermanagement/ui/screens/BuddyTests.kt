@@ -14,6 +14,8 @@ import com.cpen321.usermanagement.data.repository.BuddyRepositoryImpl
 import com.cpen321.usermanagement.data.repository.ChatRepositoryImpl
 import com.cpen321.usermanagement.data.repository.BuddyRepository
 import com.cpen321.usermanagement.data.repository.ChatRepository
+import com.cpen321.usermanagement.data.remote.dto.Buddy
+import com.cpen321.usermanagement.common.Constants
 import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
 import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
@@ -121,13 +123,7 @@ class BuddyTests {
         chatIdReceived = null
     }
 
-    @Test
-    fun success_scenario_finding_buddies_and_viewing_matches() {
-        // Given: User is on the main screen and navigates to buddies tab
-        // The backend should have other users available to match with
-        // (These users should exist in the backend database)
-        
-        // When: Main screen is displayed with buddies tab selected
+    private fun setupMainScreenWithNavigation() {
         composeTestRule.setContent {
             UserManagementTheme {
                 ProvideSpacing {
@@ -139,7 +135,6 @@ class BuddyTests {
                         when (uiState.currentScreen) {
                             "buddies" -> BuddiesScreen(viewModel = buddyViewModel)
                             else -> {
-                                // Set to buddies screen if not already
                                 mainViewModel.setCurrentScreen("buddies")
                                 BuddiesScreen(viewModel = buddyViewModel)
                             }
@@ -148,36 +143,39 @@ class BuddyTests {
                 }
             }
         }
-
         composeTestRule.waitForIdle()
+    }
 
-        // Navigate to buddies tab
+    private fun navigateToBuddiesScreen() {
         mainViewModel.setCurrentScreen("buddies")
         composeTestRule.waitForIdle()
-
-        // Verify we're on the buddies screen
         composeTestRule.onNodeWithText("Buddies").assertIsDisplayed()
         composeTestRule.onNodeWithText("Match with Buddies").assertIsDisplayed()
+    }
 
-        // Click on "Match with Buddies" button - this will call the real backend API
-        composeTestRule.onNodeWithText("Match with Buddies").performClick()
-
-        // Wait for the API call to complete - this may take time for a real backend call
+    private fun clickMatchWithBuddiesAndWait() {
+        // Set default filters (required by BuddyViewModel validation)
+        buddyViewModel.setFilters(
+            targetMinLevel = Constants.BEGINNER_LEVEL,
+            targetMaxLevel = Constants.ADVANCED_LEVEL,
+            targetMinAge = Constants.MIN_AGE,
+            targetMaxAge = Constants.MAX_AGE
+        )
         composeTestRule.waitForIdle()
         
-        // Wait a bit more for the async operation to complete
+        composeTestRule.onNodeWithText("Match with Buddies").performClick()
+        composeTestRule.waitForIdle()
         Thread.sleep(1000)
         composeTestRule.waitForIdle()
+    }
 
-        // Check if we got buddies from the backend
+    private fun verifyBuddiesFetched() {
         val buddyUiState = buddyViewModel.uiState.value
         if (buddyUiState.buddies.isEmpty() && buddyUiState.errorMessage == null) {
-            // Still loading, wait a bit more
             Thread.sleep(2000)
             composeTestRule.waitForIdle()
         }
         
-        // Check for error message
         if (buddyUiState.errorMessage != null) {
             throw AssertionError(
                 "Failed to fetch buddies from backend: ${buddyUiState.errorMessage}. " +
@@ -185,32 +183,28 @@ class BuddyTests {
             )
         }
         
-        // Verify we got buddies
         assert(buddyUiState.buddies.isNotEmpty()) {
             "No buddies returned from backend. " +
             "Please ensure there are other users in the database to match with. " +
             "Error: ${buddyUiState.errorMessage ?: "None"}"
         }
+    }
 
-        // Verify navigation was triggered
+    private fun verifyMatchScreenNavigation() {
         assert(navigateToMatchInvoked) { 
             "Navigation to MatchScreen should be invoked. " +
-            "Buddies found: ${buddyUiState.buddies.size}"
+            "Buddies found: ${buddyViewModel.uiState.value.buddies.size}"
         }
         
-        // Initialize MatchViewModel with the buddies we fetched
-        // This is simpler than using LaunchedEffect - we just do it directly in the test
-        matchViewModel.initializeWithBuddies(buddyUiState.buddies)
+        matchViewModel.initializeWithBuddies(buddyViewModel.uiState.value.buddies)
         
-        // Verify we're on the match screen now
         assert(mainViewModel.uiState.value.showMatchScreen) {
             "MainViewModel should show match screen. Current state: ${mainViewModel.uiState.value}"
         }
+    }
 
-        // Wait for the match screen to appear and be initialized
-        composeTestRule.waitUntil(
-            timeoutMillis = 5000
-        ) {
+    private fun verifyMatchScreenDisplayed() {
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
             try {
                 composeTestRule.onNodeWithText("Match").assertIsDisplayed()
                 true
@@ -218,21 +212,14 @@ class BuddyTests {
                 false
             }
         }
-
         composeTestRule.waitForIdle()
-
-        // Verify we're now on the MatchScreen
-        // Note: The actual buddy data will come from the backend
-        // We verify that the screen is displayed and has navigation buttons
         composeTestRule.onNodeWithText("Match").assertIsDisplayed()
         composeTestRule.onNodeWithText("Back").assertIsDisplayed()
+    }
 
-        // If there are multiple buddies, verify we can navigate
-        // Check if "Next" button is available (indicates multiple profiles)
+    private fun navigateThroughBuddiesIfMultiple() {
         try {
-            composeTestRule.waitUntil(
-                timeoutMillis = 2000
-            ) {
+            composeTestRule.waitUntil(timeoutMillis = 2000) {
                 try {
                     composeTestRule.onNodeWithText("Next").assertIsDisplayed()
                     true
@@ -241,59 +228,40 @@ class BuddyTests {
                 }
             }
             composeTestRule.onNodeWithText("Next").assertIsDisplayed()
-            
-            // Navigate to the next buddy by clicking "Next"
             composeTestRule.onNodeWithText("Next").performClick()
             composeTestRule.waitForIdle()
-
-            // Verify we're still on the match screen (showing next buddy)
             composeTestRule.onNodeWithText("Match").assertIsDisplayed()
             composeTestRule.onNodeWithText("Back").assertIsDisplayed()
         } catch (e: AssertionError) {
-            // If "Next" button doesn't exist, there's only one buddy - that's fine
-            // The test still passes as we've verified the match screen works
+            // Only one buddy - test still passes
         }
-
-        // Verify we've successfully navigated through the buddies
-        // The test confirms that:
-        // 1. The backend API was called successfully
-        // 2. Buddies were fetched and displayed
-        // 3. Navigation between screens works
     }
 
-    @Test
-    fun success_scenario_matching_with_user() {
-        // Given: User is on the match screen with a buddy's profile displayed
-        // The backend should have at least one user available to match with
-        
-        val showMatchScreenState = mutableStateOf(false)
-        
-        // First, fetch buddies to get a list of available matches
-        runBlocking {
-            val result = buddyRepository.getBuddies(
+    private fun fetchBuddiesFromRepository(): List<Buddy> {
+        val result = runBlocking {
+            buddyRepository.getBuddies(
                 targetMinLevel = null,
                 targetMaxLevel = null,
                 targetMinAge = null,
                 targetMaxAge = null
             )
-            
-            if (result.isFailure || result.getOrNull().isNullOrEmpty()) {
-                throw AssertionError(
-                    "No buddies available from backend. " +
-                    "Please ensure there are other users in the database to match with."
-                )
-            }
-            
-            val buddies = result.getOrNull()!!
-            matchViewModel.initializeWithBuddies(buddies)
-            showMatchScreenState.value = true
         }
+        
+        if (result.isFailure || result.getOrNull().isNullOrEmpty()) {
+            throw AssertionError(
+                "No buddies available from backend. " +
+                "Please ensure there are other users in the database to match with."
+            )
+        }
+        
+        return result.getOrNull()!!
+    }
 
-        // When: MatchScreen is displayed with a buddy's profile
+    private fun setupMatchScreenContent(showMatchScreen: Boolean) {
         composeTestRule.setContent {
             UserManagementTheme {
                 ProvideSpacing {
-                    if (showMatchScreenState.value) {
+                    if (showMatchScreen) {
                         MatchScreen(viewModel = matchViewModel)
                     } else {
                         BuddiesScreen(viewModel = buddyViewModel)
@@ -301,22 +269,17 @@ class BuddyTests {
                 }
             }
         }
-
         composeTestRule.waitForIdle()
+    }
 
-        // Verify we're on the MatchScreen and a buddy's profile is displayed
-        // The actual content will depend on what the backend returns
+    private fun verifyMatchScreenAndClickMatch() {
         composeTestRule.onNodeWithText("Match").assertIsDisplayed()
         composeTestRule.onNodeWithText("Back").assertIsDisplayed()
-
-        // Click on the "Match" button - this will create a chat via the backend API
         composeTestRule.onNodeWithText("Match").performClick()
+    }
 
-        // Wait for async operation (chat creation) to complete
-        // The "Back" button should still be visible after matching
-        composeTestRule.waitUntil(
-            timeoutMillis = 10000
-        ) {
+    private fun waitForChatCreation() {
+        composeTestRule.waitUntil(timeoutMillis = 10000) {
             try {
                 composeTestRule.onNodeWithText("Back").assertIsDisplayed()
                 true
@@ -324,10 +287,10 @@ class BuddyTests {
                 false
             }
         }
-
         composeTestRule.waitForIdle()
+    }
 
-        // Then: Verify that a chat was created and navigation was triggered
+    private fun verifyChatCreated() {
         assert(chatNavigationInvoked) { 
             "Chat navigation should be invoked after matching. " +
             "This means the backend API call to create a chat was successful."
@@ -336,12 +299,35 @@ class BuddyTests {
             "Expected chat ID to be received from backend, but got null. " +
             "The chat creation API call may have failed."
         }
-        
-        // Verify that the chat creation was successful by checking the callback was invoked
-        // with a valid chat ID (which represents the created chat between the user and the match)
-        // The chat ID should be a non-empty string returned from the backend
         assert(chatIdReceived!!.isNotEmpty()) {
             "Chat ID should not be empty. Received: $chatIdReceived"
         }
+    }
+
+    @Test
+    fun success_scenario_finding_buddies_and_viewing_matches() {
+        // Given: User is on the main screen and navigates to buddies tab
+        // The backend should have other users available to match with
+        
+        setupMainScreenWithNavigation()
+        navigateToBuddiesScreen()
+        clickMatchWithBuddiesAndWait()
+        verifyBuddiesFetched()
+        verifyMatchScreenNavigation()
+        verifyMatchScreenDisplayed()
+        navigateThroughBuddiesIfMultiple()
+    }
+
+    @Test
+    fun success_scenario_matching_with_user() {
+        // Given: User is on the match screen with a buddy's profile displayed
+        // The backend should have at least one user available to match with
+        
+        val buddies = fetchBuddiesFromRepository()
+        matchViewModel.initializeWithBuddies(buddies)
+        setupMatchScreenContent(true)
+        verifyMatchScreenAndClickMatch()
+        waitForChatCreation()
+        verifyChatCreated()
     }
 }
