@@ -23,7 +23,7 @@ fun Button(
     if (type == "secondary") {
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = Color.Black
+            contentColor = MaterialTheme.colorScheme.onSecondary
         )
     }
 

@@ -2,7 +2,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.painterResource
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
@@ -13,9 +13,9 @@ fun Icon(
 ) {
     val spacing = LocalSpacing.current
     val color = if (type == "dark") {
-        Color.Black
+        MaterialTheme.colorScheme.onSurface
     } else {
-        Color.White
+        MaterialTheme.colorScheme.onPrimary
     }
 
     Icon(

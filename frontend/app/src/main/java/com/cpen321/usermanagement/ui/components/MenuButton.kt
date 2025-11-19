@@ -26,11 +26,11 @@ fun MenuButton(
     val spacing = LocalSpacing.current
 
     val colors = ButtonDefaults.buttonColors(
-        containerColor = Color.White,
-        contentColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     )
 
-    val border = BorderStroke(1.dp, Color.LightGray)
+    val border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
     OutlinedButton(
         colors = colors,
