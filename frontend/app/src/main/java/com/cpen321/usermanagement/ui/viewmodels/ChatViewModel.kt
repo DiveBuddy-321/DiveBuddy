@@ -20,6 +20,7 @@ data class ChatUiState(
     val messagesByChat: Map<String, List<Message>> = emptyMap(),
     val currentUserId: String? = null,
     val userNames: Map<String, String> = emptyMap(), // userId -> userName mapping
+    val userAvatars: Map<String, String?> = emptyMap(), // userId -> avatar path mapping
     val error: String? = null,
     val isSocketConnected: Boolean = false
 )
@@ -100,11 +101,13 @@ class ChatViewModel @Inject constructor(
                         chat.participants.filter { it != profile?._id }
                     }.distinct()
                     
-                    // Fetch user names for all participants
+                    // Fetch user names and avatars for all participants
                     val userNamesMap = mutableMapOf<String, String>()
+                    val userAvatarsMap = mutableMapOf<String, String?>()
                     participantIds.forEach { userId ->
                         profileRepository.getProfileById(userId).getOrNull()?.let { user ->
                             userNamesMap[userId] = user.name
+                            userAvatarsMap[userId] = user.profilePicture
                         }
                     }
                     
@@ -112,7 +115,8 @@ class ChatViewModel @Inject constructor(
                         isLoading = false, 
                         chats = chatList, 
                         currentUserId = profile?._id,
-                        userNames = userNamesMap
+                        userNames = userNamesMap,
+                        userAvatars = userAvatarsMap
                     )
                 },
                 onFailure = { e -> 
@@ -201,6 +205,12 @@ class ChatViewModel @Inject constructor(
         val currentUserId = _uiState.value.currentUserId
         val otherUserId = chat.participants.find { it != currentUserId }
         return otherUserId?.let { _uiState.value.userNames[it] } ?: "Unknown User"
+    }
+    
+    fun getOtherUserAvatar(chat: Chat): String? {
+        val currentUserId = _uiState.value.currentUserId
+        val otherUserId = chat.participants.find { it != currentUserId }
+        return otherUserId?.let { _uiState.value.userAvatars[it] }
     }
     
     override fun onCleared() {

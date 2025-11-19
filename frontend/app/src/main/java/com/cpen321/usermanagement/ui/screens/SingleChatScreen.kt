@@ -205,13 +205,6 @@ private fun MessageBubbleMine(msg: Message, spacing: com.cpen321.usermanagement.
 		modifier = Modifier.fillMaxWidth(),
 		horizontalArrangement = Arrangement.End
 	) {
-		if (msg.sender?.avatar != null) {
-			AsyncImage(
-				model = RetrofitClient.getPictureUri(msg.sender.avatar),
-				contentDescription = stringResource(R.string.profile_picture),
-				modifier = Modifier.size(12.dp).clip(CircleShape)
-			)
-		}
 		Card(
 			colors = CardDefaults.cardColors(
 				containerColor = MaterialTheme.colorScheme.primary,
@@ -223,6 +216,14 @@ private fun MessageBubbleMine(msg: Message, spacing: com.cpen321.usermanagement.
 			Text(
 				text = msg.content,
 				modifier = Modifier.Companion.padding(horizontal = spacing.medium, vertical = spacing.small)
+			)
+		}
+		Spacer(modifier = Modifier.width(spacing.extraSmall))
+		if (msg.sender?.avatar != null) {
+			AsyncImage(
+				model = RetrofitClient.getPictureUri(msg.sender.avatar),
+				contentDescription = stringResource(R.string.profile_picture),
+				modifier = Modifier.size(32.dp).clip(CircleShape)
 			)
 		}
 	}
@@ -238,9 +239,10 @@ private fun MessageBubbleOther(msg: Message, spacing: com.cpen321.usermanagement
 			AsyncImage(
 				model = RetrofitClient.getPictureUri(msg.sender.avatar),
 				contentDescription = stringResource(R.string.profile_picture),
-				modifier = Modifier.size(12.dp).clip(CircleShape)
+				modifier = Modifier.size(32.dp).clip(CircleShape)
 			)
 		}
+		Spacer(modifier = Modifier.width(spacing.extraSmall))
 		Card(
 			colors = CardDefaults.cardColors(
 				containerColor = MaterialTheme.colorScheme.surfaceVariant,
