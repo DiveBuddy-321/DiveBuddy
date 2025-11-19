@@ -243,8 +243,8 @@ private fun MessageBubbleOther(msg: Message, spacing: com.cpen321.usermanagement
 		}
 		Card(
 			colors = CardDefaults.cardColors(
-				containerColor = MaterialTheme.colorScheme.surfaceVariant,
-				contentColor = MaterialTheme.colorScheme.onSurface
+				containerColor = MaterialTheme.colorScheme.secondary,
+				contentColor = MaterialTheme.colorScheme.onSecondary
 			),
 			shape = RoundedCornerShape(10.dp),
 			modifier = Modifier.fillMaxWidth(0.75f)
