@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -27,6 +28,8 @@ import androidx.compose.runtime.collectAsState
 import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
+import coil.compose.AsyncImage
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 
 @Composable
 fun ChatScreen(
@@ -97,6 +100,7 @@ private fun ChatCard(
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
+    val otherUserAvatar = viewModel.getOtherUserAvatar(chat)
     
     Card(
         modifier = modifier
@@ -116,16 +120,27 @@ private fun ChatCard(
                 .padding(spacing.medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Chat icon
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Direct message",
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            // Profile picture or default icon
+            if (otherUserAvatar != null) {
+                AsyncImage(
+                    model = RetrofitClient.getPictureUri(otherUserAvatar),
+                    contentDescription = "Profile picture",
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Direct message",
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(8.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
             
             Spacer(modifier = Modifier.width(spacing.medium))
             
