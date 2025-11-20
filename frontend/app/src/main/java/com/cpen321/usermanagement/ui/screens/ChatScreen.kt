@@ -103,10 +103,15 @@ private fun ChatCard(
             .fillMaxWidth()
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
     ) {
         Row(
             modifier = Modifier
+                .background(MaterialTheme.colorScheme.surface)
                 .fillMaxWidth()
                 .padding(spacing.medium),
             verticalAlignment = Alignment.CenterVertically

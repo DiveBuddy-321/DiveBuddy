@@ -1,5 +1,6 @@
 package com.cpen321.usermanagement.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,7 +40,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 
-private data class EventNavigationState(
+data class EventNavigationState(
     val selectedEvent: Event? = null,
     val showCreateEventForm: Boolean = false,
     val showEditEventForm: Event? = null
@@ -344,9 +345,15 @@ private fun EventCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(spacing.medium),
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(spacing.medium),
             verticalArrangement = Arrangement.spacedBy(spacing.small)
         ) {
             Text(

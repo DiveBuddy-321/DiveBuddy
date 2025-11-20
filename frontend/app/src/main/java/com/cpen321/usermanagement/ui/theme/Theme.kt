@@ -17,9 +17,19 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF331E37),
-    secondary = Color(0xFFF1F1F1),
-    tertiary = Color(0xFF706993)
+    primary = Color(0xFF0C254A),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF123B71),
+
+    secondary = Color(0xFF37C2C8),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFF69DEE0),
+
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1A1D22),
+
+    background = Color(0xFFF8FAFB),
+    error = Color(0xFFE4575C),
 )
 
 data class Spacing(

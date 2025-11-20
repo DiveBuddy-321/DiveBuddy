@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Base.Theme.UserManagement" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Material color roles wired to your palette -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/textOnPrimary</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryVariant</item>
+
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorOnSecondary">@color/textOnSecondary</item>
+        <item name="colorSecondaryContainer">@color/colorSecondaryVariant</item>
+
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/textOnSurface</item>
+
+        <item name="android:colorBackground">@color/colorBackground</item>
+
+        <item name="colorError">@color/colorError</item>
+
+        <!-- Outline/dividers -->
+        <item name="colorOutline">@color/colorDivider</item>
     </style>
 
     <style name="Theme.UserManagement" parent="Base.Theme.UserManagement" />
