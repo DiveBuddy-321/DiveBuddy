@@ -346,13 +346,13 @@ private fun EventCard(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
     ) {
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(spacing.medium),
             verticalArrangement = Arrangement.spacedBy(spacing.small)
         ) {
