@@ -111,7 +111,7 @@ private fun ChatCard(
     ) {
         Row(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .background(MaterialTheme.colorScheme.surface)
                 .fillMaxWidth()
                 .padding(spacing.medium),
             verticalAlignment = Alignment.CenterVertically
