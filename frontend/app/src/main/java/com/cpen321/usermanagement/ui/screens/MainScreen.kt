@@ -27,6 +27,10 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.components.BottomNavigationBar
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
+import com.cpen321.usermanagement.ui.screens.buddies.BuddiesScreen
+import com.cpen321.usermanagement.ui.screens.buddies.MatchScreen
+import com.cpen321.usermanagement.ui.screens.chat.ChatScreen
+import com.cpen321.usermanagement.ui.screens.events.EventsScreen
 import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainUiState
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel

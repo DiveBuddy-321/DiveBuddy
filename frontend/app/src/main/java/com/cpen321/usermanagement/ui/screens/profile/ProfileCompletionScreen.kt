@@ -1,13 +1,11 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.profile
 import com.cpen321.usermanagement.ui.components.ExperienceLevel
 
 
 import Button
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,27 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,14 +30,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
@@ -67,6 +46,16 @@ import kotlinx.coroutines.delay
 import com.cpen321.usermanagement.common.Constants
 import com.google.android.libraries.places.api.Places
 import com.cpen321.usermanagement.data.repository.ProfileUpdateParams
+import com.cpen321.usermanagement.ui.screens.CityAutocompleteField
+import com.cpen321.usermanagement.ui.screens.ProfileCityAutocompleteCallbacks
+import com.cpen321.usermanagement.ui.screens.ProfileCityAutocompleteData
+import com.cpen321.usermanagement.ui.screens.ProfileCompletionHeader
+import com.cpen321.usermanagement.ui.screens.ProfileExperienceDropdown
+import com.cpen321.usermanagement.ui.screens.SaveButton
+import kotlinx.coroutines.CoroutineScope
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 
 private data class ProfileCompletionFormState(
@@ -193,8 +182,8 @@ private data class CreateScreenContentArgs(
     val uiState: ProfileUiState,
     val formState: ProfileCompletionFormState,
     val snackBarHostState: SnackbarHostState,
-    val suggestions: List<com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel.CitySuggestion>,
-    val scope: kotlinx.coroutines.CoroutineScope,
+    val suggestions: List<ProfileViewModel.CitySuggestion>,
+    val scope: CoroutineScope,
     val cityJob: Job?,
     val profileViewModel: ProfileViewModel,
     val successMessage: String,
@@ -261,7 +250,7 @@ private fun handleCityQueryChange(
     query: String,
     formState: ProfileCompletionFormState,
     cityJob: Job?,
-    scope: kotlinx.coroutines.CoroutineScope,
+    scope: CoroutineScope,
     profileViewModel: ProfileViewModel,
     onFormStateChange: (ProfileCompletionFormState) -> Unit,
     onCityJobChange: (Job?) -> Unit
@@ -288,7 +277,7 @@ private fun handleCityQueryChange(
 
 private fun handleSaveClick(
     formState: ProfileCompletionFormState,
-    scope: kotlinx.coroutines.CoroutineScope,
+    scope: CoroutineScope,
     snackBarHostState: SnackbarHostState,
     profileViewModel: ProfileViewModel,
     successMessage: String,
@@ -330,11 +319,11 @@ private fun handleSaveClick(
                 onProfileCompletedWithMessage(successMessage)
             }
         } 
-        catch (e: java.net.SocketTimeoutException) {
+        catch (e: SocketTimeoutException) {
             snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
-        } catch (e: java.net.UnknownHostException) {
+        } catch (e: UnknownHostException) {
             snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
-        } catch (e: java.io.IOException) {
+        } catch (e: IOException) {
             snackBarHostState.showSnackbar("Couldn't verify city. Please try again.")
         }
     }
@@ -433,7 +422,7 @@ private fun ProfileForm(data: ProfileCompletionScreenData) {
         onAgeChange = data.onAgeChange
     )
     SectionSpacer()
-    
+
     CityAutocompleteField(
         data = ProfileCityAutocompleteData(
             query = data.formState.cityQuery,
@@ -449,7 +438,7 @@ private fun ProfileForm(data: ProfileCompletionScreenData) {
         )
     )
     SectionSpacer()
-    
+
     ProfileExperienceDropdown(
         selected = data.formState.experience,
         isEnabled = !data.isSavingProfile,

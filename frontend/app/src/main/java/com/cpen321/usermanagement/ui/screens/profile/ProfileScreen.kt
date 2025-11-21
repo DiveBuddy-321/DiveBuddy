@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.profile
 
 import Button
 import Icon

@@ -20,6 +20,8 @@ import com.cpen321.usermanagement.data.repository.AuthRepositoryImpl
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepositoryImpl
 import com.cpen321.usermanagement.ui.components.ExperienceLevel
+import com.cpen321.usermanagement.ui.screens.profile.ManageProfileScreen
+import com.cpen321.usermanagement.ui.screens.profile.ProfileCompletionScreen
 import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
 import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel

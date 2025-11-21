@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.buddies
 
 import coil.compose.AsyncImage
 import Button
@@ -38,6 +38,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 
@@ -232,7 +233,7 @@ private fun ProfileAgeAndSkill(age: Int, skillLevel: String) {
 }
 
 @Composable
-private fun ProfileInfoItem(iconRes: Int, text: String, textColor: androidx.compose.ui.graphics.Color) {
+private fun ProfileInfoItem(iconRes: Int, text: String, textColor: Color) {
     val spacing = LocalSpacing.current
     
     Row(

@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.events
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

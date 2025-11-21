@@ -15,10 +15,10 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.screens.AuthScreen
 import com.cpen321.usermanagement.ui.screens.LoadingScreen
 import com.cpen321.usermanagement.ui.screens.MainScreen
-import com.cpen321.usermanagement.ui.screens.ManageProfileScreen
-import com.cpen321.usermanagement.ui.screens.ProfileScreenActions
-import com.cpen321.usermanagement.ui.screens.ProfileCompletionScreen
-import com.cpen321.usermanagement.ui.screens.ProfileScreen
+import com.cpen321.usermanagement.ui.screens.profile.ManageProfileScreen
+import com.cpen321.usermanagement.ui.screens.profile.ProfileScreenActions
+import com.cpen321.usermanagement.ui.screens.profile.ProfileCompletionScreen
+import com.cpen321.usermanagement.ui.screens.profile.ProfileScreen
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
 import com.cpen321.usermanagement.ui.viewmodels.NavigationViewModel

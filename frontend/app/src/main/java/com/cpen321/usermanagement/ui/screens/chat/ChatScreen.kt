@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -104,7 +104,7 @@ private fun ChatCard(
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),

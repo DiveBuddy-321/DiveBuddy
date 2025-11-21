@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.events
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,8 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
-import com.cpen321.usermanagement.ui.screens.CreateEventScreen
-import com.cpen321.usermanagement.ui.screens.SingleEventScreen
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.EventUiState
@@ -345,7 +344,7 @@ private fun EventCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = androidx.compose.material3.CardDefaults.cardColors(
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
