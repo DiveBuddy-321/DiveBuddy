@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.profile
 
 import com.cpen321.usermanagement.ui.components.ExperienceLevel
 
@@ -61,5 +61,3 @@ data class ProfileFormState(
         return nameChanged || ageChanged || bioChanged || expChanged || cityChanged
     }
 }
-
-

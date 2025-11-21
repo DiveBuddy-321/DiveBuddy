@@ -27,6 +27,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import androidx.test.core.app.ApplicationProvider
+import com.cpen321.usermanagement.ui.screens.chat.ChatScreen
 
 /**
  * End-to-end tests for chatting functionality that actually call the backend server.

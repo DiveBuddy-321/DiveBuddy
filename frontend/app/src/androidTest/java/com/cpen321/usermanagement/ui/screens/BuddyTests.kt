@@ -3,7 +3,6 @@ package com.cpen321.usermanagement.ui.screens
 import android.content.Context
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -27,6 +26,8 @@ import org.junit.Rule
 import org.junit.Test
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
+import com.cpen321.usermanagement.ui.screens.buddies.BuddiesScreen
+import com.cpen321.usermanagement.ui.screens.buddies.MatchScreen
 
 /**
  * End-to-end tests for finding buddies use case that actually call the backend server.

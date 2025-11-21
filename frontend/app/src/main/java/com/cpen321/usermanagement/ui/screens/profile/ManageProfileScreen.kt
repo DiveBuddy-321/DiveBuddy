@@ -1,18 +1,14 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.profile
 import com.cpen321.usermanagement.ui.components.ExperienceLevel
 
-import Button
 import Icon
 import android.net.Uri
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -39,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.components.ImagePicker
@@ -52,9 +47,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.cpen321.usermanagement.data.repository.ProfileUpdateParams
+import com.cpen321.usermanagement.ui.screens.CityAutocompleteField
+import com.cpen321.usermanagement.ui.screens.ProfileCityAutocompleteCallbacks
+import com.cpen321.usermanagement.ui.screens.ProfileCityAutocompleteData
+import com.cpen321.usermanagement.ui.screens.ProfileExperienceDropdown
 
 // State holder moved to its own file to keep this file lean
-import com.cpen321.usermanagement.ui.screens.ProfileFormState
+import com.cpen321.usermanagement.ui.screens.profile.ProfileFormState
+import com.cpen321.usermanagement.ui.screens.ProfilePictureCard
+import com.cpen321.usermanagement.ui.screens.SaveButton
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.net.PlacesClient
+import kotlinx.coroutines.CoroutineScope
 
 
 private data class ManageProfileScreenActions(
@@ -142,7 +146,7 @@ fun ManageProfileScreen(
     val scope = rememberCoroutineScope()
     var cityJob by remember { mutableStateOf<Job?>(null) }
     val context = LocalContext.current
-    val placesClient = remember { com.google.android.libraries.places.api.Places.createClient(context) }
+    val placesClient = remember { Places.createClient(context) }
     var showImagePickerDialog by remember { mutableStateOf(false) }
     var formState by remember { mutableStateOf(ProfileFormState()) }
 
@@ -370,22 +374,22 @@ private fun NameAndAgeFields(data: ProfileFormData) {
 
 @Composable
 private fun LocationAndExperienceFields(data: ProfileFormData) {
-        CityAutocompleteField(
-            data = ProfileCityAutocompleteData(
-                query = data.formState.cityQuery,
-                selectedCity = data.formState.selectedCity,
-                suggestions = data.citySuggestions,
-                isEnabled = !data.isSavingProfile,
-                error = data.formState.cityError
-            ),
-            callbacks = ProfileCityAutocompleteCallbacks(
-                onQueryChange = data.onCityQueryChange,
-                onSelect = data.onCitySelect,
-                onClearSelection = { data.onCityQueryChange("") }
-            )
+    CityAutocompleteField(
+        data = ProfileCityAutocompleteData(
+            query = data.formState.cityQuery,
+            selectedCity = data.formState.selectedCity,
+            suggestions = data.citySuggestions,
+            isEnabled = !data.isSavingProfile,
+            error = data.formState.cityError
+        ),
+        callbacks = ProfileCityAutocompleteCallbacks(
+            onQueryChange = data.onCityQueryChange,
+            onSelect = data.onCitySelect,
+            onClearSelection = { data.onCityQueryChange("") }
         )
+    )
 
-        ProfileExperienceDropdown(
+    ProfileExperienceDropdown(
         selected = data.formState.experience,
         isEnabled = !data.isSavingProfile,
         error = data.formState.expError,
@@ -410,7 +414,7 @@ private fun BioField(data: ProfileFormData) {
 private fun ProfileInitEffects(
     uiState: ProfileUiState,
     profileViewModel: ProfileViewModel,
-    placesClient: com.google.android.libraries.places.api.net.PlacesClient,
+    placesClient: PlacesClient,
     setFormState: (ProfileFormState) -> Unit
 ) {
     LaunchedEffect(Unit) {
@@ -453,7 +457,7 @@ private fun buildProfileInputHandlers(
     profileViewModel: ProfileViewModel,
     formState: ProfileFormState,
     setFormState: (ProfileFormState) -> Unit,
-    scope: kotlinx.coroutines.CoroutineScope,
+    scope: CoroutineScope,
     cityJob: Job?,
     setCityJob: (Job?) -> Unit
 ): ProfileInputHandlers {
@@ -497,7 +501,7 @@ private fun buildManageProfileActions(
     onBackClick: () -> Unit,
     formState: ProfileFormState,
     setFormState: (ProfileFormState) -> Unit,
-    scope: kotlinx.coroutines.CoroutineScope,
+    scope: CoroutineScope,
     profileViewModel: ProfileViewModel,
     setShowImagePickerDialog: (Boolean) -> Unit
 ): ManageProfileScreenActions {

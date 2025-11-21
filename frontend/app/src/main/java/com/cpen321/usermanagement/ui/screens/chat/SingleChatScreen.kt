@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.screens
+package com.cpen321.usermanagement.ui.screens.chat
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -41,7 +41,6 @@ import androidx.compose.ui.draw.clip
 import com.cpen321.usermanagement.data.remote.dto.Chat
 import com.cpen321.usermanagement.data.remote.dto.Message
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
 import java.text.SimpleDateFormat
@@ -51,7 +50,11 @@ import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.MutableState
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.theme.Spacing
+import kotlinx.coroutines.delay
+import java.util.TimeZone
 
 @Composable
 fun SingleChatScreen(
@@ -91,13 +94,13 @@ fun SingleChatScreen(
 					val oldestMessage = messages.value.lastOrNull()
 					val beforeTimestamp = oldestMessage?.createdAt?.let {
 						SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-							timeZone = java.util.TimeZone.getTimeZone("UTC")
+							timeZone = TimeZone.getTimeZone("UTC")
 						}.format(it)
 					}
 					chat._id?.let { id ->
 						chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
 					}
-					kotlinx.coroutines.delay(1000)
+                    delay(1000)
 					isLoadingMore.value = false
 				}
 			}
@@ -148,7 +151,7 @@ private fun MessagesCollector(
 }
 
 @Composable
-private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: com.cpen321.usermanagement.ui.theme.Spacing) {
+private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spacing) {
 	Row(
 		verticalAlignment = Alignment.Companion.CenterVertically
 	) {
@@ -177,8 +180,8 @@ private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: com.c
 private fun MessagesList(
 	messages: List<Message>,
 	currentUserId: String?,
-	spacing: com.cpen321.usermanagement.ui.theme.Spacing,
-	listState: androidx.compose.foundation.lazy.LazyListState,
+	spacing: Spacing,
+	listState: LazyListState,
 	modifier: Modifier
 ) {
 	LazyColumn(
@@ -200,7 +203,7 @@ private fun MessagesList(
 }
 
 @Composable
-private fun MessageBubbleMine(msg: Message, spacing: com.cpen321.usermanagement.ui.theme.Spacing) {
+private fun MessageBubbleMine(msg: Message, spacing: Spacing) {
 	Row(
 		modifier = Modifier.fillMaxWidth(),
 		horizontalArrangement = Arrangement.End
@@ -229,7 +232,7 @@ private fun MessageBubbleMine(msg: Message, spacing: com.cpen321.usermanagement.
 }
 
 @Composable
-private fun MessageBubbleOther(msg: Message, spacing: com.cpen321.usermanagement.ui.theme.Spacing) {
+private fun MessageBubbleOther(msg: Message, spacing: Spacing) {
 	Row(
 		modifier = Modifier.fillMaxWidth(),
 		horizontalArrangement = Arrangement.Start
@@ -262,7 +265,7 @@ private fun MessageInputBar(
 	message: String,
 	onMessageChange: (String) -> Unit,
 	onSend: () -> Unit,
-	spacing: com.cpen321.usermanagement.ui.theme.Spacing
+	spacing: Spacing
 ) {
 	Row(
 		modifier = Modifier.Companion
@@ -301,8 +304,8 @@ private fun ChatContent(
     otherUserName: String,
     messages: List<Message>,
     currentUserId: String?,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    inputState: androidx.compose.runtime.MutableState<String>,
+    listState: LazyListState,
+    inputState: MutableState<String>,
     onSend: () -> Unit,
     onBack: () -> Unit
 ) {
