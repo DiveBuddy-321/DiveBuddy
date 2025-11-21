@@ -141,13 +141,6 @@ export class UserController {
       });
     } catch (error) {
       logger.error('Failed to update user info:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: error.message || 'Failed to update user info',
-        });
-      }
-
       next(error);
     }
   }
@@ -168,13 +161,6 @@ export class UserController {
       });
     } catch (error) {
       logger.error('Failed to delete user:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: error.message || 'Failed to delete user',
-        });
-      }
-
       next(error);
     }
   }

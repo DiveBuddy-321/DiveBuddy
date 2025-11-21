@@ -87,13 +87,6 @@ export class EventController {
       res.status(200).json({ message: 'Event updated successfully', data: { event: updated } });
     } catch (error) {
       logger.error('Failed to update event info:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: error.message || 'Failed to update event info',
-        });
-      }
-
       next(error);
     }
   }
@@ -143,13 +136,6 @@ export class EventController {
 
     } catch (error) {
       logger.error('Failed to join event:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: 'Failed to join event',
-        });
-      }
-
       next(error);
     }
   }
@@ -194,13 +180,6 @@ export class EventController {
       res.status(200).json({ message: 'Left event successfully', data: { event: updated } });
     } catch (error) {
       logger.error('Failed to leave event:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: 'Failed to leave event',
-        });
-      }
-
       next(error);
     }
   }
@@ -229,13 +208,6 @@ export class EventController {
       res.status(200).json({ message: 'Event deleted successfully' });
     } catch (error) {
       logger.error('Failed to delete event:', error);
-
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: error.message || 'Failed to delete event',
-        });
-      }
-
       next(error);
     }
   }

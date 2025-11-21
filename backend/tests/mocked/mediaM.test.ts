@@ -161,7 +161,6 @@ describe('POST /api/media/upload - mocked', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(res.body.message).toBe('Database connection failed');
     expect(MediaService.saveImage).toHaveBeenCalledTimes(1);
   });
 
@@ -177,7 +176,6 @@ describe('POST /api/media/upload - mocked', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(res.body.message).toBe('File system error');
     expect(MediaService.saveImage).toHaveBeenCalledTimes(1);
   });
 
@@ -193,7 +191,6 @@ describe('POST /api/media/upload - mocked', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(res.body.message).toBe('No space left on device');
     expect(MediaService.saveImage).toHaveBeenCalledTimes(1);
   });
 
@@ -224,7 +221,6 @@ describe('POST /api/media/upload - mocked', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
-    expect(res.body.message).toBe('Connection timeout');
     expect(MediaService.saveImage).toHaveBeenCalledTimes(1);
   });
 });

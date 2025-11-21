@@ -98,7 +98,7 @@ describe('GET /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -111,7 +111,7 @@ describe('GET /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -124,7 +124,7 @@ describe('GET /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -137,7 +137,7 @@ describe('GET /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 });
@@ -180,7 +180,7 @@ describe('GET /api/chats/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -195,7 +195,7 @@ describe('GET /api/chats/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -210,7 +210,7 @@ describe('GET /api/chats/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 });
@@ -268,7 +268,7 @@ describe('POST /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.findDirectPair).toHaveBeenCalledTimes(1);
   });
 
@@ -288,7 +288,7 @@ describe('POST /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.findDirectPair).toHaveBeenCalledTimes(1);
     expect(Chat.createPair).toHaveBeenCalledTimes(1);
   });
@@ -309,7 +309,7 @@ describe('POST /api/chats - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.createPair).toHaveBeenCalledTimes(1);
   });
 });
@@ -388,7 +388,7 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -407,7 +407,7 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
     expect(Message.createMessage).toHaveBeenCalledTimes(1);
   });
@@ -431,7 +431,7 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Message.createMessage).toHaveBeenCalledTimes(1);
     expect(Message.getMessageById).toHaveBeenCalledTimes(1);
   });
@@ -489,7 +489,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
@@ -506,7 +506,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
     expect(Message.getMessagesForChat).toHaveBeenCalledTimes(1);
   });
@@ -524,7 +524,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Message.getMessagesForChat).toHaveBeenCalledTimes(1);
   });
 
@@ -541,7 +541,7 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
 
     // Assertions
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
     expect(Message.getMessagesForChat).toHaveBeenCalledTimes(1);
   });
 });
