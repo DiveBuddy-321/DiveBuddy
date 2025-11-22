@@ -42,6 +42,7 @@ import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth
+import com.cpen321.usermanagement.ui.components.DetailsRow
 
 
 @Composable
@@ -222,33 +223,6 @@ private fun EventDetailsCard(
             if (skillLevel != null) {
                 DetailsRow(icon = "🤿", label = "Skill Level", value = skillLevel)
             }
-        }
-    }
-}
-
-@Composable
-private fun DetailsRow(icon: String, label: String, value: String) {
-    val spacing = LocalSpacing.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = icon,
-            style = MaterialTheme.typography.headlineSmall
-        )
-        Spacer(modifier = Modifier.width(spacing.medium))
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }

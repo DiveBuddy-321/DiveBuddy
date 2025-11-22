@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,9 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -38,7 +38,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import com.cpen321.usermanagement.ui.components.DetailsRow
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 
@@ -166,9 +167,8 @@ private fun ProfileInfoSection(state: MatchContentState) {
         
         ProfileName(name = state.name)
         ProfileLocation(location = state.location)
-        ProfileAgeAndSkill(age = state.age, skillLevel = state.skillLevel)
+        ProfileAgeSkillBio(age = state.age, skillLevel = state.skillLevel, bio = state.bio)
         Spacer(modifier = Modifier.height(spacing.small))
-        ProfileBio(bio = state.bio)
     }
 }
 
@@ -199,85 +199,36 @@ private fun ProfileLocation(location: String) {
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.padding(bottom = spacing.medium)
     ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_location),
-            contentDescription = null
-        )
         Text(
-            text = location,
+            text = "📍 $location",
             style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
-private fun ProfileAgeAndSkill(age: Int, skillLevel: String) {
+private fun ProfileAgeSkillBio(age: Int, skillLevel: String, bio: String) {
     val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
-    ) {
-        ProfileInfoItem(
-            iconRes = R.drawable.ic_person,
-            text = "Age: $age",
-            textColor = MaterialTheme.colorScheme.onSurface
-        )
-        ProfileInfoItem(
-            iconRes = R.drawable.ic_level,
-            text = "Level: ${if (skillLevel.isNotBlank()) skillLevel else "-"}",
-            textColor = MaterialTheme.colorScheme.primary
-        )
-    }
-}
 
-@Composable
-private fun ProfileInfoItem(iconRes: Int, text: String, textColor: Color) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+    Card(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null
-        )
-        Text(
-            text = text,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodyLarge,
-            color = textColor
-        )
+        Column(
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            modifier = Modifier.padding(spacing.medium)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.extraLarge2)
+            ) {
+                DetailsRow(icon = "👤", label = "Age", value = "$age")
+                DetailsRow(icon = "🤿", label = "Level", value = skillLevel)
+            }
+            DetailsRow(icon = "📖", label = "Bio", value = bio)
+        }
     }
-}
-
-@Composable
-private fun ProfileBio(bio: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_bio),
-            contentDescription = null
-        )
-        Text(
-            text = "Bio:",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
-    
-    Text(
-        text = bio.ifEmpty { "No bio available" },
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface
-    )
 }
 
 @Composable
