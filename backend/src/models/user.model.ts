@@ -65,6 +65,14 @@ const userSchema = new Schema<IUser>(
       required: false,
       trim: true,
     },
+    eventsJoined: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Event'
+    }],
+    eventsCreated: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Event'
+    }],
   },
   {
     timestamps: true,
