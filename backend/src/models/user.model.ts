@@ -200,6 +200,18 @@ export class UserModel {
       throw new Error('Failed to fetch users by query');
     }
   }
+
+  async updateMany(
+    filter: FilterQuery<IUser>,
+    update: mongoose.UpdateQuery<IUser>
+  ): Promise<void> {
+    try {
+      await this.user.updateMany(filter, update);
+    } catch (error) {
+      logger.error('Error updating multiple users:', error);
+      throw new Error('Failed to update users');
+    }
+  }
 }
 
 export const userModel = new UserModel();

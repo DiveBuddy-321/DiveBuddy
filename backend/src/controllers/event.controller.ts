@@ -283,22 +283,12 @@ export class EventController {
         MediaService.deleteImage(existing.photo);
       }
 
-      for (const attendeeId of existing?.attendees || []) {
-        // remove the event from attendees' eventsJoined list
-        const userData = await userModel.findById(attendeeId);
-
-        if (userData) {
-          const userObject = userData.toObject() as IUser & { __v?: number };
-          const { ...rest } = userObject;
-
-          const updateBody = {
-            ...rest,
-            eventsJoined: userData.eventsJoined.filter((eventId) => !eventId.equals(existing._id)).map((eId) => eId.toString()),
-            eventsCreated: (userData.eventsCreated || []).map((eId) => eId.toString()),
-          };
-
-          await userModel.update(userData._id, updateBody as unknown as Partial<IUser>);
-        }
+      // bulk remove the event from all attendees' eventsJoined lists
+      if (existing?.attendees && existing.attendees.length > 0) {
+        await userModel.updateMany(
+          { _id: { $in: existing.attendees } },
+          { $pull: { eventsJoined: existing._id } }
+        );
       }
 
       const createdByUser = await userModel.findById(existing.createdBy);
