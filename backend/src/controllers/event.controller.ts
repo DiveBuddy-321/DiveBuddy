@@ -232,7 +232,6 @@ export class EventController {
       if (user) {
         user.eventsJoined = user.eventsJoined || [];
 
-        user.eventsJoined.push(eventId);
         const userObject = user.toObject() as IUser & { __v?: number };
         const { ...rest } = userObject;
 
