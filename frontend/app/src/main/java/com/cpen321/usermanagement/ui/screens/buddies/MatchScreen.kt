@@ -244,7 +244,7 @@ private fun MatchActionButtons(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.small)
+            horizontalArrangement = Arrangement.spacedBy(spacing.extraLarge2)
         ) {
             Button(
                 onClick = callbacks.onChatClick,
@@ -252,20 +252,27 @@ private fun MatchActionButtons(
             ) {
                 Text(text = "Match")
             }
-            Button(
-                onClick = callbacks.onBackClick,
-                fullWidth = false
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.small)
             ) {
-                Text(text = "Back")
-            }
-            if (hasMoreProfiles) {
                 Button(
+                    type = "secondary",
+                    onClick = callbacks.onBackClick,
+                    fullWidth = false,
+                ) {
+                    Text(text = "Back")
+                }
+                Button(
+                    type = "secondary",
                     onClick = callbacks.onRejectClick,
-                    fullWidth = false
+                    fullWidth = false,
+                    enabled = hasMoreProfiles
                 ) {
                     Text(text = "Next")
                 }
             }
+
         }
     }
 }
