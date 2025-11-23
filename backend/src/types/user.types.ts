@@ -17,6 +17,8 @@ export interface IUser extends Document {
   latitude?: number;
   longitude?: number;
   skillLevel?: SkillLevel;
+  eventsJoined: mongoose.Types.ObjectId[];
+  eventsCreated: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,7 +36,9 @@ export const createUserSchema = z.object({
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  skillLevel: z.enum(SKILL_LEVELS).optional()
+  skillLevel: z.enum(SKILL_LEVELS).optional(),
+  eventsJoined: z.array(z.string()).optional(),
+  eventsCreated: z.array(z.string()).optional(),
 });
 
 export const updateProfileSchema = z.object({
@@ -46,7 +50,9 @@ export const updateProfileSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   profilePicture: z.string().optional(),
-  skillLevel: z.enum(SKILL_LEVELS).optional()
+  skillLevel: z.enum(SKILL_LEVELS).optional(),
+  eventsJoined: z.array(z.string()).optional(),
+  eventsCreated: z.array(z.string()).optional(),
 });
 
 // Request types

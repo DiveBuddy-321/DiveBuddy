@@ -5,7 +5,9 @@ import { GetProfileResponse, UpdateProfileRequest } from '../types/user.types';
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { userModel } from '../models/user.model';
+import { eventModel } from '../models/event.model';
 import type { IUser } from '../types/user.types';
+import type { IEvent } from '../types/event.types';
 
 export class UserController {
   async getAllProfiles(req: Request, res: Response<{ message: string; data?: { users: IUser[] } }>, next: NextFunction) {
@@ -59,6 +61,59 @@ export class UserController {
       }
 
       MediaService.deleteAllUserImages(user._id.toString());
+
+      for (const eventId of user?.eventsJoined || []) {
+        // Remove user from all joined events
+        const eventData = await eventModel.findById(eventId);
+
+        if (eventData) {
+          const eventObject = eventData.toObject() as IEvent & { __v?: number };
+          const { ...rest } = eventObject;
+
+          console.log('attendees before removal:', eventData.attendees);
+
+          const updateBody = {
+            ...rest,
+            attendees: eventData.attendees.filter((attendeeId) => !attendeeId.equals(user._id)).map((attendeeId) => attendeeId.toString()),
+          };
+
+          console.log('attendees after removal:', updateBody.attendees);
+
+          await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
+        }
+      }
+
+      // delete all events created by the user
+      for (const eventId of user?.eventsCreated || []) {
+        const eventData = await eventModel.findById(eventId);
+
+        if (eventData) {
+          
+          for (const attendeeId of eventData.attendees) {
+            // Remove event from all attendees' eventsJoined list
+            const attendeeData = await userModel.findById(attendeeId);
+            if (attendeeData) {
+              const attendeeObject = attendeeData.toObject() as IUser & { __v?: number };
+              const { ...attendeeRest } = attendeeObject;
+
+              console.log('eventsJoined before removal:', attendeeData.eventsJoined);
+
+              const attendeeUpdateBody = {
+                ...attendeeRest,
+                eventsJoined: attendeeData.eventsJoined.filter((eId) => !eId.equals(eventId)).map((eId) => eId.toString()),
+                eventsCreated: (attendeeData.eventsCreated || []).map((eId) => eId.toString()),
+              };
+
+              console.log('eventsJoined after update:', attendeeUpdateBody.eventsJoined);
+
+              await userModel.update(attendeeId, attendeeUpdateBody as unknown as Partial<IUser>);
+            }
+          }
+        }
+
+        await eventModel.delete(eventId);
+      }
+
       await userModel.delete(user._id);
 
       res.status(200).json({ message: 'User deleted successfully' });
@@ -160,6 +215,60 @@ export class UserController {
       }
 
       MediaService.deleteAllUserImages(user._id.toString());
+
+      const userId = new mongoose.Types.ObjectId(user._id);
+      const userData = await userModel.findById(userId);
+
+      for (const eventId of userData?.eventsJoined || []) {
+        // Remove user from all joined events
+        const eventData = await eventModel.findById(eventId);
+
+        if (eventData) {
+          const eventObject = eventData.toObject() as IEvent & { __v?: number };
+          const { ...rest } = eventObject;
+
+          console.log('attendees before removal:', eventData.attendees);
+
+          const updateBody = {
+            ...rest,
+            attendees: eventData.attendees.filter((attendeeId) => !attendeeId.equals(userId)).map((attendeeId) => attendeeId.toString()),
+          };
+
+          console.log('attendees after removal:', updateBody.attendees);
+          await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
+        }
+      }
+
+      // delete all events created by the user
+      for (const eventId of userData?.eventsCreated || []) {
+        const eventData = await eventModel.findById(eventId);
+
+        if (eventData) {
+
+          for (const attendeeId of eventData.attendees) {
+            // Remove event from all attendees' eventsJoined list
+            const attendeeData = await userModel.findById(attendeeId);
+            if (attendeeData) {
+              const attendeeObject = attendeeData.toObject() as IUser & { __v?: number };
+              const { ...attendeeRest } = attendeeObject;
+
+              console.log('eventsJoined before removal:', attendeeData.eventsJoined);
+
+              const attendeeUpdateBody = {
+                ...attendeeRest,
+                eventsJoined: attendeeData.eventsJoined.filter((eId) => !eId.equals(eventId)).map((eId) => eId.toString()),
+                eventsCreated: (attendeeData.eventsCreated || []).map((eId) => eId.toString()),
+              };
+
+              console.log('eventsJoined after update:', attendeeUpdateBody.eventsJoined);
+
+              await userModel.update(attendeeId, attendeeUpdateBody as unknown as Partial<IUser>);
+            }
+          }
+        }
+
+        await eventModel.delete(eventId);
+      }
 
       await userModel.delete(user._id);
 
