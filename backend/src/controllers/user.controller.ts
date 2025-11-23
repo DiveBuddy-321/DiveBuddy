@@ -70,14 +70,10 @@ export class UserController {
           const eventObject = eventData.toObject() as IEvent & { __v?: number };
           const { ...rest } = eventObject;
 
-          console.log('attendees before removal:', eventData.attendees);
-
           const updateBody = {
             ...rest,
             attendees: eventData.attendees.filter((attendeeId) => !attendeeId.equals(user._id)).map((attendeeId) => attendeeId.toString()),
           };
-
-          console.log('attendees after removal:', updateBody.attendees);
 
           await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
         }
@@ -96,15 +92,11 @@ export class UserController {
               const attendeeObject = attendeeData.toObject() as IUser & { __v?: number };
               const { ...attendeeRest } = attendeeObject;
 
-              console.log('eventsJoined before removal:', attendeeData.eventsJoined);
-
               const attendeeUpdateBody = {
                 ...attendeeRest,
                 eventsJoined: attendeeData.eventsJoined.filter((eId) => !eId.equals(eventId)).map((eId) => eId.toString()),
                 eventsCreated: (attendeeData.eventsCreated || []).map((eId) => eId.toString()),
               };
-
-              console.log('eventsJoined after update:', attendeeUpdateBody.eventsJoined);
 
               await userModel.update(attendeeId, attendeeUpdateBody as unknown as Partial<IUser>);
             }
@@ -227,14 +219,10 @@ export class UserController {
           const eventObject = eventData.toObject() as IEvent & { __v?: number };
           const { ...rest } = eventObject;
 
-          console.log('attendees before removal:', eventData.attendees);
-
           const updateBody = {
             ...rest,
             attendees: eventData.attendees.filter((attendeeId) => !attendeeId.equals(userId)).map((attendeeId) => attendeeId.toString()),
           };
-
-          console.log('attendees after removal:', updateBody.attendees);
           await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
         }
       }
@@ -252,15 +240,11 @@ export class UserController {
               const attendeeObject = attendeeData.toObject() as IUser & { __v?: number };
               const { ...attendeeRest } = attendeeObject;
 
-              console.log('eventsJoined before removal:', attendeeData.eventsJoined);
-
               const attendeeUpdateBody = {
                 ...attendeeRest,
                 eventsJoined: attendeeData.eventsJoined.filter((eId) => !eId.equals(eventId)).map((eId) => eId.toString()),
                 eventsCreated: (attendeeData.eventsCreated || []).map((eId) => eId.toString()),
               };
-
-              console.log('eventsJoined after update:', attendeeUpdateBody.eventsJoined);
 
               await userModel.update(attendeeId, attendeeUpdateBody as unknown as Partial<IUser>);
             }

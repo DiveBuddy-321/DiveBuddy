@@ -59,7 +59,6 @@ export class EventController {
       const user = await userModel.findById(requester._id);
       if (user) {
         user.eventsCreated = user.eventsCreated || [];
-        console.log('eventsCreated before update:', user.eventsCreated);
         
         user.eventsCreated.push(created._id);
         const userObject = user.toObject() as IUser & { __v?: number };
@@ -160,7 +159,6 @@ export class EventController {
       const user = await userModel.findById(requester._id);
       if (user) {
         user.eventsJoined = user.eventsJoined || [];
-        console.log('eventsJoined before update:', user.eventsJoined);
 
         user.eventsJoined.push(eventId);
         const userObject = user.toObject() as IUser & { __v?: number };
@@ -172,7 +170,6 @@ export class EventController {
           eventsCreated: (user.eventsCreated || []).map((eId) => eId.toString()),
         };
 
-        console.log('eventsJoined after update:', updateBody.eventsJoined);
         await userModel.update(user._id, updateBody as unknown as Partial<IUser >);
       }
 
@@ -234,7 +231,6 @@ export class EventController {
       const user = await userModel.findById(requester._id);
       if (user) {
         user.eventsJoined = user.eventsJoined || [];
-        console.log('eventsJoined before update:', user.eventsJoined);
 
         user.eventsJoined.push(eventId);
         const userObject = user.toObject() as IUser & { __v?: number };
@@ -246,7 +242,6 @@ export class EventController {
           eventsCreated: (user.eventsCreated || []).map((eId) => eId.toString()),
         };
 
-        console.log('eventsJoined after update:', updateBody.eventsJoined);
         await userModel.update(user._id, updateBody as unknown as Partial<IUser >);
       }
 
@@ -296,15 +291,11 @@ export class EventController {
           const userObject = userData.toObject() as IUser & { __v?: number };
           const { ...rest } = userObject;
 
-          console.log('attendees before removal:', userData.eventsJoined);
-
           const updateBody = {
             ...rest,
             eventsJoined: userData.eventsJoined.filter((eventId) => !eventId.equals(existing._id)).map((eId) => eId.toString()),
             eventsCreated: (userData.eventsCreated || []).map((eId) => eId.toString()),
           };
-
-          console.log('attendees after removal:', updateBody.eventsJoined);
 
           await userModel.update(userData._id, updateBody as unknown as Partial<IUser>);
         }
@@ -315,15 +306,11 @@ export class EventController {
         const userObject = createdByUser.toObject() as IUser & { __v?: number };
         const { ...rest } = userObject;
 
-        console.log('eventsCreated before removal:', createdByUser.eventsCreated);
-
         const updateBody = {
           ...rest,
           eventsCreated: createdByUser.eventsCreated.filter((eventId) => !eventId.equals(existing._id)).map((eId) => eId.toString()),
           eventsJoined: (createdByUser.eventsJoined || []).map((eId) => eId.toString()),
         };
-
-        console.log('eventsCreated after removal:', updateBody.eventsCreated);
 
         await userModel.update(createdByUser._id, updateBody as unknown as Partial<IUser>);
       }
