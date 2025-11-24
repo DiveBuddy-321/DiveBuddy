@@ -3,7 +3,9 @@ import { GetEventResponse, UpdateEventRequest, CreateEventRequest, IEvent } from
 import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { eventModel } from '../models/event.model';
+import { userModel } from '../models/user.model';
 import mongoose from 'mongoose';
+import { IUser } from '../types/user.types';
 
 export class EventController {
   async getAllEvents(req: Request, res: Response<{ message: string; data?: { events: IEvent[] } }>, next: NextFunction) {
@@ -52,6 +54,24 @@ export class EventController {
       };
 
       const created = await eventModel.create(payload as CreateEventRequest);
+
+      // update user's eventsCreated list with this event
+      const user = await userModel.findById(requester._id);
+      if (user) {
+        user.eventsCreated = user.eventsCreated || [];
+        
+        user.eventsCreated.push(created._id);
+        const userObject = user.toObject() as IUser & { __v?: number };
+        const { ...rest } = userObject;
+        
+        const updateBody = {
+          ...rest,
+          eventsCreated: user.eventsCreated.map((eId) => eId.toString()),
+          eventsJoined: (user.eventsJoined || []).map((eId) => eId.toString()),
+        };
+
+        await userModel.update(user._id, updateBody as unknown as Partial<IUser >);
+      }
 
       res.status(201).json({ message: 'Event created successfully', data: { event: created } });
     } catch (error) {
@@ -135,10 +155,30 @@ export class EventController {
         attendees: existing.attendees.map((attendeeId) => attendeeId.toString()),
       };
 
+      // update user's eventsJoined list with this event
+      const user = await userModel.findById(requester._id);
+      if (user) {
+        user.eventsJoined = user.eventsJoined || [];
+
+        user.eventsJoined.push(eventId);
+        const userObject = user.toObject() as IUser & { __v?: number };
+        const { ...rest } = userObject;
+
+        const updateBody = {
+          ...rest,
+          eventsJoined: user.eventsJoined.map((eId) => eId.toString()),
+          eventsCreated: (user.eventsCreated || []).map((eId) => eId.toString()),
+        };
+
+        await userModel.update(user._id, updateBody as unknown as Partial<IUser >);
+      }
+
       const updated = await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
+
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update event' });
       }
+
       res.status(200).json({ message: 'Joined event successfully', data: { event: updated } });
 
     } catch (error) {
@@ -187,10 +227,28 @@ export class EventController {
         attendees: existing.attendees.map((attendeeId) => attendeeId.toString()),
       };
 
+      // remove this event from user's eventsJoined list
+      const user = await userModel.findById(requester._id);
+      if (user) {
+        user.eventsJoined = user.eventsJoined || [];
+
+        const userObject = user.toObject() as IUser & { __v?: number };
+        const { ...rest } = userObject;
+
+        const updateBody = {
+          ...rest,
+          eventsJoined: user.eventsJoined.filter((eId) => !eId.equals(eventId)).map((eId) => eId.toString()),
+          eventsCreated: (user.eventsCreated || []).map((eId) => eId.toString()),
+        };
+
+        await userModel.update(user._id, updateBody as unknown as Partial<IUser >);
+      }
+
       const updated = await eventModel.update(eventId, updateBody as unknown as Partial<IEvent>);
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update event' });
       }
+
       res.status(200).json({ message: 'Left event successfully', data: { event: updated } });
     } catch (error) {
       logger.error('Failed to leave event:', error);
@@ -222,6 +280,28 @@ export class EventController {
       // delete related media if any
       if (existing.photo) {
         MediaService.deleteImage(existing.photo);
+      }
+
+      // bulk remove the event from all attendees' eventsJoined lists
+      if (existing?.attendees && existing.attendees.length > 0) {
+        await userModel.updateMany(
+          { _id: { $in: existing.attendees } },
+          { $pull: { eventsJoined: existing._id } }
+        );
+      }
+
+      const createdByUser = await userModel.findById(existing.createdBy);
+      if (createdByUser) {
+        const userObject = createdByUser.toObject() as IUser & { __v?: number };
+        const { ...rest } = userObject;
+
+        const updateBody = {
+          ...rest,
+          eventsCreated: createdByUser.eventsCreated.filter((eventId) => !eventId.equals(existing._id)).map((eId) => eId.toString()),
+          eventsJoined: (createdByUser.eventsJoined || []).map((eId) => eId.toString()),
+        };
+
+        await userModel.update(createdByUser._id, updateBody as unknown as Partial<IUser>);
       }
 
       await eventModel.delete(eventId);

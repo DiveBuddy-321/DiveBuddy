@@ -65,6 +65,14 @@ const userSchema = new Schema<IUser>(
       required: false,
       trim: true,
     },
+    eventsJoined: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Event'
+    }],
+    eventsCreated: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Event'
+    }],
   },
   {
     timestamps: true,
@@ -190,6 +198,18 @@ export class UserModel {
     } catch (error) {
       logger.error('Error fetching users by query:', error);
       throw new Error('Failed to fetch users by query');
+    }
+  }
+
+  async updateMany(
+    filter: FilterQuery<IUser>,
+    update: mongoose.UpdateQuery<IUser>
+  ): Promise<void> {
+    try {
+      await this.user.updateMany(filter, update);
+    } catch (error) {
+      logger.error('Error updating multiple users:', error);
+      throw new Error('Failed to update users');
     }
   }
 }
