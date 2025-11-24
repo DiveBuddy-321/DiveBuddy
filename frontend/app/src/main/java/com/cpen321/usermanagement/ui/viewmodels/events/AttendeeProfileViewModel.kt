@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.viewmodels
+package com.cpen321.usermanagement.ui.viewmodels.events
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class UserProfileUiState(
+data class AttendeeProfileUiState(
     val isLoading: Boolean = false,
     val isCreatingChat: Boolean = false,
     val user: User? = null,
@@ -20,7 +20,7 @@ data class UserProfileUiState(
 )
 
 @HiltViewModel
-class UserProfileViewModel @Inject constructor(
+class AttendeeProfileViewModel @Inject constructor(
     private val chatRepository: ChatRepository
 ) : ViewModel() {
 
@@ -28,17 +28,17 @@ class UserProfileViewModel @Inject constructor(
         private const val TAG = "UserProfileViewModel"
     }
 
-    private val _uiState = MutableStateFlow(UserProfileUiState())
-    val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AttendeeProfileUiState())
+    val uiState: StateFlow<AttendeeProfileUiState> = _uiState.asStateFlow()
 
     var onNavigateToChat: ((String) -> Unit)? = null
 
     fun setUser(user: User) {
-        _uiState.value = UserProfileUiState(user = user)
+        _uiState.value = AttendeeProfileUiState(user = user)
     }
 
     fun clearState() {
-        _uiState.value = UserProfileUiState()
+        _uiState.value = AttendeeProfileUiState()
     }
 
     fun onChatClick() {

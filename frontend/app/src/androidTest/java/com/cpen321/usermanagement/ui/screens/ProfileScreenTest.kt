@@ -24,7 +24,7 @@ import com.cpen321.usermanagement.ui.screens.profile.ManageProfileScreen
 import com.cpen321.usermanagement.ui.screens.profile.ProfileCompletionScreen
 import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
-import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
+import com.cpen321.usermanagement.ui.viewmodels.profile.ProfileViewModel
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule

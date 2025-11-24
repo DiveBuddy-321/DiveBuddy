@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.viewmodels
+package com.cpen321.usermanagement.ui.viewmodels.profile
 
 import android.net.Uri
 import android.util.Log
@@ -18,14 +18,12 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 // --- Google Maps / Places ---
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.PlacesClient
 import kotlinx.coroutines.suspendCancellableCoroutine
-import com.cpen321.usermanagement.common.Constants
 
 
 data class ProfileUiState(

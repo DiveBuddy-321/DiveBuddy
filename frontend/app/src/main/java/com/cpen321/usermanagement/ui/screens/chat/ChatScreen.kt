@@ -24,7 +24,7 @@ import com.cpen321.usermanagement.data.remote.dto.Chat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
+import com.cpen321.usermanagement.ui.viewmodels.chat.ChatViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
 

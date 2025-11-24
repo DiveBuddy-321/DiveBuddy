@@ -22,7 +22,7 @@ import com.cpen321.usermanagement.ui.screens.profile.ProfileScreen
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
 import com.cpen321.usermanagement.ui.viewmodels.NavigationViewModel
-import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
+import com.cpen321.usermanagement.ui.viewmodels.profile.ProfileViewModel
 
 object NavRoutes {
     const val LOADING = "loading"
