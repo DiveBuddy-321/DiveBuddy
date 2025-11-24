@@ -41,21 +41,36 @@ import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.AttendeesViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cpen321.usermanagement.ui.viewmodels.AttendeesUiState
 
 @Composable
 fun AttendeesScreen(
     attendeeIds: List<String>,
     onBack: () -> Unit,
     onUserClick: (User) -> Unit,
-    modifier: Modifier = Modifier,
     attendeesViewModel: AttendeesViewModel = hiltViewModel()
 ) {
     val uiState by attendeesViewModel.uiState.collectAsState()
-    val spacing = LocalSpacing.current
 
     LaunchedEffect(attendeeIds) {
         attendeesViewModel.loadAttendees(attendeeIds)
     }
+
+    AttendeesContent(
+        uiState = uiState,
+        onBack = onBack,
+        onUserClick = onUserClick,
+    )
+}
+
+@Composable
+private fun AttendeesContent(
+    uiState: AttendeesUiState,
+    onBack: () -> Unit,
+    onUserClick: (User) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = LocalSpacing.current
 
     Column(
         modifier = modifier
