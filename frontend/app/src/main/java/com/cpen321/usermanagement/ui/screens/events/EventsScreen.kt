@@ -42,7 +42,8 @@ import java.util.Locale
 data class EventNavigationState(
     val selectedEvent: Event? = null,
     val showCreateEventForm: Boolean = false,
-    val showEditEventForm: Event? = null
+    val showEditEventForm: Event? = null,
+    val showAttendees: Event? = null
 )
 
 @Composable
@@ -88,6 +89,7 @@ fun EventsScreen(
     var selectedEvent by remember { mutableStateOf<Event?>(null) }
     var showCreateEventForm by remember { mutableStateOf(false) }
     var showEditEventForm by remember { mutableStateOf<Event?>(null) }
+    var showAttendees by remember { mutableStateOf<Event?>(null) }
     val uiState by eventViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -101,7 +103,8 @@ fun EventsScreen(
             navigationState = EventNavigationState(
                 selectedEvent = selectedEvent,
                 showCreateEventForm = showCreateEventForm,
-                showEditEventForm = showEditEventForm
+                showEditEventForm = showEditEventForm,
+                showAttendees = showAttendees
             ),
             uiState = uiState,
             eventViewModel = eventViewModel,
@@ -109,6 +112,7 @@ fun EventsScreen(
                 selectedEvent = navState.selectedEvent
                 showCreateEventForm = navState.showCreateEventForm
                 showEditEventForm = navState.showEditEventForm
+                showAttendees = navState.showAttendees
             }
         )
     }
@@ -140,6 +144,14 @@ private fun EventNavigationContent(
                 eventViewModel = eventViewModel
             )
         }
+        navigationState.showAttendees != null -> {
+            AttendeesScreen(
+                attendeeIds = navigationState.showAttendees.attendees,
+                onBack = {
+                    onNavigationChange(navigationState.copy(showAttendees = null))
+                }
+            )
+        }
         navigationState.selectedEvent != null -> {
             SingleEventScreen(
                 event = navigationState.selectedEvent,
@@ -148,6 +160,9 @@ private fun EventNavigationContent(
                 },
                 onEditEvent = { event ->
                     onNavigationChange(navigationState.copy(showEditEventForm = event))
+                },
+                onShowAttendees = { event ->
+                    onNavigationChange(navigationState.copy(showAttendees = event))
                 },
                 eventViewModel = eventViewModel
             )
@@ -344,14 +359,9 @@ private fun EventCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
     ) {
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
                 .padding(spacing.medium),
             verticalArrangement = Arrangement.spacedBy(spacing.small)
         ) {

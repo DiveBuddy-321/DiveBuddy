@@ -1,8 +1,10 @@
 package com.cpen321.usermanagement.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,10 +15,19 @@ import androidx.compose.ui.text.font.FontWeight
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
 @Composable
-fun DetailsRow(icon: String, label: String, value: String) {
+fun DetailsRow(
+    icon: String,
+    label: String,
+    value: String,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     val spacing = LocalSpacing.current
 
     Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

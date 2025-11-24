@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import com.cpen321.usermanagement.ui.components.DetailsRow
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
@@ -304,7 +305,7 @@ private fun ProfilePictureDisplay(
     if (!profilePicture.isNullOrEmpty()) {
         AsyncImage(
             model = RetrofitClient.getPictureUri(profilePicture),
-            contentDescription = "Profile picture",
+            contentDescription = stringResource(R.string.profile_picture),
             modifier = modifier.clip(CircleShape)
         )
     } else {

@@ -76,6 +76,7 @@ fun SingleEventScreen(
     event: Event,
     onBack: () -> Unit,
     onEditEvent: (Event) -> Unit,
+    onShowAttendees: (Event) -> Unit,
     eventViewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -112,7 +113,8 @@ fun SingleEventScreen(
             dateText = dateFormatter.format(updatedEvent.date),
             location = updatedEvent.location,
             attendeesText = "${updatedEvent.attendees.size} / ${updatedEvent.capacity} people",
-            skillLevel = updatedEvent.skillLevel
+            skillLevel = updatedEvent.skillLevel,
+            onAttendeesClick = { onShowAttendees(updatedEvent) }
         )
         Spacer(modifier = Modifier.weight(1f))
 
@@ -205,7 +207,8 @@ private fun EventDetailsCard(
     dateText: String,
     location: String?,
     attendeesText: String,
-    skillLevel: String?
+    skillLevel: String?,
+    onAttendeesClick: () -> Unit
 ) {
     val spacing = LocalSpacing.current
     Card(
@@ -219,7 +222,12 @@ private fun EventDetailsCard(
             if (location != null) {
                 DetailsRow(icon = "📍", label = "Location", value = location)
             }
-            DetailsRow(icon = "👥", label = "Attendees", value = attendeesText)
+            DetailsRow(
+                icon = "👥",
+                label = "Attendees",
+                value = attendeesText,
+                onClick = onAttendeesClick
+            )
             if (skillLevel != null) {
                 DetailsRow(icon = "🤿", label = "Skill Level", value = skillLevel)
             }
