@@ -3,7 +3,6 @@ package com.cpen321.usermanagement.ui.screens.events
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +41,8 @@ import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth
+import com.cpen321.usermanagement.ui.components.ClickableDetailsRow
+import com.cpen321.usermanagement.ui.components.DetailsRow
 
 
 @Composable
@@ -75,6 +76,7 @@ fun SingleEventScreen(
     event: Event,
     onBack: () -> Unit,
     onEditEvent: (Event) -> Unit,
+    onShowAttendees: (Event) -> Unit,
     eventViewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -111,7 +113,8 @@ fun SingleEventScreen(
             dateText = dateFormatter.format(updatedEvent.date),
             location = updatedEvent.location,
             attendeesText = "${updatedEvent.attendees.size} / ${updatedEvent.capacity} people",
-            skillLevel = updatedEvent.skillLevel
+            skillLevel = updatedEvent.skillLevel,
+            onAttendeesClick = { onShowAttendees(updatedEvent) }
         )
         Spacer(modifier = Modifier.weight(1f))
 
@@ -204,7 +207,8 @@ private fun EventDetailsCard(
     dateText: String,
     location: String?,
     attendeesText: String,
-    skillLevel: String?
+    skillLevel: String?,
+    onAttendeesClick: () -> Unit
 ) {
     val spacing = LocalSpacing.current
     Card(
@@ -218,37 +222,15 @@ private fun EventDetailsCard(
             if (location != null) {
                 DetailsRow(icon = "📍", label = "Location", value = location)
             }
-            DetailsRow(icon = "👥", label = "Attendees", value = attendeesText)
+            ClickableDetailsRow(
+                icon = "👥",
+                label = "Attendees",
+                value = attendeesText,
+                onClick = onAttendeesClick
+            )
             if (skillLevel != null) {
                 DetailsRow(icon = "🤿", label = "Skill Level", value = skillLevel)
             }
-        }
-    }
-}
-
-@Composable
-private fun DetailsRow(icon: String, label: String, value: String) {
-    val spacing = LocalSpacing.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = icon,
-            style = MaterialTheme.typography.headlineSmall
-        )
-        Spacer(modifier = Modifier.width(spacing.medium))
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }
