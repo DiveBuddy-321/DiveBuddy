@@ -42,7 +42,7 @@ fun DetailsRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = value.ifBlank { "Not data found" },
+                text = value.ifBlank { "Not data found." },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -83,7 +83,7 @@ fun ClickableDetailsRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = value.ifBlank { "Not data found" },
+                    text = value.ifBlank { "Not data found." },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
