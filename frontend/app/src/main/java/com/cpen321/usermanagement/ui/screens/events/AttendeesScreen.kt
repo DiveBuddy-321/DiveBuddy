@@ -63,27 +63,8 @@ fun AttendeesScreen(
             .padding(spacing.large),
         verticalArrangement = Arrangement.spacedBy(spacing.large)
     ) {
-        // Top bar with back button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to event details"
-                )
-            }
-            Spacer(modifier = Modifier.width(spacing.medium))
-            Text(
-                text = "Attendees",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        TopBar(onBack)
 
-        // Content
         when {
             uiState.isLoading -> {
                 Box(
@@ -130,6 +111,32 @@ fun AttendeesScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TopBar(
+    onBack: () -> Unit
+) {
+    val spacing = LocalSpacing.current
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back to event details"
+            )
+        }
+        Spacer(modifier = Modifier.width(spacing.medium))
+        Text(
+            text = "Attendees",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
