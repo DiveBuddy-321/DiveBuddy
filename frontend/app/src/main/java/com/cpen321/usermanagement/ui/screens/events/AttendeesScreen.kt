@@ -10,17 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun AttendeesScreen(
     attendeeIds: List<String>,
     onBack: () -> Unit,
+    onUserClick: (User) -> Unit,
     modifier: Modifier = Modifier,
     attendeesViewModel: AttendeesViewModel = hiltViewModel()
 ) {
@@ -122,7 +122,10 @@ fun AttendeesScreen(
                     verticalArrangement = Arrangement.spacedBy(spacing.medium)
                 ) {
                     items(uiState.attendees) { attendee ->
-                        AttendeeItem(attendee = attendee)
+                        AttendeeItem(
+                            attendee = attendee,
+                            onClick = { onUserClick(attendee) }
+                        )
                     }
                 }
             }
@@ -133,13 +136,16 @@ fun AttendeesScreen(
 @Composable
 private fun AttendeeItem(
     attendee: User,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
     val imageSize = 56.dp
 
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier

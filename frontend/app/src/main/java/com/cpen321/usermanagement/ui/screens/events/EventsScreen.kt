@@ -1,6 +1,5 @@
 package com.cpen321.usermanagement.ui.screens.events
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
+import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.EventUiState
@@ -43,7 +42,8 @@ data class EventNavigationState(
     val selectedEvent: Event? = null,
     val showCreateEventForm: Boolean = false,
     val showEditEventForm: Event? = null,
-    val showAttendees: Event? = null
+    val showAttendees: Event? = null,
+    val showUserProfile: User? = null
 )
 
 @Composable
@@ -90,6 +90,7 @@ fun EventsScreen(
     var showCreateEventForm by remember { mutableStateOf(false) }
     var showEditEventForm by remember { mutableStateOf<Event?>(null) }
     var showAttendees by remember { mutableStateOf<Event?>(null) }
+    var showUserProfile by remember { mutableStateOf<User?>(null) }
     val uiState by eventViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -104,7 +105,8 @@ fun EventsScreen(
                 selectedEvent = selectedEvent,
                 showCreateEventForm = showCreateEventForm,
                 showEditEventForm = showEditEventForm,
-                showAttendees = showAttendees
+                showAttendees = showAttendees,
+                showUserProfile = showUserProfile
             ),
             uiState = uiState,
             eventViewModel = eventViewModel,
@@ -113,6 +115,7 @@ fun EventsScreen(
                 showCreateEventForm = navState.showCreateEventForm
                 showEditEventForm = navState.showEditEventForm
                 showAttendees = navState.showAttendees
+                showUserProfile = navState.showUserProfile
             }
         )
     }
@@ -144,11 +147,22 @@ private fun EventNavigationContent(
                 eventViewModel = eventViewModel
             )
         }
+        navigationState.showUserProfile != null -> {
+            AttendeeProfileScreen(
+                user = navigationState.showUserProfile,
+                onBack = {
+                    onNavigationChange(navigationState.copy(showUserProfile = null))
+                }
+            )
+        }
         navigationState.showAttendees != null -> {
             AttendeesScreen(
                 attendeeIds = navigationState.showAttendees.attendees,
                 onBack = {
                     onNavigationChange(navigationState.copy(showAttendees = null))
+                },
+                onUserClick = { user ->
+                    onNavigationChange(navigationState.copy(showUserProfile = user))
                 }
             )
         }

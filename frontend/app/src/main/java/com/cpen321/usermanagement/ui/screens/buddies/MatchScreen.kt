@@ -43,6 +43,10 @@ import androidx.compose.ui.res.stringResource
 import com.cpen321.usermanagement.ui.components.DetailsRow
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
+import com.cpen321.usermanagement.ui.components.profile.ProfileDetailsCard
+import com.cpen321.usermanagement.ui.components.profile.ProfileLocation
+import com.cpen321.usermanagement.ui.components.profile.ProfileName
+import com.cpen321.usermanagement.ui.components.profile.ProfilePictureDisplay
 
 @Composable
 fun MatchScreen(
@@ -168,67 +172,8 @@ private fun ProfileInfoSection(state: MatchContentState) {
         
         ProfileName(name = state.name)
         ProfileLocation(location = state.location)
-        ProfileAgeSkillBio(age = state.age, skillLevel = state.skillLevel, bio = state.bio)
+        ProfileDetailsCard(age = state.age, skillLevel = state.skillLevel, bio = state.bio)
         Spacer(modifier = Modifier.height(spacing.small))
-    }
-}
-
-@Composable
-private fun ProfileName(name: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(bottom = spacing.medium)
-    ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun ProfileLocation(location: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(bottom = spacing.medium)
-    ) {
-        Text(
-            text = "📍 $location",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun ProfileAgeSkillBio(age: Int, skillLevel: String, bio: String) {
-    val spacing = LocalSpacing.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
-            modifier = Modifier.padding(spacing.medium)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(spacing.extraLarge2)
-            ) {
-                DetailsRow(icon = "👤", label = "Age", value = "$age")
-                DetailsRow(icon = "🤿", label = "Level", value = skillLevel)
-            }
-            DetailsRow(icon = "📖", label = "Bio", value = bio)
-        }
     }
 }
 
@@ -293,34 +238,6 @@ private fun EmptyMatchState(onBackClick: () -> Unit) {
         )
         Button(onClick = onBackClick) {
             Text(text = "Back to Buddies")
-        }
-    }
-}
-
-@Composable
-private fun ProfilePictureDisplay(
-    profilePicture: String?,
-    modifier: Modifier = Modifier
-) {
-    if (!profilePicture.isNullOrEmpty()) {
-        AsyncImage(
-            model = RetrofitClient.getPictureUri(profilePicture),
-            contentDescription = stringResource(R.string.profile_picture),
-            modifier = modifier.clip(CircleShape)
-        )
-    } else {
-        // Show default profile icon when no picture is available
-        Box(
-            modifier = modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_account_circle),
-                contentDescription = "Default profile picture",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
