@@ -3,7 +3,6 @@ package com.cpen321.usermanagement.ui.screens.events
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +41,7 @@ import com.cpen321.usermanagement.ui.viewmodels.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth
+import com.cpen321.usermanagement.ui.components.ClickableDetailsRow
 import com.cpen321.usermanagement.ui.components.DetailsRow
 
 
@@ -222,7 +222,7 @@ private fun EventDetailsCard(
             if (location != null) {
                 DetailsRow(icon = "📍", label = "Location", value = location)
             }
-            DetailsRow(
+            ClickableDetailsRow(
                 icon = "👥",
                 label = "Attendees",
                 value = attendeesText,
