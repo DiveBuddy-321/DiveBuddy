@@ -39,9 +39,9 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.AttendeesViewModel
+import com.cpen321.usermanagement.ui.viewmodels.events.AttendeesViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cpen321.usermanagement.ui.viewmodels.AttendeesUiState
+import com.cpen321.usermanagement.ui.viewmodels.events.AttendeesUiState
 
 @Composable
 fun AttendeesScreen(

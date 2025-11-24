@@ -49,8 +49,8 @@ import com.cpen321.usermanagement.ui.components.LocationAutocomplete
 import com.cpen321.usermanagement.ui.components.LocationResult
 import com.cpen321.usermanagement.ui.components.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
-import com.cpen321.usermanagement.ui.viewmodels.EventUiState
+import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
+import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
 import java.time.LocalDate
 import java.time.Instant
 import java.time.LocalTime

@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.UserProfileViewModel
+import com.cpen321.usermanagement.ui.viewmodels.events.AttendeeProfileViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.ui.components.profile.ProfileDetailsCard
 import com.cpen321.usermanagement.ui.components.profile.ProfileLocation
@@ -40,14 +40,14 @@ fun AttendeeProfileScreen(
     user: User,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    userProfileViewModel: UserProfileViewModel = hiltViewModel()
+    attendeeProfileViewModel: AttendeeProfileViewModel = hiltViewModel()
 ) {
-    val uiState by userProfileViewModel.uiState.collectAsState()
+    val uiState by attendeeProfileViewModel.uiState.collectAsState()
     val spacing = LocalSpacing.current
 
     // Set the user when the screen is first displayed
     androidx.compose.runtime.LaunchedEffect(user) {
-        userProfileViewModel.setUser(user)
+        attendeeProfileViewModel.setUser(user)
     }
 
     Column(
@@ -89,7 +89,7 @@ fun AttendeeProfileScreen(
             ProfileInfoSection(
                 user = displayUser,
                 isCreatingChat = uiState.isCreatingChat,
-                onChatClick = { userProfileViewModel.onChatClick() }
+                onChatClick = { attendeeProfileViewModel.onChatClick() }
             )
         }
     }

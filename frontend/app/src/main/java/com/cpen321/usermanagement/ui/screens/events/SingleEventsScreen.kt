@@ -36,8 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.EventViewModel
-import com.cpen321.usermanagement.ui.viewmodels.EventUiState
+import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
+import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth

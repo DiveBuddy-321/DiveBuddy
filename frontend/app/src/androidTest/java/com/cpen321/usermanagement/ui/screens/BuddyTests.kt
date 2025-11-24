@@ -17,9 +17,9 @@ import com.cpen321.usermanagement.data.remote.dto.Buddy
 import com.cpen321.usermanagement.common.Constants
 import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
-import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
+import com.cpen321.usermanagement.ui.viewmodels.buddies.BuddyViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
-import com.cpen321.usermanagement.ui.viewmodels.MatchViewModel
+import com.cpen321.usermanagement.ui.viewmodels.buddies.MatchViewModel
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule

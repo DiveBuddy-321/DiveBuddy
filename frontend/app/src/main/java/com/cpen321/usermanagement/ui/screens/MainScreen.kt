@@ -31,11 +31,11 @@ import com.cpen321.usermanagement.ui.screens.buddies.BuddiesScreen
 import com.cpen321.usermanagement.ui.screens.buddies.MatchScreen
 import com.cpen321.usermanagement.ui.screens.chat.ChatScreen
 import com.cpen321.usermanagement.ui.screens.events.EventsScreen
-import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
+import com.cpen321.usermanagement.ui.viewmodels.buddies.BuddyViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainUiState
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
-import com.cpen321.usermanagement.ui.viewmodels.MatchViewModel
-import com.cpen321.usermanagement.ui.viewmodels.UserProfileViewModel
+import com.cpen321.usermanagement.ui.viewmodels.buddies.MatchViewModel
+import com.cpen321.usermanagement.ui.viewmodels.events.AttendeeProfileViewModel
 import com.cpen321.usermanagement.ui.theme.LocalFontSizes
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
@@ -190,7 +190,7 @@ private fun MainBody(
 ) {
     val buddyViewModel: BuddyViewModel = hiltViewModel()
     val matchViewModel: MatchViewModel = hiltViewModel()
-    val userProfileViewModel: UserProfileViewModel = hiltViewModel()
+    val attendeeProfileViewModel: AttendeeProfileViewModel = hiltViewModel()
     
     // Set up callbacks
     LaunchedEffect(Unit) {
@@ -204,7 +204,7 @@ private fun MainBody(
         matchViewModel.onNavigateToChat = { chatId ->
             callbacks.onOpenChat(chatId)
         }
-        userProfileViewModel.onNavigateToChat = { chatId ->
+        attendeeProfileViewModel.onNavigateToChat = { chatId ->
             callbacks.onOpenChat(chatId)
         }
     }
