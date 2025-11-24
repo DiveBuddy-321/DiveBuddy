@@ -89,6 +89,12 @@ afterEach(() => {
 });
 
 describe('GET /api/chats - mocked', () => {
+  /**
+   * Inputs: Authenticated user requesting chat list, database connection error
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database connection fails during chat list retrieval
+   */
   test('returns 500 when database query fails', async () => {
     // Mock Chat.listForUser to throw an error
     jest.spyOn(Chat, 'listForUser').mockRejectedValue(new Error('Database connection failed'));
@@ -102,6 +108,12 @@ describe('GET /api/chats - mocked', () => {
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Authenticated user requesting chat list, unexpected error in database layer
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when unexpected exception occurs during chat list query
+   */
   test('returns 500 when unexpected error occurs', async () => {
     // Mock Chat.listForUser to throw an unexpected error
     jest.spyOn(Chat, 'listForUser').mockRejectedValue(new Error('Unexpected error'));
@@ -115,6 +127,12 @@ describe('GET /api/chats - mocked', () => {
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Authenticated user requesting chat list, database query timeout
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database query times out during chat list retrieval
+   */
   test('returns 500 when database timeout occurs', async () => {
     // Mock Chat.listForUser to throw a timeout error
     jest.spyOn(Chat, 'listForUser').mockRejectedValue(new Error('Connection timeout'));
@@ -128,6 +146,12 @@ describe('GET /api/chats - mocked', () => {
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Authenticated user requesting chat list, null reference access in chat query
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when null reference is accessed during chat list operation
+   */
   test('returns 500 when null pointer exception occurs', async () => {
     // Mock Chat.listForUser to throw null error
     jest.spyOn(Chat, 'listForUser').mockRejectedValue(new TypeError('Cannot read property of null'));
@@ -143,6 +167,12 @@ describe('GET /api/chats - mocked', () => {
 });
 
 describe('GET /api/chats/:chatId - mocked', () => {
+  /**
+   * Inputs: Valid chatId that doesn't exist in database
+   * Expected status: 404
+   * Output: Error message 'Chat not found'
+   * Expected behavior: Returns 404 error when attempting to access non-existent chat
+   */
   test('returns 404 when chat not found', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -159,6 +189,12 @@ describe('GET /api/chats/:chatId - mocked', () => {
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Invalid chatId format (not a valid ObjectId)
+   * Expected status: 400
+   * Output: Error message 'Invalid chatId'
+   * Expected behavior: Validates chatId format and rejects malformed IDs
+   */
   test('returns 400 when invalid chat ID provided', async () => {
     // Make request with invalid ID
     const res = await request(app).get('/api/chats/invalid-id');
@@ -169,6 +205,12 @@ describe('GET /api/chats/:chatId - mocked', () => {
     expect(res.body.error).toBe('Invalid chatId');
   });
 
+  /**
+   * Inputs: Valid chatId, database error during query
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database query fails during chat retrieval
+   */
   test('returns 500 when database query fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -184,6 +226,12 @@ describe('GET /api/chats/:chatId - mocked', () => {
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid chatId, network connectivity failure
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when network error occurs during chat retrieval
+   */
   test('returns 500 when network error occurs', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -199,6 +247,12 @@ describe('GET /api/chats/:chatId - mocked', () => {
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid chatId, system out of memory during query
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when system runs out of memory during chat retrieval
+   */
   test('returns 500 when memory error occurs', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -216,6 +270,12 @@ describe('GET /api/chats/:chatId - mocked', () => {
 });
 
 describe('POST /api/chats - mocked', () => {
+  /**
+   * Inputs: Chat creation request without peerId field
+   * Expected status: 400
+   * Output: Error message 'peerId is required and must be a valid ObjectId'
+   * Expected behavior: Validates that peerId is present in request body
+   */
   test('returns 400 when peerId is missing', async () => {
     // Make request without peerId
     const res = await request(app).post('/api/chats').send({
@@ -228,6 +288,12 @@ describe('POST /api/chats - mocked', () => {
     expect(res.body.error).toBe('peerId is required and must be a valid ObjectId');
   });
 
+  /**
+   * Inputs: Chat creation request with malformed peerId (not valid ObjectId)
+   * Expected status: 400
+   * Output: Error message 'peerId is required and must be a valid ObjectId'
+   * Expected behavior: Validates peerId format and rejects invalid ObjectIds
+   */
   test('returns 400 when peerId is invalid', async () => {
     // Make request with invalid peerId
     const res = await request(app).post('/api/chats').send({
@@ -241,6 +307,12 @@ describe('POST /api/chats - mocked', () => {
     expect(res.body.error).toBe('peerId is required and must be a valid ObjectId');
   });
 
+  /**
+   * Inputs: Chat creation request where peerId equals current user's ID
+   * Expected status: 400
+   * Output: Error message 'Cannot create a direct chat with yourself'
+   * Expected behavior: Prevents users from creating chats with themselves
+   */
   test('returns 400 when trying to create chat with yourself', async () => {
     // Make request with peerId same as testUser._id
     const res = await request(app).post('/api/chats').send({
@@ -254,6 +326,12 @@ describe('POST /api/chats - mocked', () => {
     expect(res.body.error).toBe('Cannot create a direct chat with yourself');
   });
 
+  /**
+   * Inputs: Valid chat creation request, database error checking existing chats
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during existing chat lookup
+   */
   test('returns 500 when findDirectPair fails', async () => {
     const mockPeerId = new mongoose.Types.ObjectId();
 
@@ -272,6 +350,12 @@ describe('POST /api/chats - mocked', () => {
     expect(Chat.findDirectPair).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid chat creation request, no existing chat, database error during creation
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during new chat creation
+   */
   test('returns 500 when createPair fails', async () => {
     const mockPeerId = new mongoose.Types.ObjectId();
 
@@ -293,6 +377,12 @@ describe('POST /api/chats - mocked', () => {
     expect(Chat.createPair).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid chat creation request, no existing chat, network failure during creation
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when network connectivity fails during chat creation
+   */
   test('returns 500 when network error occurs during creation', async () => {
     const mockPeerId = new mongoose.Types.ObjectId();
 
@@ -315,6 +405,12 @@ describe('POST /api/chats - mocked', () => {
 });
 
 describe('POST /api/chats/:chatId/messages - mocked', () => {
+  /**
+   * Inputs: Message creation request without content field
+   * Expected status: 400
+   * Output: Error message 'Message content is required'
+   * Expected behavior: Validates that message content is present in request body
+   */
   test('returns 400 when content is missing', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
@@ -330,6 +426,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     expect(res.body.error).toBe('Message content is required');
   });
 
+  /**
+   * Inputs: Message creation request with whitespace-only content
+   * Expected status: 400
+   * Output: Error message in response body
+   * Expected behavior: Validates that message content is not empty or whitespace-only
+   */
   test('returns 400 when content is empty', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
@@ -346,6 +448,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     expect(res.body).toHaveProperty('error');
   });
 
+  /**
+   * Inputs: Message creation request with malformed chatId (not valid ObjectId)
+   * Expected status: 400
+   * Output: Error message 'Invalid chatId'
+   * Expected behavior: Validates chatId format in URL parameter
+   */
   test('returns 400 when invalid chatId provided', async () => {
     // Make request with invalid chatId
     const res = await request(app).post('/api/chats/invalid-id/messages').send({
@@ -358,6 +466,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     expect(res.body.error).toBe('Invalid chatId');
   });
 
+  /**
+   * Inputs: Valid chatId that doesn't exist or user has no access to
+   * Expected status: 404
+   * Output: Error message 'Chat not found or access denied'
+   * Expected behavior: Returns 404 when user attempts to send message to inaccessible chat
+   */
   test('returns 404 when chat not found', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -375,6 +489,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     expect(res.body.error).toBe('Chat not found or access denied');
   });
 
+  /**
+   * Inputs: Valid message creation request, database error during chat verification
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during chat access verification
+   */
   test('returns 500 when Chat.getForUser fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -392,6 +512,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid message creation request, database error during message creation
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during message document creation
+   */
   test('returns 500 when Message.createMessage fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
@@ -412,6 +538,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
     expect(Message.createMessage).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid message creation request, message created successfully, error fetching created message
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during message retrieval after creation
+   */
   test('returns 500 when Message.getMessageById fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     const mockMessageId = new mongoose.Types.ObjectId();
@@ -438,6 +570,12 @@ describe('POST /api/chats/:chatId/messages - mocked', () => {
 });
 
 describe('GET /api/chats/messages/:chatId - mocked', () => {
+  /**
+   * Inputs: Message retrieval request with malformed chatId (not valid ObjectId)
+   * Expected status: 400
+   * Output: Error message 'Invalid chatId'
+   * Expected behavior: Validates chatId format in URL parameter
+   */
   test('returns 400 when invalid chatId provided', async () => {
     // Make request with invalid chatId
     const res = await request(app).get('/api/chats/messages/invalid-id');
@@ -463,6 +601,12 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
     expect(res.body.error).toBe('Chat not found or access denied');
   });
 
+  /**
+   * Inputs: Valid chatId, malformed 'before' query parameter (not valid timestamp)
+   * Expected status: 400
+   * Output: Error message "Invalid 'before' timestamp format"
+   * Expected behavior: Validates timestamp format for pagination parameter
+   */
   test('returns 400 when invalid before timestamp provided', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
@@ -478,6 +622,12 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
     expect(res.body.error).toBe("Invalid 'before' timestamp format");
   });
 
+  /**
+   * Inputs: Valid message retrieval request, database error during chat verification
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during chat access verification
+   */
   test('returns 500 when Chat.getForUser fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
 
@@ -493,6 +643,12 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
     expect(Chat.getForUser).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid message retrieval request, database error during message query
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails during message retrieval
+   */
   test('returns 500 when Message.getMessagesForChat fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
@@ -511,6 +667,12 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
     expect(Message.getMessagesForChat).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid message retrieval request, database connection failure during message query
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database connection fails during message retrieval
+   */
   test('returns 500 when database connection fails', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat
@@ -528,6 +690,12 @@ describe('GET /api/chats/messages/:chatId - mocked', () => {
     expect(Message.getMessagesForChat).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Inputs: Valid message retrieval request, database query timeout during message retrieval
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database query times out during message retrieval
+   */
   test('returns 500 when timeout occurs', async () => {
     const mockChatId = new mongoose.Types.ObjectId();
     // Mock Chat.getForUser to return a valid chat

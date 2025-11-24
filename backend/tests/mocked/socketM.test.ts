@@ -203,6 +203,12 @@ describe('Socket.IO - mocked', () => {
   };
 
   describe('Authentication errors', () => {
+    /**
+     * Inputs: Socket connection attempt with valid token, userModel.findById database error
+     * Expected status: N/A (WebSocket connection rejection)
+     * Output: Connection rejected
+     * Expected behavior: Rejects socket connection when user lookup fails in database
+     */
     test('returns error when userModel.findById fails', async () => {
       // Mock userModel.findById to throw an error
       jest.spyOn(userModel, 'findById').mockRejectedValue(new Error('Database error'));
@@ -211,6 +217,12 @@ describe('Socket.IO - mocked', () => {
       await expect(connectClient(userToken)).rejects.toBeDefined();
     });
 
+    /**
+     * Inputs: Socket connection attempt with valid token, user not found in database
+     * Expected status: N/A (WebSocket connection rejection)
+     * Output: Connection rejected
+     * Expected behavior: Rejects socket connection when user doesn't exist
+     */
     test('returns error when userModel.findById returns null', async () => {
       // Mock userModel.findById to return null
       jest.spyOn(userModel, 'findById').mockResolvedValue(null);
@@ -221,6 +233,12 @@ describe('Socket.IO - mocked', () => {
   });
 
   describe('join_room event - mocked', () => {
+    /**
+     * Inputs: join_room event with valid chatId, database connection failure
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Database connection failed'
+     * Expected behavior: Emits error when database fails during chat access check
+     */
     test('returns error when Chat.getForUser fails', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -249,6 +267,12 @@ describe('Socket.IO - mocked', () => {
       expect(Chat.getForUser).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: join_room event with valid chatId, database query timeout
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Connection timeout'
+     * Expected behavior: Emits error when database query times out during room join
+     */
     test('returns error when database timeout occurs', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -277,6 +301,12 @@ describe('Socket.IO - mocked', () => {
       expect(Chat.getForUser).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: join_room event with valid chatId, unexpected error in database layer
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Unexpected error'
+     * Expected behavior: Emits error when unexpected exception occurs during room join
+     */
     test('returns error when unexpected error occurs', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -307,6 +337,12 @@ describe('Socket.IO - mocked', () => {
   });
 
   describe('send_message event - mocked', () => {
+    /**
+     * Inputs: send_message event with valid chatId and content, database error during chat lookup
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Database error'
+     * Expected behavior: Emits error when database fails during chat verification for message send
+     */
     test('returns error when Chat.getForUser fails', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -335,6 +371,12 @@ describe('Socket.IO - mocked', () => {
       expect(Chat.getForUser).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: send_message event with valid data, chat found, message creation failure
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Failed to create message'
+     * Expected behavior: Emits error when database fails to create message document
+     */
     test('returns error when Message.createMessage fails', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -370,6 +412,12 @@ describe('Socket.IO - mocked', () => {
       expect(Message.createMessage).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: send_message event, message created successfully, error fetching created message
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Failed to fetch message'
+     * Expected behavior: Emits error when database fails to retrieve message after creation
+     */
     test('returns error when Message.getMessageById fails', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       const mockMessageId = new mongoose.Types.ObjectId();
@@ -409,6 +457,12 @@ describe('Socket.IO - mocked', () => {
       expect(Message.getMessageById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: send_message event with valid data, database connection failure
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Database connection failed'
+     * Expected behavior: Emits error when database connection fails during message send
+     */
     test('returns error when database connection fails', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -437,6 +491,12 @@ describe('Socket.IO - mocked', () => {
       expect(Chat.getForUser).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: send_message event with valid data, network timeout during operation
+     * Expected status: N/A (WebSocket error event)
+     * Output: Error event with message 'Connection timeout'
+     * Expected behavior: Emits error when network connection times out during message send
+     */
     test('returns error when network timeout occurs', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);
@@ -467,6 +527,12 @@ describe('Socket.IO - mocked', () => {
   });
 
   describe('leave_room event - mocked', () => {
+    /**
+     * Inputs: leave_room event with valid chatId
+     * Expected status: N/A (WebSocket left_room event)
+     * Output: left_room event with chatId
+     * Expected behavior: Successfully leaves chat room without database calls
+     */
     test('handles leave room without errors', async () => {
       const mockChatId = new mongoose.Types.ObjectId().toString();
       clientSocket = await connectClient(userToken);

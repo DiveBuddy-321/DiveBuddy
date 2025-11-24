@@ -64,6 +64,12 @@ afterEach(() => {
 });
 
 describe('GET /api/buddy - mocked', () => {
+  /*
+    Inputs: GET request with mocked database connection failure
+    Expected status: 500
+    Output: { message: string }
+    Expected behavior: Returns error when database connection fails
+  */
   test('returns 500 when userModel.findByQuery fails', async () => {
     // Mock userModel.findByQuery to throw an error
     jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Database connection failed'));
@@ -77,6 +83,12 @@ describe('GET /api/buddy - mocked', () => {
     expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
+  /*
+    Inputs: GET request with mocked unexpected error
+    Expected status: 500
+    Output: { message: string }
+    Expected behavior: Returns error when unexpected exception occurs
+  */
   test('returns 500 when unexpected error occurs', async () => {
     // Mock userModel.findByQuery to throw an unexpected error
     jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Unexpected error'));
@@ -90,6 +102,12 @@ describe('GET /api/buddy - mocked', () => {
     expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
+  /*
+    Inputs: GET request with mocked database timeout
+    Expected status: 500
+    Output: { message: string }
+    Expected behavior: Returns error when database query times out
+  */
   test('returns 500 when database timeout occurs', async () => {
     // Mock userModel.findByQuery to throw a timeout error
     jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Connection timeout'));
@@ -103,6 +121,12 @@ describe('GET /api/buddy - mocked', () => {
     expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
+  /*
+    Inputs: GET request with mocked null pointer exception
+    Expected status: 500
+    Output: { message: string }
+    Expected behavior: Returns error when null reference is accessed
+  */
   test('returns 500 when null pointer exception occurs', async () => {
     // Mock userModel.findByQuery to throw null error
     jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new TypeError('Cannot read property of null'));
@@ -116,6 +140,12 @@ describe('GET /api/buddy - mocked', () => {
     expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
+  /*
+    Inputs: GET request with mocked network error
+    Expected status: 500
+    Output: { message: string }
+    Expected behavior: Returns error when network connectivity fails
+  */
   test('returns 500 when network error occurs', async () => {
     // Mock userModel.findByQuery to throw a network error
     jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Network error'));
@@ -129,6 +159,12 @@ describe('GET /api/buddy - mocked', () => {
     expect(userModel.findByQuery).toHaveBeenCalledTimes(1);
   });
 
+  /*
+    Inputs: GET request with mocked memory error
+    Expected status: 500
+    Output: { message: string }
+    Expected behavior: Returns error when system runs out of memory
+  */
   test('returns 500 when memory error occurs', async () => {
     // Mock userModel.findByQuery to throw a memory error
     jest.spyOn(userModel, 'findByQuery').mockRejectedValue(new Error('Out of memory'));
@@ -144,6 +180,12 @@ describe('GET /api/buddy - mocked', () => {
 });
 
 describe('GET /api/buddy - profile validation mocked', () => {
+  /*
+    Inputs: GET request with user missing age field
+    Expected status: 400
+    Output: { message: string } (contains 'complete your profile')
+    Expected behavior: Rejects buddy matching when user profile lacks age
+  */
   test('returns 400 when user profile is incomplete (missing age)', async () => {
     // Override middleware for this test with incomplete profile
     const incompleteApp = express();
@@ -172,6 +214,12 @@ describe('GET /api/buddy - profile validation mocked', () => {
     expect(res.body.message).toContain('complete your profile');
   });
 
+  /*
+    Inputs: GET request with user missing skillLevel field
+    Expected status: 400
+    Output: { message: string } (contains 'complete your profile')
+    Expected behavior: Rejects buddy matching when user profile lacks skill level
+  */
   test('returns 400 when user profile is incomplete (missing skillLevel)', async () => {
     const incompleteApp = express();
     incompleteApp.use(express.json());
@@ -199,6 +247,12 @@ describe('GET /api/buddy - profile validation mocked', () => {
     expect(res.body.message).toContain('complete your profile');
   });
 
+  /*
+    Inputs: GET request with user missing latitude/longitude coordinates
+    Expected status: 400
+    Output: { message: string } (contains 'complete your profile')
+    Expected behavior: Rejects buddy matching when user profile lacks location data
+  */
   test('returns 400 when user profile is incomplete (missing location)', async () => {
     const incompleteApp = express();
     incompleteApp.use(express.json());

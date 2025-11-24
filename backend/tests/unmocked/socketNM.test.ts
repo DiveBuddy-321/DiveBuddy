@@ -222,23 +222,47 @@ describe('Socket.IO - unmocked (no mocking)', () => {
     });
   };
 
+  /**
+   * Inputs: Valid JWT token for authenticated user
+   * Expected status: N/A (WebSocket connection)
+   * Output: Connected socket with connected property true
+   * Expected behavior: Successfully establishes WebSocket connection with valid authentication token
+   */
   test('connects successfully with valid token', async () => {
     clientSocket = await connectClient(userToken);
     expect(clientSocket.connected).toBe(true);
   });
 
+  /**
+   * Inputs: Empty token string
+   * Expected status: N/A (WebSocket connection)
+   * Output: Connection rejection/error
+   * Expected behavior: Rejects connection when authentication token is not provided
+   */
   test('fails to connect without token', async () => {
     await expect(
       connectClient('')
     ).rejects.toBeDefined();
   });
 
+  /**
+   * Inputs: Invalid JWT token string 'invalid-token'
+   * Expected status: N/A (WebSocket connection)
+   * Output: Connection rejection/error
+   * Expected behavior: Rejects connection when authentication token is invalid
+   */
   test('fails to connect with invalid token', async () => {
     await expect(
       connectClient('invalid-token')
     ).rejects.toBeDefined();
   });
 
+  /**
+   * Inputs: Valid JWT token for authenticated user
+   * Expected status: N/A (WebSocket connection)
+   * Output: Connected socket
+   * Expected behavior: Automatically joins user-specific room upon successful connection
+   */
   test('automatically joins user room on connection', async () => {
     clientSocket = await connectClient(userToken);
     expect(clientSocket.connected).toBe(true);
@@ -248,6 +272,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
   });
 
   describe('join_room event', () => {
+    /**
+     * Inputs: Socket event 'join_room' with valid chatId
+     * Expected status: N/A (Socket event)
+     * Output: 'joined_room' event with chatId and chat object
+     * Expected behavior: Successfully joins chat room and receives room details
+     */
     test('joins a valid chat room', async () => {
       clientSocket = await connectClient(userToken);
       
@@ -305,6 +335,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       expect(error.message).toBe('Invalid chat ID');
     });
 
+    /**
+     * Inputs: Socket event 'join_room' with valid but non-existent chatId
+     * Expected status: N/A (Socket event)
+     * Output: 'error' event with message 'Chat not found or access denied'
+     * Expected behavior: Emits error when chat does not exist in database
+     */
     test('returns error for non-existent chat', async () => {
       clientSocket = await connectClient(userToken);
       const fakeChatId = new mongoose.Types.ObjectId().toString();
@@ -329,6 +365,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       expect(error.message).toBe('Chat not found or access denied');
     });
 
+    /**
+     * Inputs: Socket event 'join_room' with chatId where user is not a participant
+     * Expected status: N/A (Socket event)
+     * Output: 'error' event with message 'Chat not found or access denied'
+     * Expected behavior: Denies access when user is not a chat participant
+     */
     test('returns error when user is not a participant', async () => {
       // Create a chat between OTHER_USER and a third user
       const thirdUser = new mongoose.Types.ObjectId().toString();
@@ -366,6 +408,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
   });
 
   describe('leave_room event', () => {
+    /**
+     * Inputs: Socket event 'leave_room' with chatId (after joining room)
+     * Expected status: N/A (Socket event)
+     * Output: 'left_room' event with chatId
+     * Expected behavior: Successfully leaves chat room after being joined
+     */
     test('leaves a chat room successfully', async () => {
       clientSocket = await connectClient(userToken);
       
@@ -417,6 +465,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
   });
 
   describe('send_message event', () => {
+    /**
+     * Inputs: Socket event 'send_message' with chatId and content from both connected users
+     * Expected status: N/A (Socket event)
+     * Output: 'new_message' event broadcast to other participant with message object
+     * Expected behavior: Sends message to chat room and broadcasts to all participants
+     */
     test('sends a message successfully', async () => {
       const userClient = await connectClient(userToken);
       const otherClient = await connectClient(otherUserToken);
@@ -499,6 +553,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       otherClient.disconnect();
     });
 
+    /**
+     * Inputs: Socket event 'send_message' with invalid chatId 'invalid-id'
+     * Expected status: N/A (Socket event)
+     * Output: 'error' event with message 'Invalid chat ID'
+     * Expected behavior: Emits error when chat ID format is invalid for message sending
+     */
     test('returns error for invalid chat ID', async () => {
       clientSocket = await connectClient(userToken);
       
@@ -522,6 +582,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       expect(error.message).toBe('Invalid chat ID');
     });
 
+    /**
+     * Inputs: Socket event 'send_message' with chatId but empty content string
+     * Expected status: N/A (Socket event)
+     * Output: 'error' event with message 'Message content is required'
+     * Expected behavior: Validates and rejects empty message content
+     */
     test('returns error when content is missing', async () => {
       clientSocket = await connectClient(userToken);
       
@@ -545,6 +611,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       expect(error.message).toBe('Message content is required');
     });
 
+    /**
+     * Inputs: Socket event 'send_message' with chatId and whitespace-only content
+     * Expected status: N/A (Socket event)
+     * Output: 'error' event with message 'Message content is required'
+     * Expected behavior: Validates and rejects whitespace-only message content
+     */
     test('returns error when content is empty', async () => {
       clientSocket = await connectClient(userToken);
       
@@ -568,6 +640,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
       expect(error.message).toBe('Message content is required');
     });
 
+    /**
+     * Inputs: Socket event 'send_message' with valid but non-existent chatId
+     * Expected status: N/A (Socket event)
+     * Output: 'error' event with message 'Chat not found or access denied'
+     * Expected behavior: Emits error when attempting to send message to non-existent chat
+     */
     test('returns error when chat not found', async () => {
       clientSocket = await connectClient(userToken);
       const fakeChatId = new mongoose.Types.ObjectId().toString();
@@ -594,6 +672,12 @@ describe('Socket.IO - unmocked (no mocking)', () => {
   });
 
   describe('disconnect event', () => {
+    /**
+     * Inputs: Socket disconnect() method called on connected socket
+     * Expected status: N/A (Socket event)
+     * Output: Socket disconnected with connected property false
+     * Expected behavior: Gracefully handles socket disconnection and cleanup
+     */
     test('handles disconnect gracefully', async () => {
       clientSocket = await connectClient(userToken);
       expect(clientSocket.connected).toBe(true);

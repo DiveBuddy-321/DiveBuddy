@@ -124,24 +124,10 @@ afterAll(async () => {
   await teardownTestDB();
 });
 
-/*
-  Split tests into individual describe blocks for each exposed interface (endpoint)
-  - Each describe below mirrors the pattern used in `eventNM.test.ts` and `userNM.test.ts`:
-    * First group: unmocked (uses real DB/models)
-    * Each test annotated with inputs, expected status and outputs
-  
-  Note: Chat controller returns direct responses (not wrapped in { message, data } format)
-*/
-
 let chatId: string;
 let messageId: string;
 
 describe('POST /api/chats - unmocked (no mocking)', () => {
-  /*
-    Inputs: { peerId: OTHER_USER, name?: string }
-    Expected status: 201
-    Output: created chat document directly in response.body
-  */
   /*
     Inputs: body { peerId: OTHER_USER, name?: string }
     Expected status: 201
