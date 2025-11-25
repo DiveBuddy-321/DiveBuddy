@@ -20,6 +20,7 @@ data class ChatUiState(
     val messagesByChat: Map<String, List<Message>> = emptyMap(),
     val currentUserId: String? = null,
     val userNames: Map<String, String> = emptyMap(), // userId -> userName mapping
+    val profilePictures: Map<String, String?> = emptyMap(), // userId -> profilePicture path
     val error: String? = null,
     val isSocketConnected: Boolean = false
 )
@@ -107,12 +108,21 @@ class ChatViewModel @Inject constructor(
                             userNamesMap[userId] = user.name
                         }
                     }
+
+                    //Fetch profile pictures for all participants
+                    val profilePicturesMap = mutableMapOf<String, String?>()
+                    participantIds.forEach { userId ->
+                        profileRepository.getProfileById(userId).getOrNull()?.let { user ->
+                            profilePicturesMap[userId] = user.profilePicture
+                        }
+                    }
                     
                     _uiState.value = ChatUiState(
                         isLoading = false, 
                         chats = chatList, 
                         currentUserId = profile?._id,
-                        userNames = userNamesMap
+                        userNames = userNamesMap,
+                        profilePictures = profilePicturesMap
                     )
                 },
                 onFailure = { e -> 
@@ -201,6 +211,12 @@ class ChatViewModel @Inject constructor(
         val currentUserId = _uiState.value.currentUserId
         val otherUserId = chat.participants.find { it != currentUserId }
         return otherUserId?.let { _uiState.value.userNames[it] } ?: "Unknown User"
+    }
+    
+    fun getOtherUserProfilePicture(chat: Chat): String? {
+        val currentUserId = _uiState.value.currentUserId
+        val otherUserId = chat.participants.find { it != currentUserId }
+        return otherUserId?.let { _uiState.value.profilePictures[it] }
     }
     
     override fun onCleared() {
