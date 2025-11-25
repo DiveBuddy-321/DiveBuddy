@@ -77,6 +77,7 @@ dependencies {
     
     // Google Maps and Places
     implementation(libs.play.services.maps)
+    implementation("com.google.maps.android:maps-compose:6.1.0")
     implementation(libs.places)
     
     // HTTP client
