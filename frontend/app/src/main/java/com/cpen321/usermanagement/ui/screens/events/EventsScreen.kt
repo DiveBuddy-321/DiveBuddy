@@ -49,7 +49,8 @@ data class EventNavigationState(
     val showCreateEventForm: Boolean = false,
     val showEditEventForm: Event? = null,
     val showAttendees: Event? = null,
-    val showUserProfile: User? = null
+    val showUserProfile: User? = null,
+    val isMapView: Boolean = false
 )
 
 @Composable
@@ -97,6 +98,7 @@ fun EventsScreen(
     var showEditEventForm by remember { mutableStateOf<Event?>(null) }
     var showAttendees by remember { mutableStateOf<Event?>(null) }
     var showUserProfile by remember { mutableStateOf<User?>(null) }
+    var isMapView by remember { mutableStateOf(false) }
     val uiState by eventViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -112,7 +114,8 @@ fun EventsScreen(
                 showCreateEventForm = showCreateEventForm,
                 showEditEventForm = showEditEventForm,
                 showAttendees = showAttendees,
-                showUserProfile = showUserProfile
+                showUserProfile = showUserProfile,
+                isMapView = isMapView
             ),
             uiState = uiState,
             eventViewModel = eventViewModel,
@@ -122,6 +125,7 @@ fun EventsScreen(
                 showEditEventForm = navState.showEditEventForm
                 showAttendees = navState.showAttendees
                 showUserProfile = navState.showUserProfile
+                isMapView = navState.isMapView
             }
         )
     }
@@ -176,7 +180,10 @@ private fun EventNavigationContent(
             SingleEventScreen(
                 event = navigationState.selectedEvent,
                 onBack = {
-                    onNavigationChange(navigationState.copy(selectedEvent = null))
+                    onNavigationChange(navigationState.copy(
+                        selectedEvent = null,
+                        isMapView = navigationState.isMapView // Preserve view state
+                    ))
                 },
                 onEditEvent = { event ->
                     onNavigationChange(navigationState.copy(showEditEventForm = event))
@@ -195,10 +202,17 @@ private fun EventNavigationContent(
                     onNavigationChange(navigationState.copy(showCreateEventForm = true))
                 },
                 onEventClick = { event ->
-                    onNavigationChange(navigationState.copy(selectedEvent = event))
+                    onNavigationChange(navigationState.copy(
+                        selectedEvent = event,
+                        isMapView = navigationState.isMapView // Preserve current view state
+                    ))
                 },
                 onRefresh = {
                     eventViewModel.refreshEvents()
+                },
+                initialIsMapView = navigationState.isMapView,
+                onViewStateChange = { isMap ->
+                    onNavigationChange(navigationState.copy(isMapView = isMap))
                 }
             )
         }
@@ -264,10 +278,17 @@ private fun EventsContent(
     uiState: EventUiState,
     onCreateEventClick: () -> Unit,
     onEventClick: (Event) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    initialIsMapView: Boolean = false,
+    onViewStateChange: (Boolean) -> Unit
 ) {
-    var isMapView by remember { mutableStateOf(false) }
+    var isMapView by remember { mutableStateOf(initialIsMapView) }
     val spacing = LocalSpacing.current
+    
+    // Update when initialIsMapView changes (when coming back from event detail)
+    LaunchedEffect(initialIsMapView) {
+        isMapView = initialIsMapView
+    }
 
     Column(
         //modifier = modifier
@@ -276,7 +297,10 @@ private fun EventsContent(
             onCreateEventClick = onCreateEventClick,
             onRefresh = onRefresh,
             isMapView = isMapView,
-            onViewToggle = { isMapView = !isMapView }
+            onViewToggle = { 
+                isMapView = !isMapView
+                onViewStateChange(isMapView)
+            }
         )
         
         if (isMapView) {
