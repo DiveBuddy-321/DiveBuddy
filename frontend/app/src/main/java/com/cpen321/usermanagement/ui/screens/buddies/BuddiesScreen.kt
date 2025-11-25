@@ -91,7 +91,8 @@ private fun FilterSlider(
     maxValue: Int,
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (ClosedFloatingPointRange<Float>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showNumericHeader: Boolean = true
 ) {
     val spacing = LocalSpacing.current
     
@@ -99,10 +100,17 @@ private fun FilterSlider(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "$label: $minValue - $maxValue",
-            style = MaterialTheme.typography.bodyLarge
-        )
+        if (showNumericHeader) {
+            Text(
+                text = "$label: $minValue - $maxValue",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        } else {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
         RangeSlider(
             value = minValue.toFloat()..maxValue.toFloat(),
             onValueChange = onValueChange,
@@ -197,6 +205,7 @@ private fun BuddiesFiltersSection(
             minValue = minLevel,
             maxValue = maxLevel,
             valueRange = Constants.BEGINNER_LEVEL.toFloat()..Constants.ADVANCED_LEVEL.toFloat(),
+            showNumericHeader = false,
             onValueChange = { range ->
                 minLevel = range.start.roundToInt()
                     .coerceIn(Constants.BEGINNER_LEVEL, Constants.ADVANCED_LEVEL)
@@ -217,6 +226,7 @@ private fun BuddiesFiltersSection(
             minValue = minAge,
             maxValue = maxAge,
             valueRange = Constants.MIN_AGE.toFloat()..Constants.MAX_AGE.toFloat(),
+            showNumericHeader = true,
             onValueChange = { range ->
                 minAge = range.start.roundToInt()
                     .coerceIn(Constants.MIN_AGE, Constants.MAX_AGE)
