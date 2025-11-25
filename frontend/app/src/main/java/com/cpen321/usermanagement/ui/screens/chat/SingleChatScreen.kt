@@ -55,6 +55,7 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import java.util.TimeZone
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun SingleChatScreen(
@@ -106,6 +107,7 @@ fun SingleChatScreen(
 			}
 	}
     ChatContent(
+        profilePicture = chatVm.getOtherUserProfilePicture(chat),
         otherUserName = otherUserName,
         messages = messages.value,
         currentUserId = uiState.currentUserId,
@@ -151,9 +153,10 @@ private fun MessagesCollector(
 }
 
 @Composable
-private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spacing) {
+private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spacing, profilePicture: String?) {
 	Row(
-		verticalAlignment = Alignment.Companion.CenterVertically
+		verticalAlignment = Alignment.Companion.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(spacing.medium),
 	) {
 		IconButton(onClick = onBack) {
 			Icon(
@@ -161,12 +164,23 @@ private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spaci
 				contentDescription = "Back to chats"
 			)
 		}
-		Icon(
-			imageVector = Icons.Default.Person,
-			contentDescription = "Direct message",
-			modifier = Modifier.Companion.size(24.dp),
-			tint = MaterialTheme.colorScheme.onSurface
-		)
+		if (!profilePicture.isNullOrEmpty()) {
+			AsyncImage(
+				model = RetrofitClient.getPictureUri(profilePicture),
+				contentDescription = stringResource(R.string.profile_picture),
+				contentScale = ContentScale.Crop,
+				modifier = Modifier.Companion
+					.size(32.dp)
+					.clip(CircleShape)
+			)
+		} else {
+			Icon(
+				imageVector = Icons.Default.Person,
+				contentDescription = "Direct message",
+				modifier = Modifier.Companion.size(32.dp),
+				tint = MaterialTheme.colorScheme.onSurface
+			)
+		}
 		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Text(
 			text = otherUserName,
@@ -307,13 +321,14 @@ private fun ChatContent(
     listState: LazyListState,
     inputState: MutableState<String>,
     onSend: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+	profilePicture: String?,
 ) {
     val spacing = LocalSpacing.current
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing)
+        ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing, profilePicture = profilePicture)
         MessagesList(
             messages = messages,
             currentUserId = currentUserId,
