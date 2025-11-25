@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
+import mongoose from 'mongoose';
 
 import logger from '../utils/logger.util';
 import { GetAllBuddiesResponse } from '../types/buddy.types';
 import { buddyAlgorithm } from '../utils/buddyAlgorithm.util';
 import { isUserReadyForBuddyMatching, IUser } from '../types/user.types';
 import { userModel } from '../models/user.model';
+import { Chat } from '../models/chat.model';
 import { SKILL_LEVELS } from '../constants/statics';
 import { FilterQuery } from 'mongoose';
 
@@ -27,7 +29,8 @@ export class BuddyController {
       }
 
       const filters = this.parseFilters(req, currentUser);
-      const query = this.buildMongoQuery(currentUser, filters);
+      const excludedUserIds = await this.getDirectPartnerIds(currentUser._id);
+      const query = this.buildMongoQuery(currentUser, filters, excludedUserIds);
       const otherUsers = await this.getUsers(query);
 
       const currentLong = currentUser.longitude;
@@ -140,12 +143,18 @@ export class BuddyController {
       allowedSkillLevels: string[];
       ageFilter: Record<string, number>;
       locationFilter: { latitude: Record<string, number>; longitude: Record<string, number> };
-    }
+    },
+    excludedUserIds?: mongoose.Types.ObjectId[]
   ): Record<string, unknown> {
     const { allowedSkillLevels, ageFilter, locationFilter } = filters;
 
+    const idFilter: { $ne: mongoose.Types.ObjectId; $nin?: mongoose.Types.ObjectId[] } = { $ne: currentUser._id };
+    if (Array.isArray(excludedUserIds) && excludedUserIds.length > 0) {
+      idFilter.$nin = excludedUserIds;
+    }
+
     return {
-      _id: { $ne: currentUser._id },
+      _id: idFilter,
       ...locationFilter,
       ...(Object.keys(ageFilter).length ? { age: ageFilter } : {}),
       ...(allowedSkillLevels.length ? { skillLevel: { $in: allowedSkillLevels } } : {}),
@@ -163,5 +172,30 @@ export class BuddyController {
     sortedBuddies: Array<[IUser, number]>
   ): Array<{ user: IUser; distance: number }> {
     return sortedBuddies.map(([user, distance]) => ({ user, distance }));
+  }
+
+  private async getDirectPartnerIds(
+    userId: mongoose.Types.ObjectId
+  ): Promise<mongoose.Types.ObjectId[]> {
+    // Find 2-participant chats that include the user
+    const chats = await Chat.find(
+      {
+        participants: userId,
+        $expr: { $eq: [{ $size: "$participants" }, 2] }
+      },
+      { participants: 1 }
+    )
+      .lean()
+      .exec();
+
+    const partnerIdStrings = new Set<string>();
+    for (const chat of chats as Array<{ participants: Array<mongoose.Types.ObjectId | string> }>) {
+      const other = chat.participants.find((p) => String(p) !== String(userId));
+      if (other) {
+        partnerIdStrings.add(String(other));
+      }
+    }
+
+    return Array.from(partnerIdStrings).map((id) => new mongoose.Types.ObjectId(id));
   }
 }

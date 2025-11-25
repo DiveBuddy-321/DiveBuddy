@@ -48,6 +48,7 @@ export const buddyAlgorithm = (
         distanceUsers.set(user, distance);
     }
     const filteredUserCount = distanceUsers.size;
+    console.log('filteredUserCount', filteredUserCount);
     //sort results in order of closest to furthest distance
     const sortedDistanceUsers = Array.from(distanceUsers.entries()).sort((a, b) => a[1] - b[1]);
 
@@ -56,7 +57,7 @@ export const buddyAlgorithm = (
         return sortedDistanceUsers
     } else {
         if (filteredUserCount < LARGE_USER_COUNT_THRESHOLD) {
-            const threshold = Math.min(Math.floor(filteredUserCount * 0.5), SMALL_USER_COUNT_THRESHOLD);
+            const threshold = Math.floor(filteredUserCount * 0.5);
             return sortedDistanceUsers.slice(0, threshold);
         } else {
             return sortedDistanceUsers.slice(0, MAX_USERS_TO_RETURN);
