@@ -76,9 +76,9 @@ private fun ChatContent(
             }
         } else {
             LazyColumn(
-                modifier = modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize().padding(vertical = spacing.large),
                 contentPadding = PaddingValues(horizontal = spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(spacing.small)
+                verticalArrangement = Arrangement.spacedBy(spacing.medium)
             ) {
                 items(chats) { chat ->
                     ChatCard(
