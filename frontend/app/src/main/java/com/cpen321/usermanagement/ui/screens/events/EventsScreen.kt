@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -31,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.data.remote.dto.User
+import com.cpen321.usermanagement.ui.components.EventsMapView
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
@@ -204,28 +210,14 @@ private fun CreateEventButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val spacing = LocalSpacing.current
     Button(
         onClick = onClick,
-        modifier = modifier.padding(spacing.small, spacing.small)
+        modifier = modifier
     ) {
         Text(
             text = "Create Event",
             color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.bodyMedium
-        )
-    }
-}
-
-@Composable
-private fun RefreshEventsButton(
-    onClick: () -> Unit
-) {
-    Button(onClick = onClick) {
-        Text(
-            text = "Refresh Events",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onPrimary
         )
     }
 }
@@ -274,39 +266,93 @@ private fun EventsContent(
     onEventClick: (Event) -> Unit,
     onRefresh: () -> Unit
 ) {
+    var isMapView by remember { mutableStateOf(false) }
     val spacing = LocalSpacing.current
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-        modifier = modifier.fillMaxSize()
+        //modifier = modifier
     ) {
-        CreateEventButton(onClick = onCreateEventClick)
-        EventsHeader(onRefresh = onRefresh)
-        EventsListContent(
-            uiState = uiState,
-            onEventClick = onEventClick,
-            onRefresh = onRefresh
+        EventsHeader(
+            onCreateEventClick = onCreateEventClick,
+            onRefresh = onRefresh,
+            isMapView = isMapView,
+            onViewToggle = { isMapView = !isMapView }
         )
+        
+        if (isMapView) {
+            EventsMapContent(
+                uiState = uiState,
+                onEventClick = onEventClick,
+                onRefresh = onRefresh
+            )
+        } else {
+            EventsListContent(
+                uiState = uiState,
+                onEventClick = onEventClick,
+                onRefresh = onRefresh
+            )
+        }
     }
 }
 
 @Composable
-private fun EventsHeader(onRefresh: () -> Unit) {
+private fun EventsHeader(
+    onCreateEventClick: () -> Unit,
+    onRefresh: () -> Unit,
+    isMapView: Boolean,
+    onViewToggle: () -> Unit
+) {
     val spacing = LocalSpacing.current
     
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing.medium)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = spacing.medium)
+            .padding(top = spacing.small, bottom = spacing.small),
+        verticalArrangement = Arrangement.spacedBy(spacing.small)
     ) {
-        Text(
-            text = "Upcoming Events",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = spacing.small)
-        )
-        RefreshEventsButton(onClick = onRefresh)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Upcoming Events",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onViewToggle) {
+                    Icon(
+                        imageVector = if (isMapView) Icons.Filled.List else Icons.Filled.LocationOn,
+                        contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.small)
+        ) {
+            CreateEventButton(
+                onClick = onCreateEventClick,
+                modifier = Modifier.weight(1f)
+            )
+            Button(onClick = onRefresh) {
+                Text(
+                    text = "Refresh",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
     }
 }
 
@@ -335,6 +381,37 @@ private fun EventsListContent(
             EventsColumn(
                 onEventClick = onEventClick,
                 uiState = uiState
+            )
+        }
+    }
+}
+
+@Composable
+private fun EventsMapContent(
+    uiState: EventUiState,
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit
+) {
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        uiState.error != null -> {
+            ErrorMessage(error = uiState.error, onClick = onRefresh)
+        }
+        uiState.events.isEmpty() -> {
+            NoEventsMessage()
+        }
+        else -> {
+            EventsMapView(
+                events = uiState.events,
+                onEventClick = onEventClick,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
