@@ -11,8 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -347,9 +348,8 @@ private fun EventsHeader(
             
             IconButton(onClick = onViewToggle) {
                 Icon(
-                    imageVector = if (isMapView) Icons.Filled.List else Icons.Filled.LocationOn,
+                    imageVector = if (isMapView) Icons.AutoMirrored.Filled.List else Icons.Filled.LocationOn,
                     contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
-                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -362,11 +362,10 @@ private fun EventsHeader(
                 onClick = onCreateEventClick,
                 modifier = Modifier.weight(1f)
             )
-            Button(onClick = onRefresh) {
-                Text(
-                    text = "Refresh",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = "Refresh Events List"
                 )
             }
         }
