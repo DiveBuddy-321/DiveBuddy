@@ -47,6 +47,8 @@ import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.components.EventsMapView
 import com.cpen321.usermanagement.ui.components.events.EventFilter
 import com.cpen321.usermanagement.ui.components.events.EventFilterDropdown
+import com.cpen321.usermanagement.ui.components.events.EventSort
+import com.cpen321.usermanagement.ui.components.events.EventSortDropdown
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
@@ -293,6 +295,7 @@ private fun EventsContent(
 ) {
     var isMapView by remember { mutableStateOf(initialIsMapView) }
     var selectedFilter by remember { mutableStateOf(EventFilter.ALL) }
+    var selectedSort by remember { mutableStateOf(EventSort.DATE_ASC) }
     
     // Update when initialIsMapView changes (when coming back from event detail)
     LaunchedEffect(initialIsMapView) {
@@ -314,6 +317,16 @@ private fun EventsContent(
         }
     }
 
+    // Sort events based on selected sort option
+    val sortedEvents = remember(filteredEvents, selectedSort) {
+        when (selectedSort) {
+            EventSort.NAME_ASC -> filteredEvents.sortedBy { it.title.lowercase() }
+            EventSort.NAME_DESC -> filteredEvents.sortedByDescending { it.title.lowercase() }
+            EventSort.DATE_ASC -> filteredEvents.sortedBy { it.date }
+            EventSort.DATE_DESC -> filteredEvents.sortedByDescending { it.date }
+        }
+    }
+
     Column() {
         EventsHeader(
             onCreateEventClick = onCreateEventClick,
@@ -324,7 +337,9 @@ private fun EventsContent(
                 onViewStateChange(isMapView)
             },
             selectedFilter = selectedFilter,
-            onFilterChange = { selectedFilter = it }
+            onFilterChange = { selectedFilter = it },
+            selectedSort = selectedSort,
+            onSortChange = { selectedSort = it }
         )
 
         if (isMapView) {
@@ -336,7 +351,7 @@ private fun EventsContent(
             )
         } else {
             EventsListContent(
-                events = filteredEvents,
+                events = sortedEvents,
                 uiState = uiState,
                 onEventClick = onEventClick,
                 onRefresh = onRefresh
@@ -353,10 +368,13 @@ private fun EventsHeader(
     isMapView: Boolean,
     onViewToggle: () -> Unit,
     selectedFilter: EventFilter,
-    onFilterChange: (EventFilter) -> Unit
+    onFilterChange: (EventFilter) -> Unit,
+    selectedSort: EventSort,
+    onSortChange: (EventSort) -> Unit
 ) {
     val spacing = LocalSpacing.current
     var filterExpanded by remember { mutableStateOf(false) }
+    var sortExpanded by remember { mutableStateOf(false) }
     
     Column(
         modifier = Modifier
@@ -391,7 +409,7 @@ private fun EventsHeader(
         ) {
             CreateEventButton(
                 onClick = onCreateEventClick,
-                modifier = Modifier.width(150.dp)
+                modifier = Modifier.width(200.dp)
             )
         }
         
@@ -408,7 +426,20 @@ private fun EventsHeader(
                 },
                 expanded = filterExpanded,
                 onExpandedChange = { filterExpanded = it },
-                modifier = Modifier.width(200.dp)
+                modifier = Modifier.width(150.dp)
+            )
+            
+            // Only enable sort dropdown in list view
+            EventSortDropdown(
+                selectedSort = selectedSort,
+                onSortChange = {
+                    onSortChange(it)
+                    sortExpanded = false
+                },
+                expanded = sortExpanded,
+                onExpandedChange = { sortExpanded = it },
+                enabled = !isMapView,
+                modifier = Modifier.width(150.dp)
             )
             
             IconButton(onClick = onRefresh) {
