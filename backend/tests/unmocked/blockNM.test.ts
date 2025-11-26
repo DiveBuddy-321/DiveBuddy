@@ -84,6 +84,12 @@ afterAll(async () => {
 });
 
 describe('Block Controller - Unmocked', () => {
+  /*
+    Inputs: POST request to /api/block with targetUserId being a valid ObjectId as an unauthenticated user
+    Expected status: 401
+    Output: { message: unauthorized }
+    Expected behavior: Returns error when unauthenticated user tries to block another user
+  */
   test('POST /api/block returns 401 when unauthorized', async () => {
     const res = await request(app)
       .post('/api/block')
@@ -93,6 +99,12 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'Unauthorized');
   });
 
+  /*
+    Inputs: POST request to /api/block with targetUserId being an invalid ObjectId
+    Expected status: 400
+    Output: { message: Invalid target user id }
+    Expected behavior: Returns error when invalid target user id is provided
+  */
   test('POST /api/block returns 400 for invalid target user id', async () => {
     const res = await request(app)
       .post('/api/block')
@@ -101,6 +113,12 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'Invalid target user id');
   });
 
+  /*
+    Inputs: POST request to /api/block with targetUserId being themselves
+    Expected status: 400
+    Output: { message: Cannot block yourself }
+    Expected behavior: Returns error when attempting to block oneself
+  */
   test('POST /api/block returns 400 when blocking self', async () => {
     const res = await request(app)
       .post('/api/block')
@@ -109,6 +127,12 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'Cannot block yourself');
   });
 
+  /*
+    Inputs: POST request to /api/block with targetUserId being a valid ObjectId
+    Expected status: 201
+    Output: { message: User blocked successfully }
+    Expected behavior: Returns success message when successfully blocking another valid user
+  */
   test('POST /api/block succeeds (201) when A blocks B', async () => {
     const res = await request(app)
       .post('/api/block')
@@ -117,6 +141,12 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'User blocked successfully');
   });
 
+  /*
+    Inputs: GET request to /api/block as an unauthenticated user
+    Expected status: 401
+    Output: { message: unauthorized }
+    Expected behavior: Returns error when unauthenticated user tries to get list of blocked users
+  */
   test('GET /api/block returns 401 when unauthorized', async () => {
     const res = await request(app)
       .get('/api/block')
@@ -125,6 +155,12 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'Unauthorized');
   });
 
+  /*
+    Inputs: GET request to /api/block lists blocked users
+    Expected status: 200
+    Output: { data: { blockedUserIds: [String] } }
+    Expected behavior: Returns list of blocked user ids
+  */
   test('GET /api/block lists blocked users', async () => {
     const res = await request(app).get('/api/block');
     expect(res.status).toBe(200);
@@ -134,6 +170,12 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body.data.blockedUserIds).toContain(String(userB._id));
   });
 
+  /*
+    Inputs: GET request to /api/block/check/:targetUserId as an unauthenticated user
+    Expected status: 401
+    Output: { message: unauthorized }
+    Expected behavior: Returns error when unauthenticated user tries to check if someone has blocked them
+  */
   test('GET /api/block/check/:targetUserId returns 401 when unauthorized', async () => {
     const res = await request(app)
       .get(`/api/block/check/${String(userB._id)}`)
@@ -142,12 +184,24 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'Unauthorized');
   });
 
+  /*
+    Inputs: GET request to /api/block/check/:targetUserId with targetUserId being an invalid ObjectId
+    Expected status: 400
+    Output: { message: Invalid target user id }
+    Expected behavior: Returns error when checking if someone with an invalid userId has blocked them
+  */
   test('GET /api/block/check/:targetUserId returns 400 for invalid id', async () => {
     const res = await request(app).get('/api/block/check/invalid-id');
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('message', 'Invalid target user id');
   });
 
+  /*
+    Inputs: GET request to /api/block/check/:targetUserId with targetUserId being a valid ObjectId
+    Expected status: 200
+    Output: { data: { isBlocked: boolean } }
+    Expected behavior: Returns true if the user is blocked by the target user, false otherwise
+  */
   test('GET /api/block/check/:targetUserId returns correct isBlocked status', async () => {
     // At this point A has blocked B, but B has not blocked A: A is not blocked by B
     const aCheckB = await request(app).get(`/api/block/check/${String(userB._id)}`);
@@ -169,6 +223,12 @@ describe('Block Controller - Unmocked', () => {
     expect(aCheckBAgain.body.data).toHaveProperty('isBlocked', true);
   });
 
+  /*
+    Inputs: DELETE request to /api/block/:targetUserId as an unauthenticated user
+    Expected status: 401
+    Output: { message: unauthorized }
+    Expected behavior: Returns error when unauthenticated user tries to unblock another user
+  */
   test('DELETE /api/block/:targetUserId returns 401 when unauthorized', async () => {
     const res = await request(app)
       .delete(`/api/block/${String(userB._id)}`)
@@ -177,12 +237,24 @@ describe('Block Controller - Unmocked', () => {
     expect(res.body).toHaveProperty('message', 'Unauthorized');
   });
 
+  /*
+    Inputs: DELETE request to /api/block/:targetUserId with targetUserId being an invalid ObjectId
+    Expected status: 400
+    Output: { message: Invalid target user id }
+    Expected behavior: Returns error when unblocking a user with an invalid userId
+  */
   test('DELETE /api/block/:targetUserId returns 400 for invalid id', async () => {
     const res = await request(app).delete('/api/block/not-an-id');
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('message', 'Invalid target user id');
   });
 
+    /*
+    Inputs: DELETE request to /api/block/:targetUserId with targetUserId being a valid ObjectId
+    Expected status: 200
+    Output: { message: User unblocked successfully }
+    Expected behavior: Returns success message when successfully unblocking another valid user
+  */
   test('DELETE /api/block/:targetUserId succeeds (200) for A unblocking B', async () => {
     const res = await request(app).delete(`/api/block/${String(userB._id)}`);
     expect(res.status).toBe(200);
