@@ -48,7 +48,6 @@ export const buddyAlgorithm = (
         distanceUsers.set(user, distance);
     }
     const filteredUserCount = distanceUsers.size;
-    console.log('filteredUserCount', filteredUserCount);
     //sort results in order of closest to furthest distance
     const sortedDistanceUsers = Array.from(distanceUsers.entries()).sort((a, b) => a[1] - b[1]);
 

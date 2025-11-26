@@ -66,5 +66,3 @@ export class BuddyModel {
 }
 
 export const buddyModel = new BuddyModel();
-
-
