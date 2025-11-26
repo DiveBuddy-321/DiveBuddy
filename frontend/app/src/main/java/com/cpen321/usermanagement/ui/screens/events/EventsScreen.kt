@@ -141,82 +141,160 @@ private fun EventNavigationContent(
 ) {
     when {
         navigationState.showCreateEventForm -> {
-            CreateEventScreen(
-                onDismiss = {
-                    onNavigationChange(navigationState.copy(showCreateEventForm = false))
-                },
-                eventViewModel = eventViewModel
+            CreateEventFormContent(
+                navigationState = navigationState,
+                eventViewModel = eventViewModel,
+                onNavigationChange = onNavigationChange
             )
         }
         navigationState.showEditEventForm != null -> {
-            CreateEventScreen(
-                event = navigationState.showEditEventForm,
-                onDismiss = {
-                    onNavigationChange(navigationState.copy(showEditEventForm = null))
-                },
-                eventViewModel = eventViewModel
+            EditEventFormContent(
+                navigationState = navigationState,
+                eventViewModel = eventViewModel,
+                onNavigationChange = onNavigationChange
             )
         }
         navigationState.showUserProfile != null -> {
-            AttendeeProfileScreen(
-                user = navigationState.showUserProfile,
-                onBack = {
-                    onNavigationChange(navigationState.copy(showUserProfile = null))
-                }
+            UserProfileContent(
+                navigationState = navigationState,
+                onNavigationChange = onNavigationChange
             )
         }
         navigationState.showAttendees != null -> {
-            AttendeesScreen(
-                attendeeIds = navigationState.showAttendees.attendees,
-                onBack = {
-                    onNavigationChange(navigationState.copy(showAttendees = null))
-                },
-                onUserClick = { user ->
-                    onNavigationChange(navigationState.copy(showUserProfile = user))
-                }
+            AttendeesContent(
+                navigationState = navigationState,
+                onNavigationChange = onNavigationChange
             )
         }
         navigationState.selectedEvent != null -> {
-            SingleEventScreen(
-                event = navigationState.selectedEvent,
-                onBack = {
-                    onNavigationChange(navigationState.copy(
-                        selectedEvent = null,
-                        isMapView = navigationState.isMapView // Preserve view state
-                    ))
-                },
-                onEditEvent = { event ->
-                    onNavigationChange(navigationState.copy(showEditEventForm = event))
-                },
-                onShowAttendees = { event ->
-                    onNavigationChange(navigationState.copy(showAttendees = event))
-                },
-                eventViewModel = eventViewModel
+            SingleEventContent(
+                navigationState = navigationState,
+                eventViewModel = eventViewModel,
+                onNavigationChange = onNavigationChange
             )
         }
         else -> {
-            EventsContent(
+            DefaultEventsContent(
                 modifier = modifier,
+                navigationState = navigationState,
                 uiState = uiState,
-                onCreateEventClick = {
-                    onNavigationChange(navigationState.copy(showCreateEventForm = true))
-                },
-                onEventClick = { event ->
-                    onNavigationChange(navigationState.copy(
-                        selectedEvent = event,
-                        isMapView = navigationState.isMapView // Preserve current view state
-                    ))
-                },
-                onRefresh = {
-                    eventViewModel.refreshEvents()
-                },
-                initialIsMapView = navigationState.isMapView,
-                onViewStateChange = { isMap ->
-                    onNavigationChange(navigationState.copy(isMapView = isMap))
-                }
+                eventViewModel = eventViewModel,
+                onNavigationChange = onNavigationChange
             )
         }
     }
+}
+
+@Composable
+private fun CreateEventFormContent(
+    navigationState: EventNavigationState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    CreateEventScreen(
+        onDismiss = {
+            onNavigationChange(navigationState.copy(showCreateEventForm = false))
+        },
+        eventViewModel = eventViewModel
+    )
+}
+
+@Composable
+private fun EditEventFormContent(
+    navigationState: EventNavigationState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    CreateEventScreen(
+        event = navigationState.showEditEventForm,
+        onDismiss = {
+            onNavigationChange(navigationState.copy(showEditEventForm = null))
+        },
+        eventViewModel = eventViewModel
+    )
+}
+
+@Composable
+private fun UserProfileContent(
+    navigationState: EventNavigationState,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    AttendeeProfileScreen(
+        user = navigationState.showUserProfile!!,
+        onBack = {
+            onNavigationChange(navigationState.copy(showUserProfile = null))
+        }
+    )
+}
+
+@Composable
+private fun AttendeesContent(
+    navigationState: EventNavigationState,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    AttendeesScreen(
+        attendeeIds = navigationState.showAttendees!!.attendees,
+        onBack = {
+            onNavigationChange(navigationState.copy(showAttendees = null))
+        },
+        onUserClick = { user ->
+            onNavigationChange(navigationState.copy(showUserProfile = user))
+        }
+    )
+}
+
+@Composable
+private fun SingleEventContent(
+    navigationState: EventNavigationState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    SingleEventScreen(
+        event = navigationState.selectedEvent!!,
+        onBack = {
+            onNavigationChange(navigationState.copy(
+                selectedEvent = null,
+                isMapView = navigationState.isMapView // Preserve view state
+            ))
+        },
+        onEditEvent = { event ->
+            onNavigationChange(navigationState.copy(showEditEventForm = event))
+        },
+        onShowAttendees = { event ->
+            onNavigationChange(navigationState.copy(showAttendees = event))
+        },
+        eventViewModel = eventViewModel
+    )
+}
+
+@Composable
+private fun DefaultEventsContent(
+    modifier: Modifier,
+    navigationState: EventNavigationState,
+    uiState: EventUiState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    EventsContent(
+        modifier = modifier,
+        uiState = uiState,
+        onCreateEventClick = {
+            onNavigationChange(navigationState.copy(showCreateEventForm = true))
+        },
+        onEventClick = { event ->
+            onNavigationChange(navigationState.copy(
+                selectedEvent = event,
+                isMapView = navigationState.isMapView // Preserve current view state
+            ))
+        },
+        onRefresh = {
+            eventViewModel.refreshEvents()
+        },
+        initialIsMapView = navigationState.isMapView,
+        onViewStateChange = { isMap ->
+            onNavigationChange(navigationState.copy(isMapView = isMap))
+        }
+    )
 }
 
 @Composable
