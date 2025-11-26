@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.remote.api.AuthInterface
+import com.cpen321.usermanagement.data.remote.api.BlockInterface
 import com.cpen321.usermanagement.data.remote.api.EventInterface
 import com.cpen321.usermanagement.data.remote.api.BuddyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
@@ -51,6 +52,12 @@ object NetworkModule {
     @Singleton
     fun provideChatService(): ChatInterface {
         return RetrofitClient.chatInterface
+    }
+
+    @Provides
+    @Singleton
+    fun provideBlockService(): BlockInterface {
+        return RetrofitClient.blockInterface
     }
 
 }

@@ -2,6 +2,8 @@ package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.AuthRepositoryImpl
+import com.cpen321.usermanagement.data.repository.BlockRepository
+import com.cpen321.usermanagement.data.repository.BlockRepositoryImpl
 import com.cpen321.usermanagement.data.repository.BuddyRepository
 import com.cpen321.usermanagement.data.repository.BuddyRepositoryImpl
 import com.cpen321.usermanagement.data.repository.EventRepository
@@ -58,5 +60,13 @@ object RepositoryModule {
         chatRepositoryImpl: ChatRepositoryImpl
     ): ChatRepository {
         return chatRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideBlockRepository(
+        blockRepositoryImpl: BlockRepositoryImpl
+    ): BlockRepository {
+        return blockRepositoryImpl
     }
 }

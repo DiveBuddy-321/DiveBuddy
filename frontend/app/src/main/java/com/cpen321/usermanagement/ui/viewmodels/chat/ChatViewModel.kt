@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.Chat
 import com.cpen321.usermanagement.data.remote.dto.Message
 import com.cpen321.usermanagement.data.repository.AuthRepository
+import com.cpen321.usermanagement.data.repository.BlockRepository
 import com.cpen321.usermanagement.data.repository.ChatRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.socket.SocketManager
@@ -15,20 +16,35 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class UserData(
+    val currentUserId: String? = null,
+    val userNames: Map<String, String> = emptyMap() // userId -> userName mapping
+)
+
+data class BlockData(
+    val blockedUsers: Set<String> = emptySet(),
+    val actionInProgress: Boolean = false
+)
+
+data class ConnectionState(
+    val isSocketConnected: Boolean = false,
+    val error: String? = null
+)
+
 data class ChatUiState(
     val isLoading: Boolean = false,
     val chats: List<Chat> = emptyList(),
     val messagesByChat: Map<String, List<Message>> = emptyMap(),
-    val currentUserId: String? = null,
-    val userNames: Map<String, String> = emptyMap(), // userId -> userName mapping
-    val error: String? = null,
-    val isSocketConnected: Boolean = false
+    val userData: UserData = UserData(),
+    val blockData: BlockData = BlockData(),
+    val connectionState: ConnectionState = ConnectionState()
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     val chatRepository: ChatRepository,
     private val profileRepository: ProfileRepository,
+    private val blockRepository: BlockRepository,
     private val socketManager: SocketManager,
     private val authRepository: AuthRepository
 ) : ViewModel() {
@@ -44,11 +60,17 @@ class ChatViewModel @Inject constructor(
             }
         }
         
+        // Load blocked users on initialization
+        viewModelScope.launch {
+            loadBlockedUsers()
+        }
 
         // Listen to socket connection state
         viewModelScope.launch {
             socketManager.connectionStateFlow.collect { isConnected ->
-                _uiState.value = _uiState.value.copy(isSocketConnected = isConnected)
+                _uiState.value = _uiState.value.copy(
+                    connectionState = _uiState.value.connectionState.copy(isSocketConnected = isConnected)
+                )
             }
         }
         
@@ -69,7 +91,9 @@ class ChatViewModel @Inject constructor(
         // Listen to socket errors
         viewModelScope.launch {
             socketManager.errorFlow.collect { event ->
-                _uiState.value = _uiState.value.copy(error = event.message)
+                _uiState.value = _uiState.value.copy(
+                    connectionState = _uiState.value.connectionState.copy(error = event.message)
+                )
             }
         }
     }
@@ -90,7 +114,10 @@ class ChatViewModel @Inject constructor(
 
     fun loadChats() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                connectionState = _uiState.value.connectionState.copy(error = null)
+            )
             val profile = profileRepository.getProfile().getOrNull()
             val result = chatRepository.listChats()
             
@@ -109,20 +136,22 @@ class ChatViewModel @Inject constructor(
                         }
                     }
                     
-                    _uiState.value = ChatUiState(
-                        isLoading = false, 
-                        chats = chatList, 
-                        currentUserId = profile?._id,
-                        userNames = userNamesMap
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        chats = chatList,
+                        userData = UserData(
+                            currentUserId = profile?._id,
+                            userNames = userNamesMap
+                        )
                     )
                 },
                 onFailure = { e -> 
-                    _uiState.value = ChatUiState(
-                        isLoading = false, 
-                        chats = emptyList(), 
-                        error = e.message, 
-                        currentUserId = profile?._id
-                    ) 
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        chats = emptyList(),
+                        connectionState = _uiState.value.connectionState.copy(error = e.message),
+                        userData = UserData(currentUserId = profile?._id)
+                    )
                 }
             )
         }
@@ -176,7 +205,9 @@ class ChatViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(messagesByChat = updated)
                     }
                 }.onFailure { e ->
-                    _uiState.value = _uiState.value.copy(error = e.message)
+                    _uiState.value = _uiState.value.copy(
+                        connectionState = _uiState.value.connectionState.copy(error = e.message)
+                    )
                 }
             }
         }
@@ -199,9 +230,94 @@ class ChatViewModel @Inject constructor(
     }
     
     fun getOtherUserName(chat: Chat): String {
-        val currentUserId = _uiState.value.currentUserId
+        val currentUserId = _uiState.value.userData.currentUserId
         val otherUserId = chat.participants.find { it != currentUserId }
-        return otherUserId?.let { _uiState.value.userNames[it] } ?: "Unknown User"
+        return otherUserId?.let { _uiState.value.userData.userNames[it] } ?: "Unknown User"
+    }
+    
+    fun getOtherUserId(chat: Chat): String? {
+        val currentUserId = _uiState.value.userData.currentUserId
+        return chat.participants.find { it != currentUserId }
+    }
+    
+    fun isUserBlocked(userId: String): Boolean {
+        return _uiState.value.blockData.blockedUsers.contains(userId)
+    }
+    
+    private fun loadBlockedUsers() {
+        viewModelScope.launch {
+            val result = blockRepository.getBlockedUsers()
+            result.onSuccess { blockedUserIds ->
+                _uiState.value = _uiState.value.copy(
+                    blockData = _uiState.value.blockData.copy(
+                        blockedUsers = blockedUserIds.toSet()
+                    )
+                )
+            }.onFailure { e ->
+                // Silently fail - blocked users will just be empty
+                _uiState.value = _uiState.value.copy(
+                    connectionState = _uiState.value.connectionState.copy(
+                        error = "Failed to load blocked users: ${e.message}"
+                    )
+                )
+            }
+        }
+    }
+    
+    fun blockUser(userId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                blockData = _uiState.value.blockData.copy(actionInProgress = true),
+                connectionState = _uiState.value.connectionState.copy(error = null)
+            )
+            val result = blockRepository.blockUser(userId)
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        blockData = _uiState.value.blockData.copy(
+                            blockedUsers = _uiState.value.blockData.blockedUsers + userId,
+                            actionInProgress = false
+                        )
+                    )
+                },
+                onFailure = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        connectionState = _uiState.value.connectionState.copy(
+                            error = e.message ?: "Failed to block user"
+                        ),
+                        blockData = _uiState.value.blockData.copy(actionInProgress = false)
+                    )
+                }
+            )
+        }
+    }
+    
+    fun unblockUser(userId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                blockData = _uiState.value.blockData.copy(actionInProgress = true),
+                connectionState = _uiState.value.connectionState.copy(error = null)
+            )
+            val result = blockRepository.unblockUser(userId)
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        blockData = _uiState.value.blockData.copy(
+                            blockedUsers = _uiState.value.blockData.blockedUsers - userId,
+                            actionInProgress = false
+                        )
+                    )
+                },
+                onFailure = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        connectionState = _uiState.value.connectionState.copy(
+                            error = e.message ?: "Failed to unblock user"
+                        ),
+                        blockData = _uiState.value.blockData.copy(actionInProgress = false)
+                    )
+                }
+            )
+        }
     }
     
     override fun onCleared() {

@@ -35,3 +35,11 @@ data class User(
 data class UploadImageData(
     val image: String
 )
+
+data class BlockRequest(
+    val targetUserId: String
+)
+
+data class BlockedUsersData(
+    val blockedUserIds: List<String>
+)
