@@ -283,7 +283,6 @@ private fun EventsContent(
     onViewStateChange: (Boolean) -> Unit
 ) {
     var isMapView by remember { mutableStateOf(initialIsMapView) }
-    val spacing = LocalSpacing.current
     
     // Update when initialIsMapView changes (when coming back from event detail)
     LaunchedEffect(initialIsMapView) {
@@ -291,18 +290,17 @@ private fun EventsContent(
     }
 
     Column(
-        //modifier = modifier
     ) {
         EventsHeader(
             onCreateEventClick = onCreateEventClick,
             onRefresh = onRefresh,
             isMapView = isMapView,
-            onViewToggle = { 
+            onViewToggle = {
                 isMapView = !isMapView
                 onViewStateChange(isMapView)
             }
         )
-        
+
         if (isMapView) {
             EventsMapContent(
                 uiState = uiState,
@@ -347,17 +345,12 @@ private fun EventsHeader(
                 color = MaterialTheme.colorScheme.primary
             )
             
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(spacing.small),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onViewToggle) {
-                    Icon(
-                        imageVector = if (isMapView) Icons.Filled.List else Icons.Filled.LocationOn,
-                        contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+            IconButton(onClick = onViewToggle) {
+                Icon(
+                    imageVector = if (isMapView) Icons.Filled.List else Icons.Filled.LocationOn,
+                    contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
         
