@@ -470,7 +470,12 @@ private fun EventsListContent(
             ErrorMessage(error = uiState.error, onClick = onRefresh)
         }
         uiState.events.isEmpty() -> {
-            NoEventsMessage()
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                NoEventsMessage()
+            }
         }
         else -> {
             EventsColumn(
