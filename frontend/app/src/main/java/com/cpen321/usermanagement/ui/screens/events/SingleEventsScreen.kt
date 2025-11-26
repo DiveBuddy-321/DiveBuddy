@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -43,6 +45,7 @@ import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth
 import com.cpen321.usermanagement.ui.components.ClickableDetailsRow
 import com.cpen321.usermanagement.ui.components.DetailsRow
+import com.cpen321.usermanagement.ui.components.EventMapView
 
 
 @Composable
@@ -95,6 +98,7 @@ fun SingleEventScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(spacing.large),
         verticalArrangement = Arrangement.spacedBy(spacing.large)
     ) {
@@ -109,6 +113,13 @@ fun SingleEventScreen(
 
         EventDescriptionCard(description = updatedEvent.description)
 
+        EventMapView(
+            latitude = updatedEvent.latitude,
+            longitude = updatedEvent.longitude,
+            locationName = updatedEvent.location,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         EventDetailsCard(
             dateText = dateFormatter.format(updatedEvent.date),
             location = updatedEvent.location,
@@ -116,7 +127,6 @@ fun SingleEventScreen(
             skillLevel = updatedEvent.skillLevel,
             onAttendeesClick = { onShowAttendees(updatedEvent) }
         )
-        Spacer(modifier = Modifier.weight(1f))
 
         RegisterLeaveButton(
             isUserAttending = isUserAttending,
