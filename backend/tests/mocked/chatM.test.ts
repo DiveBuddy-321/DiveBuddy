@@ -8,6 +8,7 @@ import { userModel } from '../../src/models/user.model';
 import { CreateUserRequest } from '../../src/types/user.types';
 import { Chat } from '../../src/models/chat.model';
 import { Message } from '../../src/models/message.model';
+import { blockModel } from '../../src/models/block.model';
 import express from 'express';
 import chatRoutes from '../../src/routes/chat.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
@@ -163,6 +164,120 @@ describe('GET /api/chats - mocked', () => {
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('message');
     expect(Chat.listForUser).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('POST /api/chats/:chatId/messages - blocking behavior (mocked)', () => {
+  /**
+   * Inputs: Authenticated user requesting to message a peer they are blocked by
+   * Expected status: 403
+   * Output: Error message in response body with the error: 'You cannot send messages to this user due to being blocked by them.'
+   * Expected behavior: Returns error when user is blocked by peer that they are trying to message
+   */
+  test('returns 403 when user is blocked by peer', async () => {
+    const mockChatId = new mongoose.Types.ObjectId();
+    const peerId = new mongoose.Types.ObjectId();
+    const mockChat = { _id: mockChatId, participants: [testUser._id, peerId] };
+    jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
+    jest.spyOn(blockModel, 'isBlockedBy').mockResolvedValue(true);
+    const hasBlockedSpy = jest.spyOn(blockModel, 'hasBlocked').mockResolvedValue(false);
+
+    const res = await request(app).post(`/api/chats/${mockChatId.toString()}/messages`).send({
+      content: 'Hello'
+    });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toBe('You cannot send messages to this user due to being blocked by them.');
+    expect(blockModel.isBlockedBy).toHaveBeenCalled();
+    expect(hasBlockedSpy).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Inputs: Authenticated user requests to message a peer they have blocked
+   * Expected status: 403
+   * Output: Error message in response body with the error: 'You cannot send messages to this user as you have blocked them.'
+   * Expected behavior: Returns error when user has blocked peer that they are trying to message
+   */
+  test('returns 403 when user has blocked peer', async () => {
+    const mockChatId = new mongoose.Types.ObjectId();
+    const peerId = new mongoose.Types.ObjectId();
+    const mockChat = { _id: mockChatId, participants: [testUser._id, peerId] };
+    jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
+    jest.spyOn(blockModel, 'isBlockedBy').mockResolvedValue(false);
+    jest.spyOn(blockModel, 'hasBlocked').mockResolvedValue(true);
+
+    const res = await request(app).post(`/api/chats/${mockChatId.toString()}/messages`).send({
+      content: 'Hello'
+    });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toBe('You cannot send messages to this user as you have blocked them.');
+  });
+
+  /**
+   * Inputs: Authenticated user requesting to message a peer, however database fails when checking if they are blocked by the peer
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database fails when checking if user is blocked by peer
+   */
+  test('returns 500 when block database fails (isBlockedBy error)', async () => {
+    const mockChatId = new mongoose.Types.ObjectId();
+    const peerId = new mongoose.Types.ObjectId();
+    const mockChat = { _id: mockChatId, participants: [testUser._id, peerId] };
+    jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
+    jest.spyOn(blockModel, 'isBlockedBy').mockRejectedValue(new Error('Database failure'));
+
+    const res = await request(app).post(`/api/chats/${mockChatId.toString()}/messages`).send({
+      content: 'Hello'
+    });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+  });
+
+   /**
+   * Inputs: Authenticated user requesting to message a peer, network failure when checking if the user has blocked the peer
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error in instances of network failure during when checking if the user has blocked the peer
+   */
+  test('returns 500 when network issue occurs during block check', async () => {
+    const mockChatId = new mongoose.Types.ObjectId();
+    const peerId = new mongoose.Types.ObjectId();
+    const mockChat = { _id: mockChatId, participants: [testUser._id, peerId] };
+    jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
+    jest.spyOn(blockModel, 'isBlockedBy').mockResolvedValue(false);
+    jest.spyOn(blockModel, 'hasBlocked').mockRejectedValue(new Error('Network error'));
+
+    const res = await request(app).post(`/api/chats/${mockChatId.toString()}/messages`).send({
+      content: 'Hello'
+    });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
+  });
+
+  /**
+   * Inputs: Authenticated user requesting to message a peer, connection timeout when checking if the user is blocked by the peer
+   * Expected status: 500
+   * Output: Error message in response body
+   * Expected behavior: Returns error when database timeout occurs during checking if the user is blocked by the peer
+   */
+  test('returns 500 on database timeout/corruption during block checks', async () => {
+    const mockChatId = new mongoose.Types.ObjectId();
+    const peerId = new mongoose.Types.ObjectId();
+    const mockChat = { _id: mockChatId, participants: [testUser._id, peerId] };
+    jest.spyOn(Chat, 'getForUser').mockResolvedValue(mockChat as any);
+    jest.spyOn(blockModel, 'isBlockedBy').mockRejectedValue(new Error('Connection timeout'));
+
+    const res = await request(app).post(`/api/chats/${mockChatId.toString()}/messages`).send({
+      content: 'Hello'
+    });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('message');
   });
 });
 
