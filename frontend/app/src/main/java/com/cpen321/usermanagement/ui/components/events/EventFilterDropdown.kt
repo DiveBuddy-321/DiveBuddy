@@ -1,14 +1,18 @@
 package com.cpen321.usermanagement.ui.components.events
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
 enum class EventFilter {
     ALL,
@@ -39,6 +43,7 @@ fun EventFilterDropdown(
             value = filterLabels[selectedFilter] ?: "All Events",
             onValueChange = {},
             readOnly = true,
+            textStyle = MaterialTheme.typography.bodySmall,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = modifier.menuAnchor(MenuAnchorType.PrimaryEditable, true),
             label = { Text("Filter") }
@@ -49,7 +54,13 @@ fun EventFilterDropdown(
         ) {
             EventFilter.entries.forEach { filter ->
                 DropdownMenuItem(
-                    text = { Text(filterLabels[filter] ?: filter.name) },
+                    text = { 
+                        Text(
+                            filterLabels[filter] ?: filter.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
+                        ) 
+                    },
                     onClick = { onFilterChange(filter) }
                 )
             }

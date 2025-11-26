@@ -1,14 +1,18 @@
 package com.cpen321.usermanagement.ui.components.events
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
 enum class EventSort {
     NAME_ASC,
@@ -43,6 +47,7 @@ fun EventSortDropdown(
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
+            textStyle = MaterialTheme.typography.bodySmall,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = modifier.menuAnchor(MenuAnchorType.PrimaryEditable, enabled),
             label = { Text("Sort") }
@@ -53,7 +58,13 @@ fun EventSortDropdown(
         ) {
             EventSort.entries.forEach { sort ->
                 DropdownMenuItem(
-                    text = { Text(sortLabels[sort] ?: sort.name) },
+                    text = { 
+                        Text(
+                            sortLabels[sort] ?: sort.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
+                        ) 
+                    },
                     onClick = { onSortChange(sort) },
                     enabled = enabled
                 )
