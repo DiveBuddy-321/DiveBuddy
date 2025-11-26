@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,9 +18,13 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -34,16 +39,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.components.EventsMapView
+import com.cpen321.usermanagement.ui.components.events.EventFilter
+import com.cpen321.usermanagement.ui.components.events.EventFilterDropdown
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
 import java.text.SimpleDateFormat
 import java.util.Locale
-
 
 data class EventNavigationState(
     val selectedEvent: Event? = null,
@@ -284,14 +292,29 @@ private fun EventsContent(
     onViewStateChange: (Boolean) -> Unit
 ) {
     var isMapView by remember { mutableStateOf(initialIsMapView) }
+    var selectedFilter by remember { mutableStateOf(EventFilter.ALL) }
     
     // Update when initialIsMapView changes (when coming back from event detail)
     LaunchedEffect(initialIsMapView) {
         isMapView = initialIsMapView
     }
 
-    Column(
-    ) {
+    // Filter events based on selected filter
+    val filteredEvents = remember(uiState.events, uiState.currentUser, selectedFilter) {
+        when (selectedFilter) {
+            EventFilter.ALL -> uiState.events
+            EventFilter.JOINED -> {
+                val joinedIds = uiState.currentUser?.eventsJoined ?: emptyList()
+                uiState.events.filter { it._id in joinedIds }
+            }
+            EventFilter.CREATED -> {
+                val createdIds = uiState.currentUser?.eventsCreated ?: emptyList()
+                uiState.events.filter { it._id in createdIds }
+            }
+        }
+    }
+
+    Column() {
         EventsHeader(
             onCreateEventClick = onCreateEventClick,
             onRefresh = onRefresh,
@@ -299,17 +322,21 @@ private fun EventsContent(
             onViewToggle = {
                 isMapView = !isMapView
                 onViewStateChange(isMapView)
-            }
+            },
+            selectedFilter = selectedFilter,
+            onFilterChange = { selectedFilter = it }
         )
 
         if (isMapView) {
             EventsMapContent(
+                events = filteredEvents,
                 uiState = uiState,
                 onEventClick = onEventClick,
                 onRefresh = onRefresh
             )
         } else {
             EventsListContent(
+                events = filteredEvents,
                 uiState = uiState,
                 onEventClick = onEventClick,
                 onRefresh = onRefresh
@@ -318,14 +345,18 @@ private fun EventsContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventsHeader(
     onCreateEventClick: () -> Unit,
     onRefresh: () -> Unit,
     isMapView: Boolean,
-    onViewToggle: () -> Unit
+    onViewToggle: () -> Unit,
+    selectedFilter: EventFilter,
+    onFilterChange: (EventFilter) -> Unit
 ) {
     val spacing = LocalSpacing.current
+    var filterExpanded by remember { mutableStateOf(false) }
     
     Column(
         modifier = Modifier
@@ -353,19 +384,37 @@ private fun EventsHeader(
                 )
             }
         }
-        
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(spacing.small)
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
         ) {
             CreateEventButton(
                 onClick = onCreateEventClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(150.dp)
             )
+        }
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            EventFilterDropdown(
+                selectedFilter = selectedFilter,
+                onFilterChange = { 
+                    onFilterChange(it)
+                    filterExpanded = false
+                },
+                expanded = filterExpanded,
+                onExpandedChange = { filterExpanded = it },
+                modifier = Modifier.width(200.dp)
+            )
+            
             IconButton(onClick = onRefresh) {
                 Icon(
                     imageVector = Icons.Filled.Refresh,
-                    contentDescription = "Refresh Events List"
+                    contentDescription = "Refresh Events List",
                 )
             }
         }
@@ -374,6 +423,7 @@ private fun EventsHeader(
 
 @Composable
 private fun EventsListContent(
+    events: List<Event>,
     uiState: EventUiState,
     onEventClick: (Event) -> Unit,
     onRefresh: () -> Unit
@@ -390,13 +440,13 @@ private fun EventsListContent(
         uiState.error != null -> {
             ErrorMessage(error = uiState.error, onClick = onRefresh)
         }
-        uiState.events.isEmpty() -> {
+        events.isEmpty() -> {
             NoEventsMessage()
         }
         else -> {
             EventsColumn(
-                onEventClick = onEventClick,
-                uiState = uiState
+                events = events,
+                onEventClick = onEventClick
             )
         }
     }
@@ -404,6 +454,7 @@ private fun EventsListContent(
 
 @Composable
 private fun EventsMapContent(
+    events: List<Event>,
     uiState: EventUiState,
     onEventClick: (Event) -> Unit,
     onRefresh: () -> Unit
@@ -420,12 +471,12 @@ private fun EventsMapContent(
         uiState.error != null -> {
             ErrorMessage(error = uiState.error, onClick = onRefresh)
         }
-        uiState.events.isEmpty() -> {
+        events.isEmpty() -> {
             NoEventsMessage()
         }
         else -> {
             EventsMapView(
-                events = uiState.events,
+                events = events,
                 onEventClick = onEventClick,
                 modifier = Modifier.fillMaxSize()
             )
@@ -435,8 +486,8 @@ private fun EventsMapContent(
 
 @Composable
 private fun EventsColumn(
-    onEventClick: (Event) -> Unit,
-    uiState: EventUiState
+    events: List<Event>,
+    onEventClick: (Event) -> Unit
 ) {
     val spacing = LocalSpacing.current
 
@@ -444,7 +495,7 @@ private fun EventsColumn(
         verticalArrangement = Arrangement.spacedBy(spacing.medium),
         modifier = Modifier.padding(horizontal = spacing.large)
     ) {
-        items(uiState.events.reversed()) { event ->
+        items(events) { event ->
             EventCard(
                 event = event,
                 onClick = { onEventClick(event) }
