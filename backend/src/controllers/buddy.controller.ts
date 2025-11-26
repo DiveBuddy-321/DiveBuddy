@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import logger from '../utils/logger.util';
 import { GetAllBuddiesResponse } from '../types/buddy.types';
 import { buddyAlgorithm } from '../utils/buddyAlgorithm.util';
@@ -63,11 +62,6 @@ export class BuddyController {
       });
     } catch (error) {
       logger.error('Failed to fetch buddies:', error);
-      if (error instanceof Error) {
-        return res.status(500).json({
-          message: error.message || 'Failed to fetch buddies',
-        });
-      }
       next(error);
     }
   }

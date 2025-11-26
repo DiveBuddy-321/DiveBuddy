@@ -1,8 +1,6 @@
 package com.cpen321.usermanagement.ui.screens.buddies
 
-import coil.compose.AsyncImage
 import Button
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,34 +11,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cpen321.usermanagement.R
-import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.MatchViewModel
+import com.cpen321.usermanagement.ui.viewmodels.buddies.MatchViewModel
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
+import com.cpen321.usermanagement.ui.components.profile.ProfileDetailsCard
+import com.cpen321.usermanagement.ui.components.profile.ProfileLocation
+import com.cpen321.usermanagement.ui.components.profile.ProfileName
+import com.cpen321.usermanagement.ui.components.profile.ProfilePictureDisplay
 
 @Composable
 fun MatchScreen(
@@ -166,118 +158,9 @@ private fun ProfileInfoSection(state: MatchContentState) {
         
         ProfileName(name = state.name)
         ProfileLocation(location = state.location)
-        ProfileAgeAndSkill(age = state.age, skillLevel = state.skillLevel)
+        ProfileDetailsCard(age = state.age, skillLevel = state.skillLevel, bio = state.bio)
         Spacer(modifier = Modifier.height(spacing.small))
-        ProfileBio(bio = state.bio)
     }
-}
-
-@Composable
-private fun ProfileName(name: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(bottom = spacing.medium)
-    ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun ProfileLocation(location: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(bottom = spacing.medium)
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_location),
-            contentDescription = null
-        )
-        Text(
-            text = location,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun ProfileAgeAndSkill(age: Int, skillLevel: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
-    ) {
-        ProfileInfoItem(
-            iconRes = R.drawable.ic_person,
-            text = "Age: $age",
-            textColor = MaterialTheme.colorScheme.onSurface
-        )
-        ProfileInfoItem(
-            iconRes = R.drawable.ic_level,
-            text = "Level: ${if (skillLevel.isNotBlank()) skillLevel else "-"}",
-            textColor = MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun ProfileInfoItem(iconRes: Int, text: String, textColor: Color) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
-    ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null
-        )
-        Text(
-            text = text,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodyLarge,
-            color = textColor
-        )
-    }
-}
-
-@Composable
-private fun ProfileBio(bio: String) {
-    val spacing = LocalSpacing.current
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_bio),
-            contentDescription = null
-        )
-        Text(
-            text = "Bio:",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
-    
-    Text(
-        text = bio.ifEmpty { "No bio available" },
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface
-    )
 }
 
 @Composable
@@ -293,7 +176,7 @@ private fun MatchActionButtons(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.small)
+            horizontalArrangement = Arrangement.spacedBy(spacing.extraLarge2)
         ) {
             Button(
                 onClick = callbacks.onChatClick,
@@ -301,20 +184,27 @@ private fun MatchActionButtons(
             ) {
                 Text(text = "Match")
             }
-            Button(
-                onClick = callbacks.onBackClick,
-                fullWidth = false
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.small)
             ) {
-                Text(text = "Back")
-            }
-            if (hasMoreProfiles) {
                 Button(
+                    type = "secondary",
+                    onClick = callbacks.onBackClick,
+                    fullWidth = false,
+                ) {
+                    Text(text = "Back")
+                }
+                Button(
+                    type = "secondary",
                     onClick = callbacks.onRejectClick,
-                    fullWidth = false
+                    fullWidth = false,
+                    enabled = hasMoreProfiles
                 ) {
                     Text(text = "Next")
                 }
             }
+
         }
     }
 }
@@ -334,34 +224,6 @@ private fun EmptyMatchState(onBackClick: () -> Unit) {
         )
         Button(onClick = onBackClick) {
             Text(text = "Back to Buddies")
-        }
-    }
-}
-
-@Composable
-private fun ProfilePictureDisplay(
-    profilePicture: String?,
-    modifier: Modifier = Modifier
-) {
-    if (!profilePicture.isNullOrEmpty()) {
-        AsyncImage(
-            model = RetrofitClient.getPictureUri(profilePicture),
-            contentDescription = "Profile picture",
-            modifier = modifier.clip(CircleShape)
-        )
-    } else {
-        // Show default profile icon when no picture is available
-        Box(
-            modifier = modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_account_circle),
-                contentDescription = "Default profile picture",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

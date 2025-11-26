@@ -50,7 +50,9 @@ beforeAll(async () => {
     location: 'Vancouver, BC',
     latitude: 49.2827,
     longitude: -123.1207,
-    skillLevel: 'Intermediate'
+    skillLevel: 'Intermediate',
+	eventsCreated: [],
+	eventsJoined: [],
   };
   testUser = await userModel.create(newUser);
 });
@@ -64,6 +66,12 @@ afterAll(async () => {
 });
 
 describe('GET /api/events - unmocked (requires running server)', () => {
+	/*
+		Inputs: None (GET request to /api/events)
+		Expected status: 200
+		Output: { message: string, data: { events: IEvent[] } }
+		Expected behavior: Returns list of all events
+	*/
 	test('returns list of events (200) when server is available', async () => {
 		
 		// make sure GET endpoint works
@@ -77,6 +85,12 @@ describe('GET /api/events - unmocked (requires running server)', () => {
 });
 
 describe('GET /api/events/:eventId - unmocked (requires running server)', () => {
+	/*
+		Inputs: Valid event ID as path parameter
+		Expected status: 200
+		Output: { message: string, data: { event: IEvent } }
+		Expected behavior: Returns specific event by ID
+	*/
 	test('returns event by ID (200) when server is available', async () => {
 		
 		// first create an event to ensure it exists
@@ -120,6 +134,12 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 		await eventModel.delete(createdId);
 	});
 
+	/*
+		Inputs: Invalid event ID format (non-ObjectId string)
+		Expected status: 400
+		Output: { message: string }
+		Expected behavior: Returns 400 error for invalid event ID format
+	*/
 	test('returns 400 for invalid event ID format', async () => {
 		// Try to fetch an event with an invalid ID format
 		const invalidId = 'invalid-id-format';
@@ -132,6 +152,12 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 });
 
 describe('POST /api/events - unmocked (requires running server)', () => {
+	/*
+		Inputs: Valid CreateEventRequest in request body
+		Expected status: 201
+		Output: { message: string, data: { event: IEvent } }
+		Expected behavior: Creates new event and adds to user's eventsCreated array
+	*/
 	test('creates a new event (201) when server is available', async () => {
 
 		// new event data
@@ -173,9 +199,16 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		expect(eventInDb?.photo).toBe(newEvent.photo);
 
 		// cleanup - delete the created event
-		await eventModel.delete(eventInDb!._id);
+		const del = (await request(app).delete(`/api/events/${eventInDb!._id.toString()}`));
+		// await eventModel.delete(eventInDb!._id);
 	});
 
+	/*
+		Inputs: CreateEventRequest with empty title string
+		Expected status: Error thrown
+		Output: Error: 'Invalid update data'
+		Expected behavior: Rejects event creation with empty title
+	*/
 	test('returns error when creating event with invalid input - empty title', async () => {
 		const invalidEvent: any = {
 			title: "", // Invalid: empty string
@@ -189,6 +222,12 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		await expect(eventModel.create(invalidEvent)).rejects.toThrow('Invalid update data');
 	});
 
+	/*
+		Inputs: CreateEventRequest with negative capacity (-5)
+		Expected status: Error thrown
+		Output: Error: 'Invalid update data'
+		Expected behavior: Rejects event creation with negative capacity
+	*/
 	test('returns error when creating event with invalid input - negative capacity', async () => {
 		const invalidEvent: any = {
 			title: "Valid Title",
@@ -202,6 +241,12 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		await expect(eventModel.create(invalidEvent)).rejects.toThrow('Invalid update data');
 	});
 
+	/*
+		Inputs: CreateEventRequest with capacity of 0
+		Expected status: Error thrown
+		Output: Error: 'Invalid update data'
+		Expected behavior: Rejects event creation with zero capacity (minimum is 1)
+	*/
 	test('returns error when creating event with invalid input - capacity of 0', async () => {
 		const invalidEvent: any = {
 			title: "Valid Title",
@@ -215,6 +260,12 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		await expect(eventModel.create(invalidEvent)).rejects.toThrow('Invalid update data');
 	});
 
+	/*
+		Inputs: CreateEventRequest with title exceeding 100 characters
+		Expected status: Error thrown
+		Output: Error: 'Invalid update data'
+		Expected behavior: Rejects event creation with title over max length
+	*/
 	test('returns error when creating event with invalid input - title exceeding max length', async () => {
 		const invalidEvent: any = {
 			title: "A".repeat(101), // Invalid: exceeds maxlength of 100
@@ -230,6 +281,12 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 });
 
 describe('PUT /api/events/join/:eventId - unmocked (requires running server)', () => {
+	/*
+		Inputs: Valid event ID as path parameter, authenticated user
+		Expected status: 200
+		Output: { message: string, data: { event: IEvent } }
+		Expected behavior: Adds user to event's attendees and event to user's eventsJoined
+	*/
 	test('user joins an event (200) when server is available', async () => {
 		
 		// first create an event to ensure it exists
@@ -265,6 +322,12 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 		await eventModel.delete(createdId);
 	});
 
+	/*
+		Inputs: Invalid event ID format (non-ObjectId string)
+		Expected status: 400
+		Output: { message: 'Invalid event id' }
+		Expected behavior: Rejects join request with invalid ID format
+	*/
 	test('returns 400 for invalid event ID format', async () => {
 		// Try to fetch an event with an invalid ID format
 		const invalidId = 'invalid-id-format';
@@ -277,6 +340,12 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 });
 
 describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', () => {
+	/*
+		Inputs: Valid event ID as path parameter, authenticated user who is an attendee
+		Expected status: 200
+		Output: { message: string, data: { event: IEvent } }
+		Expected behavior: Removes user from event's attendees and event from user's eventsJoined
+	*/
 	test('user leaves an event (200) when server is available', async () => {
 		
 		// first create an event with the user as an attendee
@@ -312,6 +381,12 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 		await eventModel.delete(createdId);
 	});
 
+	/*
+		Inputs: Invalid event ID format (non-ObjectId string)
+		Expected status: 400
+		Output: { message: 'Invalid event id' }
+		Expected behavior: Rejects leave request with invalid ID format
+	*/
 	test('returns 400 for invalid event ID format', async () => {
 		// Try to fetch an event with an invalid ID format
 		const invalidId = 'invalid-id-format';
@@ -324,6 +399,12 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 });
 
 describe('PUT /api/events/:eventId - unmocked (requires running server)', () => {
+	/*
+		Inputs: Valid event ID as path parameter, UpdateEventRequest in body
+		Expected status: 200
+		Output: { message: string, data: { event: IEvent } }
+		Expected behavior: Updates event fields with provided data
+	*/
 	test('updates an event (200) when server is available', async () => {
 		// first create an event to ensure it exists
 		const newEvent: CreateEventRequest = {
@@ -381,6 +462,12 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 		await eventModel.delete(createdId);
 	});
 
+	/*
+		Inputs: Valid event ID, UpdateEventRequest with empty title
+		Expected status: Error thrown
+		Output: Error: 'Invalid update data'
+		Expected behavior: Rejects event update with empty title
+	*/
 	test('returns error when updating event with invalid input - empty title', async () => {
 		// first create an event to ensure it exists
 		const newEvent: CreateEventRequest = {
@@ -410,6 +497,12 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 });
 
 describe('DELETE /api/events/:eventId - unmocked (requires running server)', () => {
+	/*
+		Inputs: Valid event ID as path parameter
+		Expected status: 200
+		Output: { message: 'Event deleted successfully' }
+		Expected behavior: Deletes event from database
+	*/
 	test('delete an event (200) when server is available', async () => {
 		
 		// new event data (use CreateEventRequest shape: attendees and createdBy are strings)
@@ -442,6 +535,12 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		expect(eventInDb).toBeNull();
 	});
 
+	/*
+		Inputs: Valid event ID with associated photo
+		Expected status: 200
+		Output: { message: 'Event deleted successfully' }
+		Expected behavior: Deletes event and associated media from database
+	*/
 	test('delete an event (200) when server is available', async () => {
 		// new event data (use CreateEventRequest shape: attendees and createdBy are strings)
 		const newEvent: CreateEventRequest = {
@@ -473,6 +572,12 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		expect(eventInDb).toBeNull();
 	});
 
+	/*
+		Inputs: Invalid event ID format (non-ObjectId string)
+		Expected status: 400
+		Output: { message: 'Invalid event id' }
+		Expected behavior: Rejects delete request with invalid ID format
+	*/
 	test('returns 400 for invalid event ID format', async () => {
 		// Try to fetch an event with an invalid ID format
 		const invalidId = 'invalid-id-format';
@@ -481,5 +586,96 @@ describe('DELETE /api/events/:eventId - unmocked (requires running server)', () 
 		// verify error response
 		expect(res.status).toBe(400);
 		expect(res.body).toHaveProperty('message');
+	});
+
+	/*
+		Inputs: event ID with multiple attendees
+		Expected status: 200
+		Output: { message: 'Event deleted successfully' }
+		Expected behavior: Deletes event and removes it from all attendees' eventsJoined arrays using updateMany
+	*/
+	test('deletes event with multiple attendees and removes from all eventsJoined', async () => {
+		// Create multiple attendees
+		const attendee1Data: CreateUserRequest = {
+			email: `attendee1-${Date.now()}@example.com`,
+			name: "Attendee One",
+			googleId: `attendee1-google-${Date.now()}`,
+			age: 28,
+			profilePicture: "http://example.com/attendee1.jpg",
+			bio: "Attendee 1 bio",
+			location: "Vancouver, BC",
+			latitude: 49.2827,
+			longitude: -123.1207,
+			skillLevel: "Intermediate"
+		};
+		const attendee1 = await userModel.create(attendee1Data);
+
+		const attendee2Data: CreateUserRequest = {
+			email: `attendee2-${Date.now()}@example.com`,
+			name: "Attendee Two",
+			googleId: `attendee2-google-${Date.now()}`,
+			age: 30,
+			profilePicture: "http://example.com/attendee2.jpg",
+			bio: "Attendee 2 bio",
+			location: "Vancouver, BC",
+			latitude: 49.2827,
+			longitude: -123.1207,
+			skillLevel: "Beginner"
+		};
+		const attendee2 = await userModel.create(attendee2Data);
+
+		// Create an event with multiple attendees
+		const newEvent: CreateEventRequest = {
+			title: "Multi Attendee Event",
+			description: "Event with multiple attendees for deletion test",
+			date: new Date(Date.now() + 86400000),
+			capacity: 10,
+			skillLevel: "Expert",
+			location: "Test Location",
+			latitude: 37.7749,
+			longitude: -122.4194,
+			createdBy: testUser._id.toString(),
+			attendees: [attendee1._id.toString(), attendee2._id.toString()],
+			photo: ""
+		};
+
+		const created = await eventModel.create(newEvent);
+
+		// Update attendees' eventsJoined arrays
+		const attendee1ToUpdate = await userModel.findById(attendee1._id);
+		await userModel.update(attendee1._id, {
+			...attendee1ToUpdate!,
+			eventsJoined: [created._id.toString()],
+			eventsCreated: attendee1ToUpdate!.eventsCreated.map(id => id.toString())
+		} as any);
+
+		const attendee2ToUpdate = await userModel.findById(attendee2._id);
+		await userModel.update(attendee2._id, {
+			...attendee2ToUpdate!,
+			eventsJoined: [created._id.toString()],
+			eventsCreated: attendee2ToUpdate!.eventsCreated.map(id => id.toString())
+		} as any);
+
+		// Delete the event
+		const delRes = await request(app).delete(`/api/events/${created._id.toString()}`);
+		expect(delRes.status).toBe(200);
+		expect(delRes.body.message).toBe('Event deleted successfully');
+
+		// Verify event is deleted
+		const eventInDb = await eventModel.findById(created._id);
+		expect(eventInDb).toBeNull();
+
+		// Verify event was removed from both attendees' eventsJoined arrays
+		const updatedAttendee1 = await userModel.findById(attendee1._id);
+		expect(updatedAttendee1).not.toBeNull();
+		expect(updatedAttendee1!.eventsJoined).toEqual([]);
+
+		const updatedAttendee2 = await userModel.findById(attendee2._id);
+		expect(updatedAttendee2).not.toBeNull();
+		expect(updatedAttendee2!.eventsJoined).toEqual([]);
+
+		// Cleanup
+		await userModel.delete(attendee1._id);
+		await userModel.delete(attendee2._id);
 	});
 });

@@ -21,7 +21,7 @@ import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.socket.SocketManager
 import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
-import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
+import com.cpen321.usermanagement.ui.viewmodels.chat.ChatViewModel
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule

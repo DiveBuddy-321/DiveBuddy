@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.viewmodels
+package com.cpen321.usermanagement.ui.viewmodels.events
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 data class EventUiState(
@@ -94,11 +97,11 @@ open class EventViewModel @Inject constructor(
             try {
                 val user = authRepository.getCurrentUser()
                 _uiState.value = _uiState.value.copy(currentUser = user)
-            } catch (e: java.net.SocketTimeoutException) {
+            } catch (e: SocketTimeoutException) {
                 Log.e(TAG, "Network timeout while loading current user", e)
-            } catch (e: java.net.UnknownHostException) {
+            } catch (e: UnknownHostException) {
                 Log.e(TAG, "Network connection failed while loading current user", e)
-            } catch (e: java.io.IOException) {
+            } catch (e: IOException) {
                 Log.e(TAG, "IO error while loading current user", e)
             }
         }

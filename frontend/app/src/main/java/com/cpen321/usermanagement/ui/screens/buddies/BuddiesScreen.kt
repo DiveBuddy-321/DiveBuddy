@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlin.math.roundToInt
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.BuddyViewModel
+import com.cpen321.usermanagement.ui.viewmodels.buddies.BuddyViewModel
 import Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState

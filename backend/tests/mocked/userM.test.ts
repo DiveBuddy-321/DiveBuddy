@@ -50,7 +50,9 @@ beforeAll(async () => {
     location: 'Vancouver, BC',
     latitude: 49.2827,
     longitude: -123.1207,
-    skillLevel: 'Intermediate'
+    skillLevel: 'Intermediate',
+    eventsCreated: [],
+    eventsJoined: [],
   };
   testUser = await userModel.create(newUser);
 });
@@ -68,6 +70,12 @@ afterEach(() => {
 });
 
 describe('GET /api/users - mocked', () => {
+    /**
+     * Inputs: Request to fetch all users, database connection failure
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database connection fails during user list retrieval
+     */
     test('returns 500 when database query fails', async () => {
         // Mock userModel.findAll to throw an error
         jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Database connection failed'));
@@ -80,6 +88,12 @@ describe('GET /api/users - mocked', () => {
         expect(userModel.findAll).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Request to fetch all users, unexpected error in database layer
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when unexpected exception occurs during user list query
+     */
     test('returns 500 when unexpected error occurs', async () => {
         // Mock userModel.findAll to throw an unexpected error
         jest.spyOn(userModel, 'findAll').mockRejectedValue(new Error('Unexpected error'));
@@ -94,6 +108,12 @@ describe('GET /api/users - mocked', () => {
 });
 
 describe('GET /api/users/profile - mocked', () => {
+    /**
+     * Inputs: Authenticated user requesting own profile
+     * Expected status: 200
+     * Output: Success message with user data from req.user
+     * Expected behavior: Returns current user profile without database query
+     */
     test('returns current user profile (200) from req.user', async () => {
         // This endpoint doesn't hit the database, just returns req.user
         const res = await request(app).get('/api/users/profile');
@@ -108,6 +128,12 @@ describe('GET /api/users/profile - mocked', () => {
 });
 
 describe('GET /api/users/:id - mocked', () => {
+    /**
+     * Inputs: Valid userId that doesn't exist in database
+     * Expected status: 404
+     * Output: Error message 'User not found'
+     * Expected behavior: Returns 404 when attempting to access non-existent user
+     */
     test('returns 404 when user not found', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
 
@@ -124,6 +150,12 @@ describe('GET /api/users/:id - mocked', () => {
         expect(userModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid userId, database error during query
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database query fails during user retrieval
+     */
     test('returns 500 when database query fails', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
 
@@ -138,6 +170,12 @@ describe('GET /api/users/:id - mocked', () => {
         expect(userModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to userModel.findById(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to find user'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('findById throws "Failed to find user" when database operation fails', async () => {
         // Mock the User model's findOne method directly
         const User = mongoose.model('User');
@@ -149,6 +187,12 @@ describe('GET /api/users/:id - mocked', () => {
 });
 
 describe('PUT /api/users/:id - mocked', () => {
+    /**
+     * Inputs: Valid userId that doesn't exist, valid update data
+     * Expected status: 404
+     * Output: Error message 'User not found'
+     * Expected behavior: Returns 404 when attempting to update non-existent user
+     */
     test('returns 404 when user not found', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
         const updateData: UpdateProfileRequest = {
@@ -170,6 +214,12 @@ describe('PUT /api/users/:id - mocked', () => {
         expect(userModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid userId and update data, update operation returns null
+     * Expected status: 500
+     * Output: Error message 'Failed to update user'
+     * Expected behavior: Returns error when update succeeds but returns no result
+     */
     test('returns 500 when update fails', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
         const existingUser = {
@@ -198,6 +248,12 @@ describe('PUT /api/users/:id - mocked', () => {
         expect(userModel.update).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid userId and update data, database error during user lookup
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during user existence check
+     */
     test('returns 500 when database error occurs during findById', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
         const updateData: UpdateProfileRequest = {
@@ -217,6 +273,12 @@ describe('PUT /api/users/:id - mocked', () => {
         expect(userModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to userModel.update(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to update user'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('update throws "Failed to update user" when database operation fails', async () => {
         // Mock the User model's findByIdAndUpdate method directly
         const User = mongoose.model('User');
@@ -233,6 +295,12 @@ describe('PUT /api/users/:id - mocked', () => {
 });
 
 describe('POST /api/users - mocked', () => {
+    /**
+     * Inputs: Valid update data, update operation returns null (user not found)
+     * Expected status: 404
+     * Output: Error message 'User not found'
+     * Expected behavior: Returns 404 when user doesn't exist during profile update
+     */
     test('returns 404 when user not found during update', async () => {
         const updateData: UpdateProfileRequest = {
             name: 'Updated Name',
@@ -253,6 +321,12 @@ describe('POST /api/users - mocked', () => {
         expect(userModel.update).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid update data, database error during update operation
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during profile update
+     */
     test('returns 500 when database error occurs during update', async () => {
         const updateData: UpdateProfileRequest = {
             name: 'Updated Name',
@@ -271,6 +345,12 @@ describe('POST /api/users - mocked', () => {
         expect(userModel.update).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to userModel.create(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to create user'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('create throws "Failed to create user" when database operation fails', async () => {
         // We need to mock the actual mongoose model's create method
         // Get the User model and mock its create method
@@ -286,6 +366,12 @@ describe('POST /api/users - mocked', () => {
         await expect(userModel.create(validUserInfo)).rejects.toThrow('Failed to create user');
     });
 
+    /**
+     * Inputs: User creation with location but no coordinates, geocoding API unavailable/fails
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to geocode location'
+     * Expected behavior: Fails when location requires geocoding but geocoding service is unavailable
+     */
     test('create throws error when location provided without coordinates and geocoding fails', async () => {
         // Test the case where location is provided but no coordinates
         // and geocoding fails (no GEOCODING_API or API failure)
@@ -305,6 +391,12 @@ describe('POST /api/users - mocked', () => {
         await expect(userModel.create(userWithLocationNoCoords)).rejects.toThrow('Failed to geocode location');
     });
 
+    /**
+     * Inputs: Direct call to userModel.findByGoogleId(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to find user'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('findByGoogleId throws "Failed to find user" when database operation fails', async () => {
         // Mock the User model's findOne method directly
         const User = mongoose.model('User');
@@ -315,6 +407,12 @@ describe('POST /api/users - mocked', () => {
 });
 
 describe('DELETE /api/users/:id - mocked', () => {
+    /**
+     * Inputs: Valid userId that doesn't exist in database
+     * Expected status: 404
+     * Output: Error message 'User not found'
+     * Expected behavior: Returns 404 when attempting to delete non-existent user
+     */
     test('returns 404 when user not found', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
 
@@ -331,6 +429,12 @@ describe('DELETE /api/users/:id - mocked', () => {
         expect(userModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid userId, database error during user lookup
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during delete pre-check
+     */
     test('returns 500 when database error occurs during findById', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
 
@@ -345,6 +449,12 @@ describe('DELETE /api/users/:id - mocked', () => {
         expect(userModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid userId, user exists, delete operation throws error
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database delete operation fails
+     */
     test('returns 500 when delete operation fails', async () => {
         const mockUserId = new mongoose.Types.ObjectId();
         const existingUser = {
@@ -366,6 +476,12 @@ describe('DELETE /api/users/:id - mocked', () => {
         expect(userModel.delete).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to userModel.delete(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to delete user'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('delete throws "Failed to delete user" when database operation fails', async () => {
         // Mock the User model's findByIdAndDelete method directly
         const User = mongoose.model('User');
@@ -377,6 +493,12 @@ describe('DELETE /api/users/:id - mocked', () => {
 });
 
 describe('DELETE /api/users - mocked', () => {
+    /**
+     * Inputs: Delete current user request, delete operation throws error
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database delete operation fails
+     */
     test('returns 500 when delete operation fails', async () => {
         // Mock userModel.delete to throw an error
         jest.spyOn(userModel, 'delete').mockRejectedValue(new Error('Delete failed'));
@@ -389,6 +511,12 @@ describe('DELETE /api/users - mocked', () => {
         expect(userModel.delete).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Delete current user request, database connection failure
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database connection fails during delete
+     */
     test('returns 500 when database connection error occurs', async () => {
         // Mock userModel.delete to throw a database error
         jest.spyOn(userModel, 'delete').mockRejectedValue(new Error('Database connection error'));

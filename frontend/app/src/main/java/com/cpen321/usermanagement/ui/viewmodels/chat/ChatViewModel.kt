@@ -1,9 +1,10 @@
-package com.cpen321.usermanagement.ui.viewmodels
+package com.cpen321.usermanagement.ui.viewmodels.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.Chat
 import com.cpen321.usermanagement.data.remote.dto.Message
+import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.ChatRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.socket.SocketManager
@@ -29,7 +30,7 @@ class ChatViewModel @Inject constructor(
     val chatRepository: ChatRepository,
     private val profileRepository: ProfileRepository,
     private val socketManager: SocketManager,
-    private val authRepository: com.cpen321.usermanagement.data.repository.AuthRepository
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())

@@ -127,6 +127,12 @@ afterAll(async () => {
 // non-functional tests to test event API calls within 500ms
 
 describe('GET /api/events - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: None (authenticated request to fetch all events)
+	 * Expected status: 200
+	 * Output: List of events with message and data properties
+	 * Expected behavior: Returns all events within 500ms performance requirement
+	 */
 	test('returns list of events (200) when server is available, within 500ms', async () => {
 		
 		// make sure GET endpoint works
@@ -145,6 +151,12 @@ describe('GET /api/events - unmocked (requires running server)', () => {
 });
 
 describe('GET /api/events/:eventId - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: Valid eventId in URL path
+	 * Expected status: 200
+	 * Output: Single event object with all event details
+	 * Expected behavior: Fetches specific event by ID within 500ms performance requirement
+	 */
 	test('returns event by ID (200) when server is available, within 500ms', async () => {
 		
 		// first create an event to ensure it exists
@@ -195,6 +207,12 @@ describe('GET /api/events/:eventId - unmocked (requires running server)', () => 
 });
 
 describe('POST /api/events - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: Valid event creation data (title, description, date, capacity, etc.)
+	 * Expected status: 201
+	 * Output: Newly created event object
+	 * Expected behavior: Creates new event in database within 500ms performance requirement
+	 */
 	test('creates a new event (201) when server is available, within 500ms', async () => {
 
 		// new event data
@@ -246,6 +264,12 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 });
 
 describe('PUT /api/events/join/:eventId - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: Valid eventId for event user wants to join
+	 * Expected status: 200
+	 * Output: Updated event with user added to attendees
+	 * Expected behavior: Adds user to event attendees within 500ms performance requirement
+	 */
 	test('user joins an event (200) when server is available, within 500ms', async () => {
 		
 		// first create an event to ensure it exists
@@ -288,6 +312,12 @@ describe('PUT /api/events/join/:eventId - unmocked (requires running server)', (
 });
 
 describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: Valid eventId for event user wants to leave
+	 * Expected status: 200
+	 * Output: Updated event with user removed from attendees
+	 * Expected behavior: Removes user from event attendees within 500ms performance requirement
+	 */
 	test('user leaves an event (200) when server is available, within 500ms', async () => {
 		
 		// first create an event with the user as an attendee
@@ -330,6 +360,12 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 });
 
 describe('PUT /api/events/:eventId - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: Valid eventId and update data (title, description, capacity, etc.)
+	 * Expected status: 200
+	 * Output: Updated event object with modified fields
+	 * Expected behavior: Updates existing event in database within 500ms performance requirement
+	 */
 	test('updates an event (200) when server is available, within 500ms', async () => {
 		// first create an event to ensure it exists
 		const newEvent: CreateEventRequest = {
@@ -394,6 +430,12 @@ describe('PUT /api/events/:eventId - unmocked (requires running server)', () => 
 });
 
 describe('DELETE /api/events/:eventId - unmocked (requires running server)', () => {
+	/**
+	 * Inputs: Valid eventId for event to delete
+	 * Expected status: 200
+	 * Output: Success message confirming deletion
+	 * Expected behavior: Removes event from database within 500ms performance requirement
+	 */
 	test('delete an event (200) when server is available, within 500ms', async () => {
 		
 		// new event data (use CreateEventRequest shape: attendees and createdBy are strings)
@@ -559,6 +601,12 @@ describe('POST /api/auth/signin - unmocked (covers auth.service.ts)', () => {
 });
 
 describe('GET /api/users - unmocked (requires running server)', () => {
+    /**
+     * Inputs: None (authenticated request to fetch all users)
+     * Expected status: 200
+     * Output: List of users with message and data properties
+     * Expected behavior: Returns all users (note: not exposed in frontend, timing less critical)
+     */
     test('returns list of users (200) when server is available, within 500ms', async () => {
         
         // make sure GET endpoint works
@@ -578,6 +626,12 @@ describe('GET /api/users - unmocked (requires running server)', () => {
 });
 
 describe('GET /api/users/profile - unmocked (requires running server)', () => {
+    /**
+     * Inputs: None (authenticated request to fetch current user profile)
+     * Expected status: 200
+     * Output: Current user object from req.user
+     * Expected behavior: Returns authenticated user's profile within 500ms
+     */
     test('returns current user (200) when server is available, within 500ms', async () => {
         // call the endpoint
         const startTime = performance.now();
@@ -624,12 +678,12 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
 });
 
 describe('PUT /api/users/:id - unmocked (requires running server)', () => {
-  /*
-    Inputs: path param id, body UpdateProfileRequest (all fields)
-    Expected status: 200
-    Output: { message: string, data: { user: IUser } }
-    Expected behavior: Updates user profile and returns updated user
-  */
+  /**
+   * Inputs: Valid userId in path, update data (name, age, bio, location, etc.)
+   * Expected status: 200
+   * Output: Updated user object with modified fields
+   * Expected behavior: Updates user profile in database within 500ms performance requirement
+   */
   test('returns user by ID (200) when server is available, within 500ms', async () => {
     const updateData: UpdateProfileRequest = {
       name: "Updated Name PUT",
@@ -669,12 +723,12 @@ describe('PUT /api/users/:id - unmocked (requires running server)', () => {
 });
 
 describe('POST /api/users/ - unmocked (requires running server)', () => {
-  /*
-    Inputs: body UpdateProfileRequest (all fields)
-    Expected status: 200
-    Output: { message: string, data: { user: IUser } }
-    Expected behavior: Updates current user profile and returns updated user
-  */
+  /**
+   * Inputs: Update data for current user (name, age, bio, location, etc.)
+   * Expected status: 200
+   * Output: Updated user object for authenticated user
+   * Expected behavior: Updates current user profile within 500ms performance requirement
+   */
   test('returns user (200) when server is available, within 500ms', async () => {
     const updateData: UpdateProfileRequest = {
       name: "Updated Name POST",
@@ -714,6 +768,12 @@ describe('POST /api/users/ - unmocked (requires running server)', () => {
 });
 
 describe('DELETE /api/users/ - unmocked (requires running server)', () => {
+    /**
+     * Inputs: Valid JWT token for user to delete
+     * Expected status: 200
+     * Output: Success message confirming deletion
+     * Expected behavior: Deletes authenticated user from database within 500ms performance requirement
+     */
     test('returns success (200) when server is available and user deleted, within 500ms', async () => {
 
         // Generate unique googleId to avoid duplicates
@@ -764,17 +824,12 @@ let chatId: string;
 let messageId: string;
 
 describe('POST /api/chats - unmocked (no mocking)', () => {
-  /*
-    Inputs: { peerId: OTHER_USER, name?: string }
-    Expected status: 201
-    Output: created chat document directly in response.body
-  */
-  /*
-    Inputs: body { peerId: OTHER_USER, name?: string }
-    Expected status: 201
-    Output: created chat document directly in response.body
-    Expected behavior: Creates new direct chat between two users
-  */
+  /**
+   * Inputs: peerId (other user's ID), optional name for chat
+   * Expected status: 201
+   * Output: Created chat document with participants
+   * Expected behavior: Creates direct chat between two users within 500ms performance requirement
+   */
   test('creates a direct chat between two users, within 500ms', async () => {
     console.log('[TEST] Creating chat with peerId:', otherTestUser._id);
     const startTime = performance.now();
@@ -799,11 +854,12 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
 });
 
 describe('GET /api/chats - unmocked (no mocking)', () => {
-  /*
-    Inputs: none (user from mock auth)
-    Expected status: 200
-    Output: array of chats directly in response.body (not wrapped)
-  */
+  /**
+   * Inputs: None (authenticated user requesting their chats)
+   * Expected status: 200
+   * Output: Array of chat documents where user is participant
+   * Expected behavior: Returns user's chat list within 500ms performance requirement
+   */
   test('lists chats for the authenticated user, within 500ms', async () => {
     console.log('[TEST] Starting GET /api/chats test');
     console.log('[TEST] USER_ID from env:', testUser._id);
@@ -836,12 +892,12 @@ describe('GET /api/chats - unmocked (no mocking)', () => {
 });
 
 describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
-  /*
-    Inputs: path param chatId (valid chat where user is participant)
-    Expected status: 200
-    Output: chat document directly in response.body
-    Expected behavior: Returns chat when user is a participant
-  */
+  /**
+   * Inputs: Valid chatId where user is participant
+   * Expected status: 200
+   * Output: Chat document with participant details
+   * Expected behavior: Returns specific chat when user has access within 500ms
+   */
   test('returns a chat when the user is a participant, within 500ms', async () => {
     const startTime = performance.now();
     const res = await request(app).get(`/api/chats/${chatId}`);
@@ -855,12 +911,12 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
 });
 
 describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
-  /*
-    Inputs: path param chatId, body { content: string }
-    Expected status: 201
-    Output: created message directly in response.body
-    Expected behavior: Creates message in chat and returns populated message
-  */
+  /**
+   * Inputs: Valid chatId in path, message content in body
+   * Expected status: 201
+   * Output: Created message document with populated sender
+   * Expected behavior: Creates and returns new message in chat within 500ms
+   */
   test('sends a message in the chat, within 500ms', async () => {
     const startTime = performance.now();
     const res = await request(app).post(`/api/chats/${chatId}/messages`).send({
@@ -879,12 +935,12 @@ describe('POST /api/chats/:chatId/messages - unmocked (no mocking)', () => {
 });
 
 describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
-  /*
-    Inputs: path param chatId (no query params)
-    Expected status: 200
-    Output: object with messages array, chatId, limit, count, hasMore in response.body
-    Expected behavior: Returns messages with default limit of 20
-  */
+  /**
+   * Inputs: Valid chatId in path, optional query params for pagination
+   * Expected status: 200
+   * Output: Object with messages array, chatId, limit, count, hasMore
+   * Expected behavior: Fetches chat messages with pagination within 500ms (default limit 20)
+   */
   test('fetches messages for a chat, within 500ms', async () => {
     const startTime = performance.now();
     const res = await request(app).get(`/api/chats/messages/${chatId}`);
@@ -903,6 +959,12 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
 });
 
 describe('Cleanup - unmocked', () => {
+  /**
+   * Inputs: chatId from previous tests
+   * Expected status: N/A (cleanup operation)
+   * Output: None
+   * Expected behavior: Removes test chat and associated messages from database
+   */
   test('removes created chat and messages', async () => {
     if (chatId) {
       await Chat.deleteOne({ _id: chatId });
