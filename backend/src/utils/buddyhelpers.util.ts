@@ -64,5 +64,3 @@ export function toBuddyResponse(
 ): Array<{ user: IUser; distance: number }> {
   return sortedBuddies.map(([user, distance]) => ({ user, distance }));
 }
-
-
