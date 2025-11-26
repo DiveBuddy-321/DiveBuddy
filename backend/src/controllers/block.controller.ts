@@ -68,18 +68,44 @@ export class BlockController {
       }
 
       const blockerId = new mongoose.Types.ObjectId(authUser._id);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const blockedUserObjectIds = await blockModel.getBlockedUsers(blockerId);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
       const blockedUserIds = blockedUserObjectIds.map((id) => id.toString());
 
       res.status(200).json({ 
         message: 'Blocked users fetched successfully',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         data: { blockedUserIds }
       });
     } catch (error) {
       logger.error('Failed to fetch blocked users:', error);
+      next(error);
+    }
+  }
+
+  async checkIfBlockedBy(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const authUser = req.user;
+      if (!authUser?._id) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      const { targetUserId } = req.params as { targetUserId: string };
+      if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+        res.status(400).json({ message: 'Invalid target user id' });
+        return;
+      }
+
+      const currentUserId = new mongoose.Types.ObjectId(authUser._id);
+      const targetUserIdObj = new mongoose.Types.ObjectId(targetUserId);
+
+      const isBlocked = await blockModel.isBlockedBy(currentUserId, targetUserIdObj);
+
+      res.status(200).json({ 
+        message: 'Block status checked successfully',
+        data: { isBlocked }
+      });
+    } catch (error) {
+      logger.error('Failed to check block status:', error);
       next(error);
     }
   }

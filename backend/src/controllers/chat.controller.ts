@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import { Chat } from "../models/chat.model";
 import { Message } from "../models/message.model";
+import { blockModel } from "../models/block.model";
 import type { Id } from "../types/chat.types";
 import type { IUser } from "../types/user.types";
 import logger from '../utils/logger.util';
@@ -135,22 +136,49 @@ export class ChatController {
       if (!content || typeof content !== "string" || !content.trim()) {
         return res.status(400).json({ error: "Message content is required" });
       }
-
       // Verify user is a participant in the chat
       const chat = await Chat.getForUser(chatId, asObjectId(user._id));
       if (!chat) return res.status(404).json({ error: "Chat not found or access denied" });
+
+      // Check if the user is blocked by any of the other participants
+      const otherParticipants = chat.participants.filter(
+        (participantId) => String(participantId) !== String(user._id)
+      );
+      for (const participantId of otherParticipants) {
+        const isBlocked = await blockModel.isBlockedBy(
+          asObjectId(user._id),
+          asObjectId(participantId)
+        );
+        if (isBlocked) {
+          return res.status(403).json({ 
+            error: "You cannot send messages to this user",
+            message: "You have been blocked by this user"
+          });
+        }
+
+        // Check if the user has blocked the other participant
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const hasBlocked = await blockModel.hasBlocked(
+          asObjectId(user._id),
+          asObjectId(participantId)
+        );
+        if (hasBlocked) {
+          return res.status(403).json({ 
+            error: "You cannot send messages to this user",
+            message: "You have blocked this user"
+          });
+        }
+      }
 
       // Create the message
       const message = await Message.createMessage(chatId, String(user._id), content.trim());
 
       // Return the populated message
       const populatedMessage = await Message.getMessageById(String(message._id));
-
       return res.status(201).json(populatedMessage);
     } catch (error) {
       logger.error('Failed to send message:', error);
       next(error);
     }
   }
-  
 }

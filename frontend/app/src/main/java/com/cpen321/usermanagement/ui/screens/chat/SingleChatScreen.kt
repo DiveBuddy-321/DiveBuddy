@@ -55,6 +55,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.theme.Spacing
 import kotlinx.coroutines.delay
@@ -77,6 +79,22 @@ fun SingleChatScreen(
     val otherUserName = chatVm.getOtherUserName(chat)
     val otherUserId = chatVm.getOtherUserId(chat)
     val isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
+    val context = LocalContext.current
+    
+    // Show toast when there's an error (using timestamp to allow repeated toasts)
+    LaunchedEffect(uiState.connectionState.errorTimestamp) {
+        if (uiState.connectionState.errorTimestamp > 0L) {
+            uiState.connectionState.error?.let { error ->
+                Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+	// Also notify when you have blocked this user
+	LaunchedEffect(isUserBlocked) {
+		if (isUserBlocked) {
+			Toast.makeText(context, "You have blocked this user. You cannot send messages.", Toast.LENGTH_LONG).show()
+		}
+	}
 	ChatInitializationEffects(chatId = chat._id, chatVm = chatVm)
 	MessagesCollector(
 		chatId = chat._id,
@@ -120,7 +138,7 @@ fun SingleChatScreen(
         onSend = {
             if (messageText.value.trim().isNotEmpty()) {
                 chat._id?.let { chatId ->
-                    chatVm.sendMessage(chatId, messageText.value.trim())
+                    chatVm.sendMessage(chatId, messageText.value.trim(), otherUserId)
                     messageText.value = ""
                 }
             }
@@ -209,7 +227,8 @@ private fun ChatTopBar(
 		}
 		DropdownMenu(
 			expanded = showMenu,
-			onDismissRequest = { showMenu = false }
+			onDismissRequest = { showMenu = false },
+			modifier = Modifier.Companion.fillMaxWidth()
 		) {
 			if (otherUserId != null) {
 				if (isUserBlocked) {
@@ -323,7 +342,8 @@ private fun MessageInputBar(
 	message: String,
 	onMessageChange: (String) -> Unit,
 	onSend: () -> Unit,
-	spacing: Spacing
+	spacing: Spacing,
+	isBlocked: Boolean = false
 ) {
 	Row(
 		modifier = Modifier.Companion
@@ -334,21 +354,22 @@ private fun MessageInputBar(
 		OutlinedTextField(
 			value = message,
 			onValueChange = onMessageChange,
-			placeholder = { Text("Type a message...") },
+			placeholder = { Text(if (isBlocked) "You have blocked this user" else "Type a message...") },
 			modifier = Modifier.Companion
 				.weight(1f)
 				.padding(end = spacing.small),
 			shape = RoundedCornerShape(24.dp),
-			maxLines = 4
+			maxLines = 4,
+			enabled = !isBlocked
 		)
 		IconButton(
 			onClick = onSend,
-			enabled = message.trim().isNotEmpty()
+			enabled = message.trim().isNotEmpty() && !isBlocked
 		) {
 			Icon(
 				imageVector = Icons.AutoMirrored.Filled.Send,
 				contentDescription = "Send message",
-				tint = if (message.trim().isNotEmpty())
+				tint = if (message.trim().isNotEmpty() && !isBlocked)
 					MaterialTheme.colorScheme.primary
 				else
 					MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -395,7 +416,8 @@ private fun ChatContent(
             message = inputState.value,
             onMessageChange = { inputState.value = it },
             onSend = onSend,
-            spacing = spacing
+            spacing = spacing,
+            isBlocked = isUserBlocked
         )
     }
 }

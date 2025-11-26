@@ -31,6 +31,13 @@ router.get(
   })
 );
 
+router.get(
+  '/check/:targetUserId',
+  asyncHandler<ParamsDictionary & { targetUserId: string }, unknown>(async (req, res, next) => {
+    await blockController.checkIfBlockedBy(req, res, next);
+  })
+);
+
 export default router;
 
 

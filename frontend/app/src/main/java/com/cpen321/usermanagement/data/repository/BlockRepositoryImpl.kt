@@ -94,5 +94,31 @@ class BlockRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun checkIfBlockedBy(targetUserId: String): Result<Boolean> {
+        return try {
+            val response = blockInterface.checkIfBlockedBy("", targetUserId)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!.isBlocked)
+            } else {
+                val errorBodyString = response.errorBody()?.string()
+                val errorMessage = parseErrorMessage(errorBodyString, "Failed to check block status.")
+                Log.e(TAG, "Failed to check block status: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "Network timeout while checking block status", e)
+            Result.failure(e)
+        } catch (e: java.net.UnknownHostException) {
+            Log.e(TAG, "Network connection failed while checking block status", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "IO error while checking block status", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            Log.e(TAG, "HTTP error while checking block status: ${e.code()}", e)
+            Result.failure(e)
+        }
+    }
 }
 

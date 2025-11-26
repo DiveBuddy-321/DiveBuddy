@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { Message } from "../models/message.model";
 import { Chat } from "../models/chat.model";
 import { userModel } from "../models/user.model";
+import { blockModel } from "../models/block.model";
 import type { IUser } from "../types/user.types";
 import logger from "../utils/logger.util";
 
@@ -170,6 +171,35 @@ export class SocketService {
         return;
       }
       
+      // Check if the user is blocked by any of the other participants
+      const otherParticipants = chat.participants.filter(
+        (participantId) => String(participantId) !== String(currentUserId)
+      );
+
+      for (const participantId of otherParticipants) {
+        const isBlocked = await blockModel.isBlockedBy(
+          new mongoose.Types.ObjectId(currentUserId),
+          new mongoose.Types.ObjectId(String(participantId))
+        );
+        if (isBlocked) {
+          socket.emit("error", { 
+            message: "You cannot send messages to this user. You have been blocked."
+          });
+          return;
+        }
+
+        // Check if the user has blocked the other participant
+        const hasBlocked = await blockModel.hasBlocked(
+          new mongoose.Types.ObjectId(currentUserId),
+          new mongoose.Types.ObjectId(String(participantId))
+        );
+        if (hasBlocked) {
+          socket.emit("error", { 
+            message: "You cannot send messages to this user. You have blocked this user."
+          });
+          return;
+        }
+      }
 
       // Create the message - pass string IDs as expected by the new model
       const message = await Message.createMessage(
@@ -205,11 +235,11 @@ export class SocketService {
       }
 
       // Send chat_updated only to participants NOT in the room
-      const otherParticipants = chat.participants.filter(
+      const notificationParticipants = chat.participants.filter(
         (p) => String(p) !== String(socket.user?._id)
       );
 
-      for (const participantId of otherParticipants) {
+      for (const participantId of notificationParticipants) {
         // Only send if user is not in the chat room
         if (!userIdsInRoom.has(String(participantId))) {
           this.io.to(`user:${String(participantId)}`).emit("chat_updated", {

@@ -124,8 +124,14 @@ class ChatRepositoryImpl @Inject constructor(
                 Result.success(response.body()!!)
             } else {
                 val err = response.errorBody()?.string()
-                Log.e(TAG, "Failed to send message: ${'$'}err")
-                Result.failure(IllegalStateException("Failed to send message"))
+                Log.e(TAG, "Failed to send message (code=${response.code()}): $err")
+                
+                // Check if the error is due to being blocked
+                if (response.code() == 403 && err?.contains("blocked") == true) {
+                    Result.failure(BlockedException("You have been blocked by this user"))
+                } else {
+                    Result.failure(IllegalStateException("Failed to send message"))
+                }
             }
         } catch (e: java.net.SocketTimeoutException) {
             Result.failure(e)
@@ -135,6 +141,6 @@ class ChatRepositoryImpl @Inject constructor(
            Result.failure(e)
         }
     }
-} 
+}
 
-
+class BlockedException(message: String) : Exception(message)

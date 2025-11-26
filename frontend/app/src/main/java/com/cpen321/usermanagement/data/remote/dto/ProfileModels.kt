@@ -43,3 +43,7 @@ data class BlockRequest(
 data class BlockedUsersData(
     val blockedUserIds: List<String>
 )
+
+data class BlockStatusData(
+    val isBlocked: Boolean
+)

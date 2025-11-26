@@ -47,6 +47,16 @@ export class BlockModel {
     const blocks = await Block.find({ blocker: blockerId }).select('blocked').lean().exec();
     return blocks.map(block => block.blocked);
   }
+
+  async isBlockedBy(userId: mongoose.Types.ObjectId, potentialBlockerId: mongoose.Types.ObjectId): Promise<boolean> {
+    const block = await Block.findOne({ blocker: potentialBlockerId, blocked: userId }).lean().exec();
+    return !!block;
+  }
+
+  async hasBlocked(blockerId: mongoose.Types.ObjectId, blockedId: mongoose.Types.ObjectId): Promise<boolean> {
+    const block = await Block.findOne({ blocker: blockerId, blocked: blockedId }).lean().exec();
+    return !!block;
+  }
 }
 
 export const blockModel = new BlockModel();
