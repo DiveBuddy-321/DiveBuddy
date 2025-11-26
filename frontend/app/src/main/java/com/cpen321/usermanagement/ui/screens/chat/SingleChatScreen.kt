@@ -81,10 +81,10 @@ fun SingleChatScreen(
     val isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
     val context = LocalContext.current
     
-    // Show toast when there's an error (using timestamp to allow repeated toasts)
-    LaunchedEffect(uiState.connectionState.errorTimestamp) {
-        if (uiState.connectionState.errorTimestamp > 0L) {
-            uiState.connectionState.error?.let { error ->
+    // Show toast when there's an error (triggered when error changes)
+    LaunchedEffect(uiState.connectionState.error) {
+        uiState.connectionState.error?.let { error ->
+            if (error.isNotEmpty()) {
                 Toast.makeText(context, error, Toast.LENGTH_LONG).show()
             }
         }
