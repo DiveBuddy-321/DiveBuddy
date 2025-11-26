@@ -447,8 +447,6 @@ private fun EventsHeader(
     onSortChange: (EventSort) -> Unit
 ) {
     val spacing = LocalSpacing.current
-    var filterExpanded by remember { mutableStateOf(false) }
-    var sortExpanded by remember { mutableStateOf(false) }
     
     Column(
         modifier = Modifier
@@ -457,25 +455,10 @@ private fun EventsHeader(
             .padding(top = spacing.small, bottom = spacing.small),
         verticalArrangement = Arrangement.spacedBy(spacing.small)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Upcoming Events",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            IconButton(onClick = onViewToggle) {
-                Icon(
-                    imageVector = if (isMapView) Icons.AutoMirrored.Filled.List else Icons.Filled.LocationOn,
-                    contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
-                )
-            }
-        }
+        EventTitle(
+            onViewToggle = onViewToggle,
+            isMapView = isMapView
+        )
 
         Row(
             horizontalArrangement = Arrangement.Center,
@@ -487,41 +470,89 @@ private fun EventsHeader(
             )
         }
         
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            EventFilterDropdown(
-                selectedFilter = selectedFilter,
-                onFilterChange = { 
-                    onFilterChange(it)
-                    filterExpanded = false
-                },
-                expanded = filterExpanded,
-                onExpandedChange = { filterExpanded = it },
-                modifier = Modifier.width(150.dp)
+        EventFilterSort(
+            isMapView = isMapView,
+            onRefresh = onRefresh,
+            selectedFilter = selectedFilter,
+            onFilterChange = onFilterChange,
+            selectedSort = selectedSort,
+            onSortChange = onSortChange
+        )
+    }
+}
+
+@Composable
+private fun EventTitle(
+    onViewToggle: () -> Unit,
+    isMapView: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Upcoming Events",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        IconButton(onClick = onViewToggle) {
+            Icon(
+                imageVector = if (isMapView) Icons.AutoMirrored.Filled.List else Icons.Filled.LocationOn,
+                contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
             )
-            
-            // Only enable sort dropdown in list view
-            EventSortDropdown(
-                selectedSort = selectedSort,
-                onSortChange = {
-                    onSortChange(it)
-                    sortExpanded = false
-                },
-                expanded = sortExpanded,
-                onExpandedChange = { sortExpanded = it },
-                enabled = !isMapView,
-                modifier = Modifier.width(175.dp)
+        }
+    }
+}
+
+@Composable
+private fun EventFilterSort(
+    isMapView: Boolean,
+    onRefresh: () -> Unit,
+    selectedFilter: EventFilter,
+    onFilterChange: (EventFilter) -> Unit,
+    selectedSort: EventSort,
+    onSortChange: (EventSort) -> Unit
+) {
+    var filterExpanded by remember { mutableStateOf(false) }
+    var sortExpanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        EventFilterDropdown(
+            selectedFilter = selectedFilter,
+            onFilterChange = { 
+                onFilterChange(it)
+                filterExpanded = false
+            },
+            expanded = filterExpanded,
+            onExpandedChange = { filterExpanded = it },
+            modifier = Modifier.width(150.dp)
+        )
+        
+        // Only enable sort dropdown in list view
+        EventSortDropdown(
+            selectedSort = selectedSort,
+            onSortChange = {
+                onSortChange(it)
+                sortExpanded = false
+            },
+            expanded = sortExpanded,
+            onExpandedChange = { sortExpanded = it },
+            enabled = !isMapView,
+            modifier = Modifier.width(175.dp)
+        )
+        
+        IconButton(onClick = onRefresh) {
+            Icon(
+                imageVector = Icons.Filled.Refresh,
+                contentDescription = "Refresh Events List",
             )
-            
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = "Refresh Events List",
-                )
-            }
         }
     }
 }
