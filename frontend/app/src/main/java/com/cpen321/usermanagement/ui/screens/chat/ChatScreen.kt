@@ -33,7 +33,7 @@ import androidx.compose.ui.res.vectorResource
 import com.cpen321.usermanagement.R
 import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
-
+import androidx.compose.ui.layout.ContentScale
 @Composable
 fun ChatScreen(
     modifier: Modifier = Modifier,
@@ -181,6 +181,7 @@ private fun ProfilePictureDisplay(
         AsyncImage(
             model = RetrofitClient.getPictureUri(profilePicture),
             contentDescription = "Profile picture",
+            contentScale = ContentScale.Crop,
             modifier = modifier.clip(CircleShape)
         )
     } else {
