@@ -13,9 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -113,9 +115,8 @@ fun EventsScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+    ) {
         EventNavigationContent(
-            modifier = modifier.padding(paddingValues),
             navigationState = EventNavigationState(
                 selectedEvent = selectedEvent,
                 showCreateEventForm = showCreateEventForm,
@@ -140,7 +141,6 @@ fun EventsScreen(
 
 @Composable
 private fun EventNavigationContent(
-    modifier: Modifier,
     navigationState: EventNavigationState,
     uiState: EventUiState,
     eventViewModel: EventViewModel,
@@ -182,7 +182,6 @@ private fun EventNavigationContent(
         }
         else -> {
             DefaultEventsContent(
-                modifier = modifier,
                 navigationState = navigationState,
                 uiState = uiState,
                 eventViewModel = eventViewModel,
@@ -276,14 +275,12 @@ private fun SingleEventContent(
 
 @Composable
 private fun DefaultEventsContent(
-    modifier: Modifier,
     navigationState: EventNavigationState,
     uiState: EventUiState,
     eventViewModel: EventViewModel,
     onNavigationChange: (EventNavigationState) -> Unit
 ) {
     EventsContent(
-        modifier = modifier,
         uiState = uiState,
         onCreateEventClick = {
             onNavigationChange(navigationState.copy(showCreateEventForm = true))
@@ -302,23 +299,6 @@ private fun DefaultEventsContent(
             onNavigationChange(navigationState.copy(isMapView = isMap))
         }
     )
-}
-
-@Composable
-private fun CreateEventButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-    ) {
-        Text(
-            text = "Create Event",
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.bodyMedium
-        )
-    }
 }
 
 @Composable
@@ -359,7 +339,6 @@ private fun NoEventsMessage(
 
 @Composable
 private fun EventsContent(
-    modifier: Modifier = Modifier,
     uiState: EventUiState,
     onCreateEventClick: () -> Unit,
     onEventClick: (Event) -> Unit,
@@ -367,6 +346,8 @@ private fun EventsContent(
     initialIsMapView: Boolean = false,
     onViewStateChange: (Boolean) -> Unit
 ) {
+    val spacing = LocalSpacing.current
+
     var isMapView by remember { mutableStateOf(initialIsMapView) }
     var selectedFilter by remember { mutableStateOf(EventFilter.ALL) }
     var selectedSort by remember { mutableStateOf(EventSort.DATE_ASC) }
@@ -401,34 +382,49 @@ private fun EventsContent(
         }
     }
 
-    Column() {
-        EventsHeader(
-            onCreateEventClick = onCreateEventClick,
-            onRefresh = onRefresh,
-            isMapView = isMapView,
-            onViewToggle = {
-                isMapView = !isMapView
-                onViewStateChange(isMapView)
-            },
-            selectedFilter = selectedFilter,
-            onFilterChange = { selectedFilter = it },
-            selectedSort = selectedSort,
-            onSortChange = { selectedSort = it }
-        )
-
-        if (isMapView) {
-            EventsMapContent(
-                events = filteredEvents,
-                uiState = uiState,
-                onEventClick = onEventClick,
-                onRefresh = onRefresh
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column {
+            EventsHeader(
+                onRefresh = onRefresh,
+                isMapView = isMapView,
+                onViewToggle = {
+                    isMapView = !isMapView
+                    onViewStateChange(isMapView)
+                },
+                selectedFilter = selectedFilter,
+                onFilterChange = { selectedFilter = it },
+                selectedSort = selectedSort,
+                onSortChange = { selectedSort = it }
             )
-        } else {
-            EventsListContent(
-                events = sortedEvents,
-                uiState = uiState,
-                onEventClick = onEventClick,
-                onRefresh = onRefresh
+
+            if (isMapView) {
+                EventsMapContent(
+                    events = filteredEvents,
+                    uiState = uiState,
+                    onEventClick = onEventClick,
+                    onRefresh = onRefresh
+                )
+            } else {
+                EventsListContent(
+                    events = sortedEvents,
+                    uiState = uiState,
+                    onEventClick = onEventClick,
+                    onRefresh = onRefresh
+                )
+            }
+        }
+
+        FloatingActionButton(
+            onClick = onCreateEventClick,
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(spacing.medium)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "Create Event"
             )
         }
     }
@@ -437,7 +433,6 @@ private fun EventsContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventsHeader(
-    onCreateEventClick: () -> Unit,
     onRefresh: () -> Unit,
     isMapView: Boolean,
     onViewToggle: () -> Unit,
@@ -451,24 +446,13 @@ private fun EventsHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = spacing.medium)
-            .padding(top = spacing.small, bottom = spacing.small),
+            .padding(horizontal = spacing.medium, vertical = spacing.small),
         verticalArrangement = Arrangement.spacedBy(spacing.small)
     ) {
         EventTitle(
             onViewToggle = onViewToggle,
             isMapView = isMapView
         )
-
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            CreateEventButton(
-                onClick = onCreateEventClick,
-                modifier = Modifier.width(200.dp)
-            )
-        }
         
         EventFilterSort(
             isMapView = isMapView,
