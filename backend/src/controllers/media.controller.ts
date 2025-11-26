@@ -35,15 +35,6 @@ export class MediaController {
         return; // ensure Promise<void>
       } catch (error) {
         logger.error('Error uploading profile picture:', error);
-
-        // Option A: map known errors here and return; otherwise next()
-        if (error instanceof Error) {
-          res.status(500).json({
-            message: error.message || 'Failed to upload profile picture',
-          });
-          return;
-        }
-
         next(error);
       }
     };

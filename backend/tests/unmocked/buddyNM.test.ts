@@ -62,12 +62,12 @@ afterAll(async () => {
 });
 
 describe('GET /api/buddy - unmocked (no mocking)', () => {
-  /*
-    Inputs: none (user from mock auth, must have complete profile: age, skillLevel, latitude, longitude)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: Returns sorted list of matching buddies with distances
-  */
+  /**
+   * Inputs: None (authenticated user with complete profile: age, skillLevel, latitude, longitude)
+   * Expected status: 200
+   * Output: Object with message and data containing buddies array with user and distance
+   * Expected behavior: Returns sorted list of matching buddies with calculated distances
+   */
   test('returns list of buddies when user profile is complete', async () => {
     if (!testUser) {
       throw new Error('Test user not set up');
@@ -88,12 +88,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     }
   });
 
-  /*
-    Inputs: none (user from mock auth with incomplete profile - missing age, skillLevel, or location)
-    Expected status: 400
-    Output: { message: string } with message containing 'complete your profile'
-    Expected behavior: Rejects request when user profile is incomplete
-  */
+  /**
+   * Inputs: Authenticated user with incomplete profile (missing age, skillLevel, or location)
+   * Expected status: 400
+   * Output: Error message containing 'complete your profile'
+   * Expected behavior: Rejects request when user profile is incomplete
+   */
   test('returns 400 when user profile is incomplete', async () => {
     // Temporarily override testUser with incomplete profile
     const originalUser = testUser;
@@ -114,12 +114,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     testUser = originalUser;
   });
 
-  /*
-    Inputs: query { targetMinLevel: 1, targetMaxLevel: 2 }
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: Filters buddies to only include those with skill level between 1 (Beginner) and 2 (Intermediate)
-  */
+  /**
+   * Inputs: Query parameters targetMinLevel: 1, targetMaxLevel: 2
+   * Expected status: 200
+   * Output: Buddies array filtered to skill levels 1 (Beginner) to 2 (Intermediate)
+   * Expected behavior: Filters buddies to only include those with skill level between 1 and 2
+   */
   test('filters buddies by skill level range', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return; // Skip test if user profile incomplete
@@ -140,12 +140,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     }
   });
 
-  /*
-    Inputs: query { targetMinAge: 20, targetMaxAge: 30 }
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: Filters buddies to only include those with age between 20 and 30
-  */
+  /**
+   * Inputs: Query parameters targetMinAge: 20, targetMaxAge: 30
+   * Expected status: 200
+   * Output: Buddies array filtered to ages between 20 and 30
+   * Expected behavior: Filters buddies to only include those with age between 20 and 30
+   */
   test('filters buddies by age range', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -166,12 +166,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     }
   });
 
-  /*
-    Inputs: query { targetMinLevel: 1, targetMaxLevel: 3, targetMinAge: 18, targetMaxAge: 50 }
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: Filters buddies by both skill level (1-3) and age (18-50) simultaneously
-  */
+  /**
+   * Inputs: Query parameters for both skill level (1-3) and age (18-50)
+   * Expected status: 200
+   * Output: Buddies array filtered by both criteria simultaneously
+   * Expected behavior: Filters buddies by both skill level and age ranges
+   */
   test('filters buddies by both skill level and age', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -197,12 +197,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     }
   });
 
-  /*
-    Inputs: none (no query params)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: Returns buddies sorted by distance in ascending order (closest first)
-  */
+  /**
+   * Inputs: None (no query parameters)
+   * Expected status: 200
+   * Output: Buddies array sorted in ascending order by distance
+   * Expected behavior: Returns buddies sorted by distance (closest first)
+   */
   test('returns buddies sorted by distance (closest first)', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -223,12 +223,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     }
   });
 
-  /*
-    Inputs: none (user from mock auth)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: Excludes the current user from the results
-  */
+  /**
+   * Inputs: None (authenticated user making request)
+   * Expected status: 200
+   * Output: Buddies array without current user
+   * Expected behavior: Excludes the current user from the results
+   */
   test('excludes current user from results', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -245,12 +245,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     });
   });
 
-  /*
-    Inputs: query { targetMinLevel: 1 } (only min level, no max)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
-  */
+  /**
+   * Inputs: Query parameter targetMinLevel: 1 (only min, no max)
+   * Expected status: 200
+   * Output: All eligible buddies (filter not applied)
+   * Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+   */
   test('handles partial level filter (only min, no max)', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -279,12 +279,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     await userModel.delete(new mongoose.Types.ObjectId(beginnerUser._id));
   });
 
-  /*
-    Inputs: query { targetMaxLevel: 3 } (only max level, no min)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
-  */
+  /**
+   * Inputs: Query parameter targetMaxLevel: 3 (only max, no min)
+   * Expected status: 200
+   * Output: All eligible buddies (filter not applied)
+   * Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+   */
   test('handles partial level filter (only max, no min)', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -299,12 +299,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     // Should return all eligible users since filter requires both min and max
   });
 
-  /*
-    Inputs: query { targetMinAge: 20 } (only min age, no max)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
-  */
+  /**
+   * Inputs: Query parameter targetMinAge: 20 (only min, no max)
+   * Expected status: 200
+   * Output: All eligible buddies (filter not applied)
+   * Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+   */
   test('handles partial age filter (only min, no max)', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -319,12 +319,12 @@ describe('GET /api/buddy - unmocked (no mocking)', () => {
     // Should return all eligible users since filter requires both min and max
   });
 
-  /*
-    Inputs: query { targetMaxAge: 50 } (only max age, no min)
-    Expected status: 200
-    Output: { message: string, data: { buddies: [{ user: IUser, distance: number }] } }
-    Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
-  */
+  /**
+   * Inputs: Query parameter targetMaxAge: 40 (only max, no min)
+   * Expected status: 200
+   * Output: All eligible buddies (filter not applied)
+   * Expected behavior: When only one filter bound is provided, algorithm should not filter (requires both min and max)
+   */
   test('handles partial age filter (only max, no min)', async () => {
     if (!testUser || !testUser.age || !testUser.skillLevel || !testUser.latitude || !testUser.longitude) {
       return;
@@ -528,12 +528,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     process.env.GEOCODING_API = 'test-api-key';
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to GeocodeResult
-    Output: { latitude: number, longitude: number } | null
-    Expected behavior: Successfully geocodes location and returns coordinates
-  */
+  /**
+   * Inputs: Location string 'Vancouver, BC' with mocked successful API response
+   * Expected status: Promise resolves to GeocodeResult
+   * Output: Object with latitude: 49.2827, longitude: -123.1207
+   * Expected behavior: Successfully geocodes location and returns coordinates from API
+   */
   test('successfully geocodes a valid location', async () => {
     const mockResponse = {
       status: 'OK',
@@ -565,12 +565,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when API key is not set
-  */
+  /**
+   * Inputs: Location string 'Vancouver, BC' with GEOCODING_API undefined
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when API key is not configured
+   */
   test('returns null when GEOCODING_API is not set', async () => {
     delete process.env.GEOCODING_API;
 
@@ -580,12 +580,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  /*
-    Inputs: location: 'Invalid Location'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when API returns non-OK status
-  */
+  /**
+   * Inputs: Location string 'Invalid Location' with API response status 'ZERO_RESULTS'
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when API returns non-OK status
+   */
   test('returns null when API returns non-OK status', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -606,12 +606,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when API returns empty results array
-  */
+  /**
+   * Inputs: Location string 'Vancouver, BC' with API response containing empty results array
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when API returns empty results array
+   */
   test('returns null when API returns empty results', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -632,12 +632,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when response is not OK (HTTP error)
-  */
+  /**
+   * Inputs: Location string 'Vancouver, BC' with HTTP 500 response
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when HTTP request fails (non-OK response)
+   */
   test('returns null when HTTP request fails', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -653,12 +653,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when geometry location is missing
-  */
+  /**
+   * Inputs: Location string with API response missing geometry.location property
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when geometry location is missing from API response
+   */
   test('returns null when geometry location is missing', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -683,12 +683,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when lat/lng are not numbers
-  */
+  /**
+   * Inputs: Location string with API response containing non-numeric lat/lng values
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when lat/lng are not valid numbers
+   */
   test('returns null when lat/lng are not numbers', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -718,12 +718,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'Vancouver, BC'
-    Expected status: Promise resolves to null
-    Output: null
-    Expected behavior: Returns null when fetch throws an error
-  */
+  /**
+   * Inputs: Location string with fetch throwing Network error
+   * Expected status: Promise resolves to null
+   * Output: null
+   * Expected behavior: Returns null when fetch throws an error (network failure)
+   */
   test('returns null when fetch throws an error', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -737,12 +737,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  /*
-    Inputs: location: 'New York, NY'
-    Expected status: Promise resolves to GeocodeResult
-    Output: { latitude: number, longitude: number }
-    Expected behavior: Properly URL-encodes location in API request
-  */
+  /**
+   * Inputs: Location string 'New York, NY' with spaces and special characters
+   * Expected status: Promise resolves to GeocodeResult
+   * Output: Object with latitude: 40.7128, longitude: -74.0060
+   * Expected behavior: Properly URL-encodes location in API request URL
+   */
   test('properly URL-encodes location in API request', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 
@@ -778,12 +778,12 @@ describe('getCoordinatesFromLocation - unmocked (no mocking)', () => {
     expect(fetchCall).toContain('test-api-key');
   });
 
-  /*
-    Inputs: location: 'San Francisco, CA'
-    Expected status: Promise resolves to GeocodeResult
-    Output: { latitude: number, longitude: number }
-    Expected behavior: Handles locations with special characters
-  */
+  /**
+   * Inputs: Location string 'San Francisco, CA' with special characters
+   * Expected status: Promise resolves to GeocodeResult
+   * Output: Object with latitude: 37.7749, longitude: -122.4194
+   * Expected behavior: Handles locations with special characters correctly
+   */
   test('handles locations with special characters', async () => {
     process.env.GEOCODING_API = 'test-api-key';
 

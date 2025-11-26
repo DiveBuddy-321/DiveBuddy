@@ -41,8 +41,8 @@ import com.cpen321.usermanagement.ui.components.ImagePicker
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
-import com.cpen321.usermanagement.ui.viewmodels.ProfileUiState
-import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
+import com.cpen321.usermanagement.ui.viewmodels.profile.ProfileUiState
+import com.cpen321.usermanagement.ui.viewmodels.profile.ProfileViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -53,7 +53,6 @@ import com.cpen321.usermanagement.ui.screens.ProfileCityAutocompleteData
 import com.cpen321.usermanagement.ui.screens.ProfileExperienceDropdown
 
 // State holder moved to its own file to keep this file lean
-import com.cpen321.usermanagement.ui.screens.profile.ProfileFormState
 import com.cpen321.usermanagement.ui.screens.ProfilePictureCard
 import com.cpen321.usermanagement.ui.screens.SaveButton
 import com.google.android.libraries.places.api.Places

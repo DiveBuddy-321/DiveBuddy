@@ -42,7 +42,7 @@ import com.cpen321.usermanagement.data.remote.dto.Chat
 import com.cpen321.usermanagement.data.remote.dto.Message
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cpen321.usermanagement.ui.viewmodels.ChatViewModel
+import com.cpen321.usermanagement.ui.viewmodels.chat.ChatViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 import coil.compose.AsyncImage

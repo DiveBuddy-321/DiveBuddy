@@ -1,10 +1,11 @@
 // Class controller matched to your routes (no `next` param in your router)
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import { Chat } from "../models/chat.model";
 import { Message } from "../models/message.model";
 import type { Id } from "../types/chat.types";
 import type { IUser } from "../types/user.types";
+import logger from '../utils/logger.util';
 
 type AuthedRequest = Request & { user?: IUser };
 
@@ -16,19 +17,20 @@ const isValidId = (v: unknown): v is string =>
 
 export class ChatController {
   /** GET /rooms */
-  async listChats(req: AuthedRequest, res: Response) {
+  async listChats(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user;
       if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
       const rooms = await Chat.listForUser(asObjectId(user._id));
       return res.json(rooms);
-    } catch (err: unknown) {
-      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to list chats" });
+    } catch (error) {
+      logger.error('Failed to list chats:', error);
+      next(error);
     }
   }
 
   /** GET /:chatId */
-  async getChat(req: AuthedRequest, res: Response) {
+  async getChat(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user;
       if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
@@ -38,13 +40,14 @@ export class ChatController {
       const chat = await Chat.getForUser(chatId, asObjectId(user._id));
       if (!chat) return res.status(404).json({ error: "Chat not found" });
       return res.json(chat);
-    } catch (err: unknown) {
-      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to fetch chat" });
+    } catch (error) {
+      logger.error('Failed to get chat:', error);
+      next(error);
     }
   }
 
   /** POST /newChat  Body: { peerId: Id, name?: string } */
-  async createChat(req: AuthedRequest, res: Response) {
+  async createChat(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user;
       if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
@@ -65,15 +68,16 @@ export class ChatController {
 
       const chat = await Chat.createPair(asObjectId(user._id), asObjectId(peerId), name ?? null);
       return res.status(201).json(chat);
-    } catch (err: unknown) {
-      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to create chat" });
+    } catch (error) {
+      logger.error('Failed to create chat:', error);
+      next(error);
     }
   }
 
   /** DELETE /:chatId */
 
   /** GET /:chatId/messages?limit=20&before=<timestamp> */
-  async getMessages(req: AuthedRequest, res: Response) {
+  async getMessages(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user;
       if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
@@ -111,13 +115,14 @@ export class ChatController {
         count: messages.length,
         hasMore: messages.length === validLimit
       });
-    } catch (err: unknown) {
-      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to fetch messages" });
+    } catch (error) {
+      logger.error('Failed to fetch messages:', error);
+      next(error);
     }
   }
 
   /** POST /:chatId/messages  Body: { content: string } */
-  async sendMessage(req: AuthedRequest, res: Response) {
+  async sendMessage(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user;
       if (!user?._id) return res.status(401).json({ error: "Unauthorized" });
@@ -142,8 +147,9 @@ export class ChatController {
       const populatedMessage = await Message.getMessageById(String(message._id));
 
       return res.status(201).json(populatedMessage);
-    } catch (err: unknown) {
-      return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to send message" });
+    } catch (error) {
+      logger.error('Failed to send message:', error);
+      next(error);
     }
   }
   

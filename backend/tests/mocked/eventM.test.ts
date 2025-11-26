@@ -47,7 +47,9 @@ beforeAll(async () => {
     location: 'Vancouver, BC',
     latitude: 49.2827,
     longitude: -123.1207,
-    skillLevel: 'Intermediate'
+    skillLevel: 'Intermediate',
+    eventsCreated: [],
+    eventsJoined: [],
   };
   testUser = await userModel.create(newUser);
 });
@@ -65,6 +67,12 @@ afterEach(() => {
 });
 
 describe('GET /api/events - mocked', () => {
+    /**
+     * Inputs: Request to fetch all events, database connection failure
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database connection fails during event list retrieval
+     */
     test('returns 500 when database query fails', async () => {
         // Mock eventModel.findAll to throw an error
         jest.spyOn(eventModel, 'findAll').mockRejectedValue(new Error('Database connection failed'));
@@ -77,6 +85,12 @@ describe('GET /api/events - mocked', () => {
         expect(eventModel.findAll).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Request to fetch all events, unexpected error in database layer
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when unexpected exception occurs during event list query
+     */
     test('returns 500 when unexpected error occurs', async () => {
         // Mock eventModel.findAll to throw an unexpected error
         jest.spyOn(eventModel, 'findAll').mockRejectedValue(new Error('Unexpected error'));
@@ -89,6 +103,12 @@ describe('GET /api/events - mocked', () => {
         expect(eventModel.findAll).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Request to fetch all events, database query timeout
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database query times out during event list retrieval
+     */
     test('returns 500 when database timeout occurs', async () => {
         // Mock eventModel.findAll to throw a timeout error
         jest.spyOn(eventModel, 'findAll').mockRejectedValue(new Error('Connection timeout'));
@@ -101,6 +121,12 @@ describe('GET /api/events - mocked', () => {
         expect(eventModel.findAll).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Request to fetch all events, null reference access in query
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when null reference is accessed during event list operation
+     */
     test('returns 500 when null pointer exception occurs', async () => {
         // Mock eventModel.findAll to throw null error
         jest.spyOn(eventModel, 'findAll').mockRejectedValue(new TypeError('Cannot read property of null'));
@@ -113,6 +139,12 @@ describe('GET /api/events - mocked', () => {
         expect(eventModel.findAll).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to eventModel.findAll(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to fetch events'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('findAll throws "Failed to fetch events" when database operation fails', async () => {
         // Mock the Event model's find method directly
         const Event = mongoose.model('Event');
@@ -123,6 +155,12 @@ describe('GET /api/events - mocked', () => {
         await expect(eventModel.findAll()).rejects.toThrow('Failed to fetch events');
     });
 
+    /**
+     * Inputs: Logger input containing CRLF characters (newline/carriage return)
+     * Expected status: N/A (direct logger test)
+     * Output: Throws error 'CRLF injection attempt detected'
+     * Expected behavior: Logger validates input and prevents log injection attacks
+     */
     test('logger.info throws error when input contains CRLF characters', () => {
         // Test that logger rejects input with newline characters (CRLF injection attempt)
         const maliciousInput = 'Normal message\nInjected malicious log entry';
@@ -136,6 +174,12 @@ describe('GET /api/events - mocked', () => {
 
 describe('GET /api/events/:id - mocked', () => {
     
+    /**
+     * Inputs: Valid eventId that doesn't exist in database
+     * Expected status: 404
+     * Output: Error message 'Event not found'
+     * Expected behavior: Returns 404 when attempting to access non-existent event
+     */
     test('returns 404 when event not found', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -152,6 +196,12 @@ describe('GET /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Malformed eventId (not valid ObjectId format)
+     * Expected status: 400
+     * Output: Error message 'Invalid event id'
+     * Expected behavior: Validates eventId format and rejects malformed IDs
+     */
     test('returns 400 when invalid event ID provided', async () => {
         // Make request with invalid ID
         const res = await request(app).get('/api/events/invalid-id');
@@ -162,6 +212,12 @@ describe('GET /api/events/:id - mocked', () => {
         expect(res.body.message).toBe('Invalid event id');
     });
 
+    /**
+     * Inputs: Valid eventId, database error during query
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database query fails during event retrieval
+     */
     test('returns 500 when database query fails', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -176,6 +232,12 @@ describe('GET /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId, network connectivity failure
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when network error occurs during event retrieval
+     */
     test('returns 500 when network error occurs', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -190,6 +252,12 @@ describe('GET /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId, system out of memory during query
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when system runs out of memory during event retrieval
+     */
     test('returns 500 when memory error occurs', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -204,6 +272,12 @@ describe('GET /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to eventModel.findById(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to find event'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('findById throws "Failed to find event" when database operation fails', async () => {
         // Mock the Event model's findOne method directly
         const Event = mongoose.model('Event');
@@ -216,6 +290,12 @@ describe('GET /api/events/:id - mocked', () => {
 
 describe('POST /api/events - mocked', () => {
 
+    /**
+     * Inputs: Valid event creation data, database error during creation
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during event creation
+     */
     test('returns 500 when event creation fails', async () => {
         const newEventData = {
             title: 'New Test Event',
@@ -241,6 +321,12 @@ describe('POST /api/events - mocked', () => {
         expect(eventModel.create).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Event creation data, database validation failure
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database validation fails during event creation
+     */
     test('returns 500 when validation error occurs in database', async () => {
         const newEventData = {
             title: 'New Test Event',
@@ -266,6 +352,12 @@ describe('POST /api/events - mocked', () => {
         expect(eventModel.create).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Event creation data with duplicate unique field
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when duplicate key constraint is violated
+     */
     test('returns 500 when duplicate key error occurs', async () => {
         const newEventData = {
             title: 'New Test Event',
@@ -291,6 +383,12 @@ describe('POST /api/events - mocked', () => {
         expect(eventModel.create).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to eventModel.create(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to create event'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('create throws "Failed to create event" when database operation fails', async () => {
         // Mock the Event model's create method directly
         const Event = mongoose.model('Event');
@@ -311,6 +409,12 @@ describe('POST /api/events - mocked', () => {
 
 describe('PUT /api/events/:id - mocked', () => {
     
+    /**
+     * Inputs: Valid eventId that doesn't exist, valid update data
+     * Expected status: 404
+     * Output: Error message 'Event not found'
+     * Expected behavior: Returns 404 when attempting to update non-existent event
+     */
     test('returns 404 when event not found', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const updateData = { 
@@ -334,6 +438,12 @@ describe('PUT /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId, invalid update data (wrong type)
+     * Expected status: 400
+     * Output: Error message 'Invalid input data'
+     * Expected behavior: Validates update data schema and rejects invalid types
+     */
     test('returns 400 when invalid data provided', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const updateData = { title: 123 }; // Invalid type
@@ -347,6 +457,12 @@ describe('PUT /api/events/:id - mocked', () => {
         expect(res.body.message).toBe('Invalid input data');
     });
 
+    /**
+     * Inputs: Valid eventId and update data, database update operation returns null
+     * Expected status: 500
+     * Output: Error message 'Failed to update event'
+     * Expected behavior: Returns error when update operation succeeds but returns no result
+     */
     test('returns 500 when update fails', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const existingEvent = {
@@ -374,6 +490,12 @@ describe('PUT /api/events/:id - mocked', () => {
         expect(res.body.message).toBe('Failed to update event');
     });
 
+    /**
+     * Inputs: Valid eventId and update data, database error during event lookup
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during event existence check
+     */
     test('returns 500 when database error occurs during findById', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const updateData = { 
@@ -395,6 +517,12 @@ describe('PUT /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId and update data, database error during update operation
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database update operation throws error
+     */
     test('returns 500 when update throws error', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const existingEvent = {
@@ -421,6 +549,12 @@ describe('PUT /api/events/:id - mocked', () => {
         expect(eventModel.update).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to eventModel.update(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to update event'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('update throws "Failed to update event" when database operation fails', async () => {
         // Mock the Event model's findByIdAndUpdate method directly
         const Event = mongoose.model('Event');
@@ -441,6 +575,12 @@ describe('PUT /api/events/:id - mocked', () => {
 
 describe('PUT /api/events/join/:id - mocked', () => {
 
+    /**
+     * Inputs: Valid eventId, user already in attendees list
+     * Expected status: 400
+     * Output: Error message 'User already joined the event'
+     * Expected behavior: Prevents duplicate joins by checking attendees array
+     */
     test('returns 400 when user already joined', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const mockUserId = testUser ? testUser._id : new mongoose.Types.ObjectId();
@@ -470,6 +610,12 @@ describe('PUT /api/events/join/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId, event at maximum capacity
+     * Expected status: 400
+     * Output: Error message 'Event is at full capacity'
+     * Expected behavior: Prevents joining when attendees count equals capacity
+     */
     test('returns 400 when event is at full capacity', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const existingEvent = {
@@ -510,6 +656,12 @@ describe('PUT /api/events/join/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid join request, database error during event lookup
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during join operation
+     */
     test('returns 500 when database error occurs during join', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -524,6 +676,12 @@ describe('PUT /api/events/join/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid join request, event found, update operation returns null
+     * Expected status: 500
+     * Output: Error message 'Failed to update event'
+     * Expected behavior: Returns error when update fails after successful validation
+     */
     test('returns 500 when update fails after join', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const mockUserId = testUser ? testUser._id : new mongoose.Types.ObjectId();
@@ -559,6 +717,12 @@ describe('PUT /api/events/join/:id - mocked', () => {
 
 describe('PUT /api/events/leave/:id - mocked', () => {
 
+    /**
+     * Inputs: Valid eventId, user not in attendees list
+     * Expected status: 400
+     * Output: Error message 'User is not an attendee of the event'
+     * Expected behavior: Prevents leaving when user hasn't joined the event
+     */
     test('returns 400 when user is not an attendee', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const existingEvent = {
@@ -579,6 +743,12 @@ describe('PUT /api/events/leave/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId that doesn't exist
+     * Expected status: 404
+     * Output: Error message 'Event not found'
+     * Expected behavior: Returns 404 when attempting to leave non-existent event
+     */
     test('returns 404 when event not found', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -595,6 +765,12 @@ describe('PUT /api/events/leave/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid leave request, database error during event lookup
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during leave operation
+     */
     test('returns 500 when database error occurs during leave', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -609,6 +785,12 @@ describe('PUT /api/events/leave/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid leave request, user in attendees, update operation returns null
+     * Expected status: 500
+     * Output: Error message 'Failed to update event'
+     * Expected behavior: Returns error when update fails after successful validation
+     */
     test('returns 500 when update fails after leave', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const mockUserId = testUser ? testUser._id : new mongoose.Types.ObjectId();
@@ -673,6 +855,12 @@ describe('PUT /api/events/leave/:id - mocked', () => {
 
 describe('DELETE /api/events/:id - mocked', () => {
 
+    /**
+     * Inputs: Valid eventId that doesn't exist
+     * Expected status: 404
+     * Output: Error message 'Event not found'
+     * Expected behavior: Returns 404 when attempting to delete non-existent event
+     */
     test('returns 404 when event not found', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -689,6 +877,12 @@ describe('DELETE /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Malformed eventId (not valid ObjectId format)
+     * Expected status: 400
+     * Output: Error message 'Invalid event id'
+     * Expected behavior: Validates eventId format before delete operation
+     */
     test('returns 400 when invalid event ID provided', async () => {
         // Make request with invalid ID
         const res = await request(app).delete('/api/events/invalid-id');
@@ -699,6 +893,12 @@ describe('DELETE /api/events/:id - mocked', () => {
         expect(res.body.message).toBe('Invalid event id');
     });
 
+    /**
+     * Inputs: Valid eventId, event exists, delete operation throws error
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database delete operation fails
+     */
     test('returns 500 when delete fails', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const existingEvent = {
@@ -719,6 +919,12 @@ describe('DELETE /api/events/:id - mocked', () => {
         expect(eventModel.delete).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId, database error during event lookup
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when database fails during delete pre-check
+     */
     test('returns 500 when database error occurs during findById for delete', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
 
@@ -733,6 +939,12 @@ describe('DELETE /api/events/:id - mocked', () => {
         expect(eventModel.findById).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Valid eventId, event exists, permission denied during delete
+     * Expected status: 500
+     * Output: Error message in response body
+     * Expected behavior: Returns error when delete operation fails due to permissions
+     */
     test('returns 500 when permission error occurs', async () => {
         const mockEventId = new mongoose.Types.ObjectId();
         const existingEvent = {
@@ -752,6 +964,12 @@ describe('DELETE /api/events/:id - mocked', () => {
         expect(eventModel.delete).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Inputs: Direct call to eventModel.delete(), database operation failure
+     * Expected status: N/A (direct model test)
+     * Output: Throws error with message 'Failed to delete event'
+     * Expected behavior: Model method wraps database errors in custom error message
+     */
     test('delete throws "Failed to delete event" when database operation fails', async () => {
         // Mock the Event model's findByIdAndDelete method directly
         const Event = mongoose.model('Event');

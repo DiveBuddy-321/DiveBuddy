@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.viewmodels
+package com.cpen321.usermanagement.ui.viewmodels.buddies
 
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
