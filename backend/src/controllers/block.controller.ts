@@ -22,7 +22,6 @@ export class BlockController {
       const blockedId = new mongoose.Types.ObjectId(targetUserId);
 
       await blockModel.blockUser(blockerId, blockedId);
-      console.log('User blocked successfully');
 
       return res.status(201).json({ message: 'User blocked successfully' });
     } catch (error) {
@@ -49,7 +48,6 @@ export class BlockController {
       const blockerId = new mongoose.Types.ObjectId(authUser._id);
       const blockedId = new mongoose.Types.ObjectId(targetUserId);
       await blockModel.unblockUser(blockerId, blockedId);
-      console.log('User unblocked successfully');
 
       return res.status(200).json({ message: 'User unblocked successfully' });
       

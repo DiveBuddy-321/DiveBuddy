@@ -6,6 +6,7 @@ import com.cpen321.usermanagement.data.remote.dto.Chat
 import com.cpen321.usermanagement.data.remote.dto.Message
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.BlockRepository
+import com.cpen321.usermanagement.data.repository.BlockedException
 import com.cpen321.usermanagement.data.repository.ChatRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.socket.SocketManager
@@ -16,19 +17,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+//UserData groups ui state variables related to user info together
 data class UserData(
     val currentUserId: String? = null,
     val userNames: Map<String, String> = emptyMap() // userId -> userName mapping
 )
 
+//BlockData groups ui state variables related to blocking a user
 data class BlockData(
     val blockedUsers: Set<String> = emptySet(),
     val actionInProgress: Boolean = false
 )
 
+//ConnectionState groups ui state variables related to socket connections
 data class ConnectionState(
     val isSocketConnected: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val errorTimestamp: Long = 0L // Used to trigger toast even with same error message
 )
 
 data class ChatUiState(
@@ -92,7 +97,10 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             socketManager.errorFlow.collect { event ->
                 _uiState.value = _uiState.value.copy(
-                    connectionState = _uiState.value.connectionState.copy(error = event.message)
+                    connectionState = _uiState.value.connectionState.copy(
+                        error = event.message,
+                        errorTimestamp = System.currentTimeMillis()
+                    )
                 )
             }
         }
@@ -149,7 +157,10 @@ class ChatViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         chats = emptyList(),
-                        connectionState = _uiState.value.connectionState.copy(error = e.message),
+                        connectionState = _uiState.value.connectionState.copy(
+                            error = e.message,
+                            errorTimestamp = System.currentTimeMillis()
+                        ),
                         userData = UserData(currentUserId = profile?._id)
                     )
                 }
@@ -188,7 +199,46 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sendMessage(chatId: String, content: String) {
+    fun sendMessage(chatId: String, content: String, otherUserId: String? = null) {
+        // Check if we have blocked the other user
+        if (otherUserId != null && isUserBlocked(otherUserId)) {
+            _uiState.value = _uiState.value.copy(
+                connectionState = _uiState.value.connectionState.copy(
+                    error = "You have blocked this user. You cannot send messages.",
+                    errorTimestamp = System.currentTimeMillis()
+                )
+            )
+            return
+        }
+        
+        // Check if we are blocked by the other user before sending
+        if (otherUserId != null) {
+            viewModelScope.launch {
+                val blockCheckResult = blockRepository.checkIfBlockedBy(otherUserId)
+                blockCheckResult.onSuccess { isBlocked ->
+                    if (isBlocked) {
+                        _uiState.value = _uiState.value.copy(
+                            connectionState = _uiState.value.connectionState.copy(
+                                error = "You cannot send messages to this user. You have been blocked.",
+                                errorTimestamp = System.currentTimeMillis()
+                            )
+                        )
+                    } else {
+                        // Not blocked, proceed with sending
+                        actualSendMessage(chatId, content)
+                    }
+                }.onFailure {
+                    // If the check fails, proceed anyway and let backend handle it
+                    actualSendMessage(chatId, content)
+                }
+            }
+        } else {
+            // No otherUserId provided, proceed with sending
+            actualSendMessage(chatId, content)
+        }
+    }
+    
+    private fun actualSendMessage(chatId: String, content: String) {
         if (socketManager.isConnected() && socketManager.isInRoom(chatId)) {
             // Send via WebSocket only; server persists and echoes back to all clients
             socketManager.sendMessage(chatId, content)
@@ -205,8 +255,15 @@ class ChatViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(messagesByChat = updated)
                     }
                 }.onFailure { e ->
+                    val errorMessage = when (e) {
+                        is BlockedException -> "You cannot send messages to this user. You have been blocked."
+                        else -> e.message ?: "Failed to send message"
+                    }
                     _uiState.value = _uiState.value.copy(
-                        connectionState = _uiState.value.connectionState.copy(error = e.message)
+                        connectionState = _uiState.value.connectionState.copy(
+                            error = errorMessage,
+                            errorTimestamp = System.currentTimeMillis()
+                        )
                     )
                 }
             }
@@ -257,7 +314,8 @@ class ChatViewModel @Inject constructor(
                 // Silently fail - blocked users will just be empty
                 _uiState.value = _uiState.value.copy(
                     connectionState = _uiState.value.connectionState.copy(
-                        error = "Failed to load blocked users: ${e.message}"
+                        error = "Failed to load blocked users: ${e.message}",
+                        errorTimestamp = System.currentTimeMillis()
                     )
                 )
             }
@@ -283,7 +341,8 @@ class ChatViewModel @Inject constructor(
                 onFailure = { e ->
                     _uiState.value = _uiState.value.copy(
                         connectionState = _uiState.value.connectionState.copy(
-                            error = e.message ?: "Failed to block user"
+                            error = e.message ?: "Failed to block user",
+                            errorTimestamp = System.currentTimeMillis()
                         ),
                         blockData = _uiState.value.blockData.copy(actionInProgress = false)
                     )
@@ -311,7 +370,8 @@ class ChatViewModel @Inject constructor(
                 onFailure = { e ->
                     _uiState.value = _uiState.value.copy(
                         connectionState = _uiState.value.connectionState.copy(
-                            error = e.message ?: "Failed to unblock user"
+                            error = e.message ?: "Failed to unblock user",
+                            errorTimestamp = System.currentTimeMillis()
                         ),
                         blockData = _uiState.value.blockData.copy(actionInProgress = false)
                     )
@@ -323,6 +383,12 @@ class ChatViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         socketManager.disconnect()
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(
+            connectionState = _uiState.value.connectionState.copy(error = null)
+        )
     }
 }
 

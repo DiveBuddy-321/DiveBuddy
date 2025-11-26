@@ -151,21 +151,18 @@ export class ChatController {
         );
         if (isBlocked) {
           return res.status(403).json({ 
-            error: "You cannot send messages to this user",
-            message: "You have been blocked by this user"
+            error: "You cannot send messages to this user due to being blocked by them.",
           });
         }
 
         // Check if the user has blocked the other participant
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const hasBlocked = await blockModel.hasBlocked(
           asObjectId(user._id),
           asObjectId(participantId)
         );
         if (hasBlocked) {
           return res.status(403).json({ 
-            error: "You cannot send messages to this user",
-            message: "You have blocked this user"
+            error: "You cannot send messages to this user as you have blocked them.",
           });
         }
       }

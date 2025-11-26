@@ -89,12 +89,7 @@ fun SingleChatScreen(
             }
         }
     }
-	// Also notify when you have blocked this user
-	LaunchedEffect(isUserBlocked) {
-		if (isUserBlocked) {
-			Toast.makeText(context, "You have blocked this user. You cannot send messages.", Toast.LENGTH_LONG).show()
-		}
-	}
+	
 	ChatInitializationEffects(chatId = chat._id, chatVm = chatVm)
 	MessagesCollector(
 		chatId = chat._id,
@@ -193,7 +188,6 @@ private fun ChatTopBar(
     onUnblockUser: () -> Unit
 ) {
 	var showMenu by remember { mutableStateOf(false) }
-	
 	Row(
 		verticalAlignment = Alignment.Companion.CenterVertically,
 		modifier = Modifier.Companion.fillMaxWidth()
