@@ -181,4 +181,3 @@ open class BuddyViewModel @Inject constructor(
         _uiState.value = BuddyUiState()
     }
 }
-

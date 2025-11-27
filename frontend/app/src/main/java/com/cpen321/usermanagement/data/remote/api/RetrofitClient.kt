@@ -41,6 +41,7 @@ object RetrofitClient {
     val userInterface: UserInterface = retrofit.create(UserInterface::class.java)
     val buddyInterface: BuddyInterface = retrofit.create(BuddyInterface::class.java)
     val eventInterface: EventInterface = retrofit.create(EventInterface::class.java)
+    val blockInterface: BlockInterface = retrofit.create(BlockInterface::class.java)
 
     fun setAuthToken(token: String?) {
         authToken = token

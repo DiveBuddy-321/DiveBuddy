@@ -6,6 +6,7 @@ import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { userModel } from '../models/user.model';
 import { eventModel } from '../models/event.model';
+import { blockModel } from '../models/block.model';
 import type { IUser } from '../types/user.types';
 import type { IEvent } from '../types/event.types';
 
@@ -27,6 +28,7 @@ export class UserController {
   async getProfileById(req: Request, res: Response<GetProfileResponse>, next: NextFunction) {
     try {
       const { id } = req.params as { id: string };
+      const requestingUser = req.user;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid user id' });
@@ -36,6 +38,36 @@ export class UserController {
 
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if requesting user is blocked by the target user
+      if (requestingUser?._id) {
+        const isBlocked = await blockModel.isBlockedBy(
+          new mongoose.Types.ObjectId(requestingUser._id),
+          new mongoose.Types.ObjectId(id)
+        );
+
+        if (isBlocked) {
+          // Return anonymous user data
+          const anonymousUser = {
+            _id: user._id,
+            googleId: user.googleId,
+            email: user.email,
+            name: 'Unknown User',
+            bio: undefined,
+            profilePicture: undefined,
+            age: undefined,
+            skillLevel: undefined,
+            location: undefined,
+            latitude: undefined,
+            longitude: undefined,
+            eventsJoined: user.eventsJoined,
+            eventsCreated: user.eventsCreated,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          };
+          return res.status(200).json({ message: 'Profile fetched successfully', data: { user: anonymousUser as unknown as IUser } });
+        }
       }
 
       res.status(200).json({ message: 'Profile fetched successfully', data: { user } });

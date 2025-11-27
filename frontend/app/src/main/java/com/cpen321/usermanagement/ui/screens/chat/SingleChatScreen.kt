@@ -19,9 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +55,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.theme.Spacing
 import kotlinx.coroutines.delay
@@ -72,6 +78,19 @@ fun SingleChatScreen(
     val isLoadingMore = remember { mutableStateOf(false) }
     val messageText = remember { mutableStateOf("") }
     val otherUserName = chatVm.getOtherUserName(chat)
+    val otherUserId = chatVm.getOtherUserId(chat)
+    val isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
+    val context = LocalContext.current
+    
+    // Show toast when there's an error (triggered when error changes)
+    LaunchedEffect(uiState.connectionState.error) {
+        uiState.connectionState.error?.let { error ->
+            if (error.isNotEmpty()) {
+                Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+	
 	ChatInitializationEffects(chatId = chat._id, chatVm = chatVm)
 	MessagesCollector(
 		chatId = chat._id,
@@ -110,18 +129,26 @@ fun SingleChatScreen(
         profilePicture = chatVm.getOtherUserProfilePicture(chat),
         otherUserName = otherUserName,
         messages = messages.value,
-        currentUserId = uiState.currentUserId,
+        currentUserId = uiState.userData.currentUserId,
         listState = listState,
         inputState = messageText,
         onSend = {
             if (messageText.value.trim().isNotEmpty()) {
                 chat._id?.let { chatId ->
-                    chatVm.sendMessage(chatId, messageText.value.trim())
+                    chatVm.sendMessage(chatId, messageText.value.trim(), otherUserId)
                     messageText.value = ""
                 }
             }
         },
-        onBack = onBack
+        onBack = onBack,
+        otherUserId = otherUserId,
+        isUserBlocked = isUserBlocked,
+        onBlockUser = {
+            otherUserId?.let { chatVm.blockUser(it) }
+        },
+        onUnblockUser = {
+            otherUserId?.let { chatVm.unblockUser(it) }
+        }
     )
 }
 
@@ -153,10 +180,19 @@ private fun MessagesCollector(
 }
 
 @Composable
-private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spacing, profilePicture: String?) {
+private fun ChatTopBar(
+    onBack: () -> Unit, 
+    otherUserName: String, 
+    spacing: Spacing,
+    otherUserId: String?,
+    isUserBlocked: Boolean,
+    onBlockUser: () -> Unit,
+    onUnblockUser: () -> Unit
+) {
+	var showMenu by remember { mutableStateOf(false) }
 	Row(
 		verticalAlignment = Alignment.Companion.CenterVertically,
-		horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+		modifier = Modifier.Companion.fillMaxWidth()
 	) {
 		IconButton(onClick = onBack) {
 			Icon(
@@ -185,8 +221,42 @@ private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spaci
 		Text(
 			text = otherUserName,
 			style = MaterialTheme.typography.titleLarge,
-			fontWeight = FontWeight.Companion.SemiBold
+			fontWeight = FontWeight.Companion.SemiBold,
+			modifier = Modifier.Companion.weight(1f)
 		)
+		
+		// Three-dot menu
+		IconButton(onClick = { showMenu = true }) {
+			Icon(
+				imageVector = Icons.Default.MoreVert,
+				contentDescription = "More options"
+			)
+		}
+		DropdownMenu(
+			expanded = showMenu,
+			onDismissRequest = { showMenu = false },
+			modifier = Modifier.Companion.fillMaxWidth()
+		) {
+			if (otherUserId != null) {
+				if (isUserBlocked) {
+					DropdownMenuItem(
+						text = { Text("Unblock User") },
+						onClick = {
+							onUnblockUser()
+							showMenu = false
+						}
+					)
+				} else {
+					DropdownMenuItem(
+						text = { Text("Block User") },
+						onClick = {
+							onBlockUser()
+							showMenu = false
+						}
+					)
+				}
+			}
+		}
 	}
 }
 
@@ -279,7 +349,8 @@ private fun MessageInputBar(
 	message: String,
 	onMessageChange: (String) -> Unit,
 	onSend: () -> Unit,
-	spacing: Spacing
+	spacing: Spacing,
+	isBlocked: Boolean = false
 ) {
 	Row(
 		modifier = Modifier.Companion
@@ -290,21 +361,22 @@ private fun MessageInputBar(
 		OutlinedTextField(
 			value = message,
 			onValueChange = onMessageChange,
-			placeholder = { Text("Type a message...") },
+			placeholder = { Text(if (isBlocked) "You have blocked this user" else "Type a message...") },
 			modifier = Modifier.Companion
 				.weight(1f)
 				.padding(end = spacing.small),
 			shape = RoundedCornerShape(24.dp),
-			maxLines = 4
+			maxLines = 4,
+			enabled = !isBlocked
 		)
 		IconButton(
 			onClick = onSend,
-			enabled = message.trim().isNotEmpty()
+			enabled = message.trim().isNotEmpty() && !isBlocked
 		) {
 			Icon(
 				imageVector = Icons.AutoMirrored.Filled.Send,
 				contentDescription = "Send message",
-				tint = if (message.trim().isNotEmpty())
+				tint = if (message.trim().isNotEmpty() && !isBlocked)
 					MaterialTheme.colorScheme.primary
 				else
 					MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -322,13 +394,24 @@ private fun ChatContent(
     inputState: MutableState<String>,
     onSend: () -> Unit,
     onBack: () -> Unit,
-	profilePicture: String?,
+    otherUserId: String?,
+    isUserBlocked: Boolean,
+    onBlockUser: () -> Unit,
+    onUnblockUser: () -> Unit
 ) {
     val spacing = LocalSpacing.current
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing, profilePicture = profilePicture)
+        ChatTopBar(
+            onBack = onBack, 
+            otherUserName = otherUserName, 
+            spacing = spacing,
+            otherUserId = otherUserId,
+            isUserBlocked = isUserBlocked,
+            onBlockUser = onBlockUser,
+            onUnblockUser = onUnblockUser
+        )
         MessagesList(
             messages = messages,
             currentUserId = currentUserId,
@@ -340,7 +423,8 @@ private fun ChatContent(
             message = inputState.value,
             onMessageChange = { inputState.value = it },
             onSend = onSend,
-            spacing = spacing
+            spacing = spacing,
+            isBlocked = isUserBlocked
         )
     }
 }
