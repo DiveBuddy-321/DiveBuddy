@@ -44,7 +44,7 @@ import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth
 import com.cpen321.usermanagement.ui.components.ClickableDetailsRow
 import com.cpen321.usermanagement.ui.components.DetailsRow
-import com.cpen321.usermanagement.ui.components.EventMapView
+import com.cpen321.usermanagement.ui.components.events.SingleEventMapView
 
 
 @Composable
@@ -112,7 +112,7 @@ fun SingleEventScreen(
 
         EventDescriptionCard(description = updatedEvent.description)
 
-        EventMapView(
+        SingleEventMapView(
             latitude = updatedEvent.latitude,
             longitude = updatedEvent.longitude,
             locationName = updatedEvent.location,

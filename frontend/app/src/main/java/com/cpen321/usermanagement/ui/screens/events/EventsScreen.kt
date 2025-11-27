@@ -13,7 +13,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.data.remote.dto.User
-import com.cpen321.usermanagement.ui.components.EventsMapContent
+import com.cpen321.usermanagement.ui.components.events.EventsMapContent
 import com.cpen321.usermanagement.ui.components.events.EventFilter
 import com.cpen321.usermanagement.ui.components.events.EventFilterDropdown
 import com.cpen321.usermanagement.ui.components.events.EventSort

@@ -45,9 +45,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.CreateEventRequest
 import com.cpen321.usermanagement.data.remote.dto.Event
-import com.cpen321.usermanagement.ui.components.LocationAutocomplete
-import com.cpen321.usermanagement.ui.components.LocationResult
-import com.cpen321.usermanagement.ui.components.RequiredTextLabel
+import com.cpen321.usermanagement.ui.components.events.LocationAutocomplete
+import com.cpen321.usermanagement.ui.components.events.LocationResult
+import com.cpen321.usermanagement.ui.components.events.RequiredTextLabel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
