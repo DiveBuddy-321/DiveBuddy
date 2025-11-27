@@ -129,6 +129,9 @@ class ChatRepositoryImpl @Inject constructor(
                 // Check if the error is due to being blocked
                 if (response.code() == 403 && err?.contains("blocked") == true) {
                     Result.failure(BlockedException("You have been blocked by this user"))
+                } else if (response.code() == 404) {
+                    // Chat was likely deleted (or no longer accessible)
+                    Result.failure(ChatDeletedException("Chat has been deleted"))
                 } else {
                     Result.failure(IllegalStateException("Failed to send message"))
                 }
@@ -144,3 +147,4 @@ class ChatRepositoryImpl @Inject constructor(
 }
 
 class BlockedException(message: String) : Exception(message)
+class ChatDeletedException(message: String) : Exception(message)

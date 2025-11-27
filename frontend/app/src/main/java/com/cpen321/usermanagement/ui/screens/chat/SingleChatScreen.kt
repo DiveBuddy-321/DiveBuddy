@@ -1,5 +1,6 @@
 package com.cpen321.usermanagement.ui.screens.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import com.cpen321.usermanagement.data.remote.dto.Chat
@@ -77,13 +79,13 @@ fun SingleChatScreen(
     val listState = rememberLazyListState()
     val isLoadingMore = remember { mutableStateOf(false) }
     val messageText = remember { mutableStateOf("") }
-    val otherUserName = chatVm.getOtherUserName(chat)
+    val chatDisplayName = chatVm.getChatDisplayName(chat)
     val otherUserId = chatVm.getOtherUserId(chat)
     val isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
     val context = LocalContext.current
     
-    // Show toast when there's an error (triggered when error changes)
-    LaunchedEffect(uiState.connectionState.error) {
+    // Show toast when there's an error; use timestamp to trigger even for repeated messages
+    LaunchedEffect(uiState.connectionState.errorTimestamp) {
         uiState.connectionState.error?.let { error ->
             if (error.isNotEmpty()) {
                 Toast.makeText(context, error, Toast.LENGTH_LONG).show()
@@ -126,8 +128,8 @@ fun SingleChatScreen(
 			}
 	}
     ChatContent(
-        profilePicture = chatVm.getOtherUserProfilePicture(chat),
-        otherUserName = otherUserName,
+        profilePicture = if (!chat.name.isNullOrEmpty()) null else chatVm.getOtherUserProfilePicture(chat),
+        chatDisplayName = chatDisplayName,
         messages = messages.value,
         currentUserId = uiState.userData.currentUserId,
         listState = listState,
@@ -148,7 +150,8 @@ fun SingleChatScreen(
         },
         onUnblockUser = {
             otherUserId?.let { chatVm.unblockUser(it) }
-        }
+        },
+        isGroupChat = !chat.name.isNullOrEmpty()
     )
 }
 
@@ -182,13 +185,14 @@ private fun MessagesCollector(
 @Composable
 private fun ChatTopBar(
     onBack: () -> Unit, 
-    otherUserName: String, 
+    chatDisplayName: String, 
     spacing: Spacing,
     otherUserId: String?,
     isUserBlocked: Boolean,
     onBlockUser: () -> Unit,
 	onUnblockUser: () -> Unit,
-	profilePicture: String?
+	profilePicture: String?,
+	isGroupChat: Boolean
 ) {
 	var showMenu by remember { mutableStateOf(false) }
 	Row(
@@ -213,48 +217,50 @@ private fun ChatTopBar(
 		} else {
 			Icon(
 				imageVector = Icons.Default.Person,
-				contentDescription = "Direct message",
+				contentDescription = if (isGroupChat) "Group chat" else "Direct message",
 				modifier = Modifier.Companion.size(32.dp),
 				tint = MaterialTheme.colorScheme.onSurface
 			)
 		}
 		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Text(
-			text = otherUserName,
+			text = chatDisplayName,
 			style = MaterialTheme.typography.titleLarge,
 			fontWeight = FontWeight.Companion.SemiBold,
 			modifier = Modifier.Companion.weight(1f)
 		)
 		
-		// Three-dot menu
-		IconButton(onClick = { showMenu = true }) {
-			Icon(
-				imageVector = Icons.Default.MoreVert,
-				contentDescription = "More options"
-			)
-		}
-		DropdownMenu(
-			expanded = showMenu,
-			onDismissRequest = { showMenu = false },
-			modifier = Modifier.Companion.fillMaxWidth()
-		) {
-			if (otherUserId != null) {
-				if (isUserBlocked) {
-					DropdownMenuItem(
-						text = { Text("Unblock User") },
-						onClick = {
-							onUnblockUser()
-							showMenu = false
-						}
-					)
-				} else {
-					DropdownMenuItem(
-						text = { Text("Block User") },
-						onClick = {
-							onBlockUser()
-							showMenu = false
-						}
-					)
+		// Three-dot menu (only show for direct messages, not group chats)
+		if (!isGroupChat) {
+			IconButton(onClick = { showMenu = true }) {
+				Icon(
+					imageVector = Icons.Default.MoreVert,
+					contentDescription = "More options"
+				)
+			}
+			DropdownMenu(
+				expanded = showMenu,
+				onDismissRequest = { showMenu = false },
+				modifier = Modifier.Companion.fillMaxWidth()
+			) {
+				if (otherUserId != null) {
+					if (isUserBlocked) {
+						DropdownMenuItem(
+							text = { Text("Unblock User") },
+							onClick = {
+								onUnblockUser()
+								showMenu = false
+							}
+						)
+					} else {
+						DropdownMenuItem(
+							text = { Text("Block User") },
+							onClick = {
+								onBlockUser()
+								showMenu = false
+							}
+						)
+					}
 				}
 			}
 		}
@@ -291,15 +297,9 @@ private fun MessagesList(
 private fun MessageBubbleMine(msg: Message, spacing: Spacing) {
 	Row(
 		modifier = Modifier.fillMaxWidth(),
-		horizontalArrangement = Arrangement.End
+		horizontalArrangement = Arrangement.End,
+		verticalAlignment = Alignment.Bottom
 	) {
-		if (msg.sender?.avatar != null) {
-			AsyncImage(
-				model = RetrofitClient.getPictureUri(msg.sender.avatar),
-				contentDescription = stringResource(R.string.profile_picture),
-				modifier = Modifier.size(12.dp).clip(CircleShape)
-			)
-		}
 		Card(
 			colors = CardDefaults.cardColors(
 				containerColor = MaterialTheme.colorScheme.primary,
@@ -313,22 +313,83 @@ private fun MessageBubbleMine(msg: Message, spacing: Spacing) {
 				modifier = Modifier.Companion.padding(horizontal = spacing.medium, vertical = spacing.small)
 			)
 		}
+		Spacer(modifier = Modifier.Companion.width(spacing.small))
+		// Profile picture and name on the right for own messages
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+			modifier = Modifier.width(48.dp)
+		) {
+			if (!msg.sender?.profilePicture.isNullOrEmpty()) {
+				AsyncImage(
+					model = RetrofitClient.getPictureUri(msg.sender?.profilePicture ?: ""),
+					contentDescription = stringResource(R.string.profile_picture),
+					contentScale = ContentScale.Crop,
+					modifier = Modifier.size(32.dp).clip(CircleShape)
+				)
+			} else {
+				Icon(
+					imageVector = Icons.Default.Person,
+					contentDescription = stringResource(R.string.profile_picture),
+					modifier = Modifier.size(32.dp)
+						.clip(CircleShape)
+						.background(MaterialTheme.colorScheme.primaryContainer)
+						.padding(6.dp),
+					tint = MaterialTheme.colorScheme.onPrimaryContainer
+				)
+			}
+			Text(
+				text = msg.sender?.name ?: "Unknown",
+				style = MaterialTheme.typography.labelSmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
+			)
+		}
 	}
 }
+
 
 @Composable
 private fun MessageBubbleOther(msg: Message, spacing: Spacing) {
 	Row(
 		modifier = Modifier.fillMaxWidth(),
-		horizontalArrangement = Arrangement.Start
+		horizontalArrangement = Arrangement.Start,
+		verticalAlignment = Alignment.Bottom
 	) {
-		if (msg.sender?.avatar != null) {
-			AsyncImage(
-				model = RetrofitClient.getPictureUri(msg.sender.avatar),
-				contentDescription = stringResource(R.string.profile_picture),
-				modifier = Modifier.size(12.dp).clip(CircleShape)
+		// Profile picture and name on the left for other users' messages
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+			modifier = Modifier.width(48.dp)
+		) {
+			if (!msg.sender?.profilePicture.isNullOrEmpty()) {
+				AsyncImage(
+					model = RetrofitClient.getPictureUri(msg.sender?.profilePicture ?: ""),
+					contentDescription = stringResource(R.string.profile_picture),
+					contentScale = ContentScale.Crop,
+					modifier = Modifier.size(32.dp).clip(CircleShape)
+				)
+			} else {
+				Icon(
+					imageVector = Icons.Default.Person,
+					contentDescription = stringResource(R.string.profile_picture),
+					modifier = Modifier.size(32.dp)
+						.clip(CircleShape)
+						.background(MaterialTheme.colorScheme.secondaryContainer)
+						.padding(6.dp),
+					tint = MaterialTheme.colorScheme.onSecondaryContainer
+				)
+			}
+			Text(
+				text = msg.sender?.name ?: "Unknown",
+				style = MaterialTheme.typography.labelSmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
 			)
 		}
+		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Card(
 			colors = CardDefaults.cardColors(
 				containerColor = MaterialTheme.colorScheme.secondary,
@@ -389,7 +450,7 @@ private fun MessageInputBar(
 @Composable
 private fun ChatContent(
 	profilePicture: String?,
-    otherUserName: String,
+    chatDisplayName: String,
     messages: List<Message>,
     currentUserId: String?,
     listState: LazyListState,
@@ -399,7 +460,8 @@ private fun ChatContent(
     otherUserId: String?,
     isUserBlocked: Boolean,
     onBlockUser: () -> Unit,
-    onUnblockUser: () -> Unit
+    onUnblockUser: () -> Unit,
+    isGroupChat: Boolean
 ) {
     val spacing = LocalSpacing.current
     Column(
@@ -407,13 +469,14 @@ private fun ChatContent(
     ) {
         ChatTopBar(
             onBack = onBack, 
-            otherUserName = otherUserName, 
+            chatDisplayName = chatDisplayName, 
             spacing = spacing,
             otherUserId = otherUserId,
             isUserBlocked = isUserBlocked,
             onBlockUser = onBlockUser,
             onUnblockUser = onUnblockUser,
-			profilePicture = profilePicture
+			profilePicture = profilePicture,
+			isGroupChat = isGroupChat
         )
         MessagesList(
             messages = messages,

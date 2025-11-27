@@ -125,7 +125,7 @@ private fun ChatCard(
         ) {
             // Chat icon
             ProfilePictureDisplay(
-                profilePicture = viewModel.getOtherUserProfilePicture(chat),
+                profilePicture = if (!chat.name.isNullOrEmpty()) null else viewModel.getOtherUserProfilePicture(chat),
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(24.dp))
@@ -140,7 +140,7 @@ private fun ChatCard(
             ) {
                 // Chat name
                 Text(
-                    text = viewModel.getOtherUserName(chat),
+                    text = viewModel.getChatDisplayName(chat),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,

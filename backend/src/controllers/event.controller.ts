@@ -4,6 +4,7 @@ import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { eventModel } from '../models/event.model';
 import { userModel } from '../models/user.model';
+import { Chat } from '../models/chat.model';
 import mongoose from 'mongoose';
 import { IUser } from '../types/user.types';
 
@@ -48,26 +49,56 @@ export class EventController {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
+      // Add creator to attendees list
+      const attendees = req.body.attendees || [];
+      if (!attendees.includes(requester._id.toString())) {
+        attendees.push(requester._id.toString());
+      }
+
       const payload = {
         ...req.body,
         createdBy: requester._id.toString(),
+        attendees: attendees,
       };
 
       const created = await eventModel.create(payload as CreateEventRequest);
 
-      // update user's eventsCreated list with this event
+      // Create event group chat and add creator
+      try {
+        await Chat.findOrCreateEventChat(
+          created._id,
+          created.title,
+          requester._id
+        );
+        logger.info(`Event group chat created for event: ${created._id}`);
+      } catch (chatError) {
+        logger.error(`Failed to create event group chat for event ${created._id}:`, chatError);
+        // Don't fail event creation if chat creation fails
+      }
+
+      // update user's eventsCreated and eventsJoined lists with this event
       const user = await userModel.findById(requester._id);
       if (user) {
         user.eventsCreated = user.eventsCreated || [];
+        user.eventsJoined = user.eventsJoined || [];
         
-        user.eventsCreated.push(created._id);
+        // Add to eventsCreated if not already there
+        if (!user.eventsCreated.some((eId) => eId.equals(created._id))) {
+          user.eventsCreated.push(created._id);
+        }
+        
+        // Add to eventsJoined since creator is automatically an attendee
+        if (!user.eventsJoined.some((eId) => eId.equals(created._id))) {
+          user.eventsJoined.push(created._id);
+        }
+        
         const userObject = user.toObject() as IUser & { __v?: number };
         const { ...rest } = userObject;
         
         const updateBody = {
           ...rest,
           eventsCreated: user.eventsCreated.map((eId) => eId.toString()),
-          eventsJoined: (user.eventsJoined || []).map((eId) => eId.toString()),
+          eventsJoined: user.eventsJoined.map((eId) => eId.toString()),
         };
 
         await userModel.update(user._id, updateBody as unknown as Partial<IUser >);
@@ -172,6 +203,18 @@ export class EventController {
         return res.status(500).json({ message: 'Failed to update event' });
       }
 
+      // Add user to event group chat
+      try {
+        const eventChat = await Chat.findOne({ eventId: eventId });
+        if (eventChat) {
+          await Chat.addParticipant(String(eventChat._id), requester._id);
+          logger.info(`User ${requester._id} added to event group chat for event: ${eventId}`);
+        }
+      } catch (chatError) {
+        logger.error(`Failed to add user to event group chat for event ${eventId}:`, chatError);
+        // Don't fail join if chat update fails
+      }
+
       res.status(200).json({ message: 'Joined event successfully', data: { event: updated } });
 
     } catch (error) {
@@ -201,6 +244,11 @@ export class EventController {
 
       if (!existing.attendees.includes(requester._id)) {
         return res.status(400).json({ message: 'User is not an attendee of the event' });
+      }
+
+      // Prevent event creator from leaving the event
+      if (existing.createdBy.equals(requester._id)) {
+        return res.status(400).json({ message: 'Event creator cannot leave the event' });
       }
 
       existing.attendees = existing.attendees.filter((attendeeId) => !attendeeId.equals(requester._id));
@@ -235,6 +283,18 @@ export class EventController {
         return res.status(500).json({ message: 'Failed to update event' });
       }
 
+      // Remove user from event group chat
+      try {
+        const eventChat = await Chat.findOne({ eventId: eventId });
+        if (eventChat) {
+          await Chat.removeParticipant(String(eventChat._id), requester._id);
+          logger.info(`User ${requester._id} removed from event group chat for event: ${eventId}`);
+        }
+      } catch (chatError) {
+        logger.error(`Failed to remove user from event group chat for event ${eventId}:`, chatError);
+        // Don't fail leave if chat update fails
+      }
+
       res.status(200).json({ message: 'Left event successfully', data: { event: updated } });
     } catch (error) {
       logger.error('Failed to leave event:', error);
@@ -259,6 +319,18 @@ export class EventController {
       // delete related media if any
       if (existing.photo) {
         MediaService.deleteImage(existing.photo);
+      }
+
+      // Delete event group chat (this removes all participants including creator)
+      try {
+        const eventChat = await Chat.findOne({ eventId: eventId });
+        if (eventChat) {
+          await Chat.deleteOne({ _id: eventChat._id });
+          logger.info(`Event group chat deleted for event: ${eventId} (owner and all participants removed)`);
+        }
+      } catch (chatError) {
+        logger.error(`Failed to delete event group chat for event ${eventId}:`, chatError);
+        // Don't fail event deletion if chat cleanup fails
       }
 
       // bulk remove the event from all attendees' eventsJoined lists

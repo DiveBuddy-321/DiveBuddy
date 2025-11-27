@@ -5,7 +5,7 @@ import java.util.Date
 data class Sender(
     val _id: String,
     val name: String,
-    val avatar: String? = null
+    val profilePicture: String? = null
 )
 
 data class Message(

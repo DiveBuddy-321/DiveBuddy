@@ -7,6 +7,7 @@ import com.cpen321.usermanagement.data.remote.dto.Message
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.BlockRepository
 import com.cpen321.usermanagement.data.repository.BlockedException
+import com.cpen321.usermanagement.data.repository.ChatDeletedException
 import com.cpen321.usermanagement.data.repository.ChatRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.socket.SocketManager
@@ -98,9 +99,16 @@ class ChatViewModel @Inject constructor(
         // Listen to socket errors
         viewModelScope.launch {
             socketManager.errorFlow.collect { event ->
+                val friendlyMessage =
+                // special case for users attempting to access deleted chats/chat with deleted users
+                    if (event.message.contains("Chat not found") || event.message.contains("access denied") || event.message.contains("not a participant")) {
+                        "This chat has been deleted."
+                    } else {
+                        event.message
+                    }
                 _uiState.value = _uiState.value.copy(
                     connectionState = _uiState.value.connectionState.copy(
-                        error = event.message,
+                        error = friendlyMessage,
                         errorTimestamp = System.currentTimeMillis()
                     )
                 )
@@ -263,6 +271,7 @@ class ChatViewModel @Inject constructor(
                 }.onFailure { e ->
                     val errorMessage = when (e) {
                         is BlockedException -> "You cannot send messages to this user. You have been blocked."
+                        is ChatDeletedException -> "This chat has been deleted."
                         else -> e.message ?: "Failed to send message"
                     }
                     _uiState.value = _uiState.value.copy(
@@ -296,6 +305,15 @@ class ChatViewModel @Inject constructor(
         val currentUserId = _uiState.value.userData.currentUserId
         val otherUserId = chat.participants.find { it != currentUserId }
         return otherUserId?.let { _uiState.value.userData.userNames[it] } ?: "Unknown User"
+    }
+    
+    fun getChatDisplayName(chat: Chat): String {
+        // If chat has a name field, it's a group chat (event) - use that name directly
+        if (!chat.name.isNullOrEmpty()) {
+            return chat.name
+        }
+        // Otherwise it's a direct message - display the other user's name
+        return getOtherUserName(chat)
     }
     
     fun getOtherUserId(chat: Chat): String? {
