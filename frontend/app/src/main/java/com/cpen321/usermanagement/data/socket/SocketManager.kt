@@ -317,8 +317,8 @@ class SocketManager @Inject constructor() {
             val s = obj.getJSONObject("sender")
             val senderId = s.optString("_id", "")
             val name = s.optString("name", "Unknown")
-            val avatar = if (s.has("avatar") && !s.isNull("avatar")) s.optString("avatar", null) else null
-            Sender(_id = senderId, name = name, avatar = avatar)
+            val profilePicture = if (s.has("profilePicture") && !s.isNull("profilePicture")) s.optString("profilePicture", null) else null
+            Sender(_id = senderId, name = name, profilePicture = profilePicture)
         } else {
             null
         }

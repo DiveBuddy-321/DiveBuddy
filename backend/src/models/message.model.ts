@@ -96,7 +96,7 @@ messageSchema.statics.getMessagesForChat = function (
   return this.find(query)
     .sort({ createdAt: -1 })
     .limit(Math.max(1, Math.min(200, limit as number)))
-    .populate("sender", "name avatar")
+    .populate("sender", "name profilePicture")
     .lean()
     .exec();
 };
@@ -104,7 +104,7 @@ messageSchema.statics.getMessagesForChat = function (
 // Get a specific message by ID
 messageSchema.statics.getMessageById = function (messageId: string): Promise<IMessageDocument | null> {
   return this.findById(messageId)
-    .populate("sender", "name avatar")
+    .populate("sender", "name profilePicture")
     .lean()
     .exec();
 };
