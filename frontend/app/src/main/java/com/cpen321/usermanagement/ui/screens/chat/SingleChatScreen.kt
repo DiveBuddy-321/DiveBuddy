@@ -322,7 +322,7 @@ private fun MessageBubbleMine(msg: Message, spacing: Spacing) {
 		) {
 			if (!msg.sender?.profilePicture.isNullOrEmpty()) {
 				AsyncImage(
-					model = RetrofitClient.getPictureUri(msg.sender!!.profilePicture!!),
+					model = RetrofitClient.getPictureUri(msg.sender?.profilePicture ?: ""),
 					contentDescription = stringResource(R.string.profile_picture),
 					contentScale = ContentScale.Crop,
 					modifier = Modifier.size(32.dp).clip(CircleShape)
@@ -365,7 +365,7 @@ private fun MessageBubbleOther(msg: Message, spacing: Spacing) {
 		) {
 			if (!msg.sender?.profilePicture.isNullOrEmpty()) {
 				AsyncImage(
-					model = RetrofitClient.getPictureUri(msg.sender!!.profilePicture!!),
+					model = RetrofitClient.getPictureUri(msg.sender?.profilePicture ?: ""),
 					contentDescription = stringResource(R.string.profile_picture),
 					contentScale = ContentScale.Crop,
 					modifier = Modifier.size(32.dp).clip(CircleShape)

@@ -100,7 +100,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             socketManager.errorFlow.collect { event ->
                 val friendlyMessage =
-                //special case for users attempting to access deleted chats/chat with deleted users
+                // special case for users attempting to access deleted chats/chat with deleted users
                     if (event.message.contains("Chat not found") || event.message.contains("access denied") || event.message.contains("not a participant")) {
                         "This chat has been deleted."
                     } else {
