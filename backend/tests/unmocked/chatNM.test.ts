@@ -11,6 +11,7 @@ import { Chat } from '../../src/models/chat.model';
 import { Message } from '../../src/models/message.model';
 import express from 'express';
 import chatRoutes from '../../src/routes/chat.routes';
+import blockRoutes from '../../src/routes/block.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
 
 dotenv.config();
@@ -29,10 +30,15 @@ app.use(express.json());
 // Note: _id as ObjectId matches the IUser interface and real auth middleware behavior
 app.use((req: any, res, next) => {
   if (testUser) {
+    // Allow switching acting user via header 'x-user-id' for tests
+    const headerUserId = req.header('x-user-id');
+    const actingUser = headerUserId && otherTestUser && String(otherTestUser._id) === String(headerUserId)
+      ? otherTestUser
+      : testUser;
     const mockUser = {
-      _id: testUser._id,
-      email: testUser.email,
-      name: testUser.name
+      _id: actingUser._id,
+      email: actingUser.email,
+      name: actingUser.name
     };
     req.user = mockUser;
     console.log('[MOCK AUTH] Setting req.user:', {
@@ -62,6 +68,7 @@ app.use('/api/chats', (req: any, res, next) => {
 
 // Mount routes directly (bypassing src/routes.ts which applies authenticateToken)
 app.use('/api/chats', chatRoutes);
+app.use('/api/block', blockRoutes);
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
@@ -72,7 +79,7 @@ beforeAll(async () => {
   
   // Create test users
   const newUser: CreateUserRequest = {
-    email: 'test@example.com',
+    email: `chatnm-test-${Date.now()}@example.com`,
     name: 'Test User',
     googleId: `test-google-${Date.now()}`,
     age: 25,
@@ -86,7 +93,7 @@ beforeAll(async () => {
   testUser = await userModel.create(newUser);
   
   const newOtherUser: CreateUserRequest = {
-    email: 'other@example.com',
+    email: `chatnm-other-${Date.now()}@example.com`,
     name: 'Other Test User',
     googleId: `test-google-other-${Date.now()}`,
     age: 30,
@@ -526,6 +533,108 @@ describe('GET /api/chats/messages/:chatId - unmocked (no mocking)', () => {
     const res = await request(app).get(`/api/chats/messages/${chatId}`);
     expect(res.status).toBe(200);
     expect(res.body.limit).toBe(20);
+  });
+});
+
+describe('Blocking behavior - unmocked (no mocking)', () => {
+
+    /*
+    Inputs: Two users A and B
+    Expected status: 403
+    Output (user B): error message 'You cannot send messages to this user due to being blocked by them.' in response.body.error for user B
+    Output (user A): error message 'You cannot send messages to this user as you have blocked them.' in response.body.error for user A
+    Expected behavior: Prevents messaging in either direction when A blocks B
+  */
+  test('prevents messaging when A blocks B (both directions)', async () => {
+    // A blocks B
+    const blockRes = await request(app).post('/api/block').send({
+      targetUserId: otherTestUser._id.toString()
+    });
+    expect(blockRes.status).toBe(201);
+
+    // B -> A should fail: blocked by them
+    const bToA = await request(app)
+      .post(`/api/chats/${chatId}/messages`)
+      .set('x-user-id', otherTestUser._id.toString())
+      .send({ content: 'Hello from B' });
+    expect(bToA.status).toBe(403);
+    expect(bToA.body).toHaveProperty('error');
+    expect(bToA.body.error).toBe('You cannot send messages to this user due to being blocked by them.');
+
+    // A -> B should fail: you have blocked them
+    const aToB = await request(app)
+      .post(`/api/chats/${chatId}/messages`)
+      .send({ content: 'Hello from A' });
+    expect(aToB.status).toBe(403);
+    expect(aToB.body).toHaveProperty('error');
+    expect(aToB.body.error).toBe('You cannot send messages to this user as you have blocked them.');
+  });
+
+  /*
+    Inputs: Two users A and B
+    Expected status: 403
+    Output (user A): error message 'You cannot send messages to this user due to being blocked by them.' in response.body.error for user A
+    Output (user B): error message 'You cannot send messages to this user as you have blocked them.' in response.body.error for user B
+    Expected behavior: Prevents messaging in either direction when B blocks A after A unblocks B
+  */
+  test('prevents messaging when B blocks A after A unblocks B', async () => {
+    // A unblocks B
+    const unblockRes = await request(app).delete(`/api/block/${otherTestUser._id.toString()}`);
+    expect(unblockRes.status).toBe(200);
+
+    // B blocks A
+    const bBlocksA = await request(app)
+      .post('/api/block')
+      .set('x-user-id', otherTestUser._id.toString())
+      .send({ targetUserId: testUser._id.toString() });
+    expect(bBlocksA.status).toBe(201);
+
+    // A -> B should fail: blocked by them (B blocked A)
+    const aToB = await request(app)
+      .post(`/api/chats/${chatId}/messages`)
+      .send({ content: 'Message from A' });
+    expect(aToB.status).toBe(403);
+    expect(aToB.body).toHaveProperty('error');
+    expect(aToB.body.error).toBe('You cannot send messages to this user due to being blocked by them.');
+
+    // B -> A should fail: you have blocked them (B has blocked A)
+    const bToA = await request(app)
+      .post(`/api/chats/${chatId}/messages`)
+      .set('x-user-id', otherTestUser._id.toString())
+      .send({ content: 'Message from B' });
+    expect(bToA.status).toBe(403);
+    expect(bToA.body).toHaveProperty('error');
+    expect(bToA.body.error).toBe('You cannot send messages to this user as you have blocked them.');
+  });
+
+  /*
+    Inputs: Two users A and B
+    Expected status: 200
+    Expected behavior: Once B unblocks A, sending messages in either direction should be successful again.
+  */
+  test('allows messaging again after B unblocks A', async () => {
+    // B unblocks A
+    const bUnblocksA = await request(app)
+      .delete(`/api/block/${testUser._id.toString()}`)
+      .set('x-user-id', otherTestUser._id.toString());
+    expect(bUnblocksA.status).toBe(200);
+
+    // A -> B succeeds
+    const aToB = await request(app)
+      .post(`/api/chats/${chatId}/messages`)
+      .send({ content: 'A can message B now' });
+    expect(aToB.status).toBe(201);
+    expect(aToB.body).toHaveProperty('_id');
+    expect(aToB.body).toHaveProperty('content');
+
+    // B -> A succeeds
+    const bToA = await request(app)
+      .post(`/api/chats/${chatId}/messages`)
+      .set('x-user-id', otherTestUser._id.toString())
+      .send({ content: 'B can message A now' });
+    expect(bToA.status).toBe(201);
+    expect(bToA.body).toHaveProperty('_id');
+    expect(bToA.body).toHaveProperty('content');
   });
 });
 
