@@ -48,7 +48,7 @@ class SocketManager @Inject constructor() {
     private val _joinedRoomFlow = MutableSharedFlow<JoinedRoomEvent>(replay = 0)
     val joinedRoomFlow: SharedFlow<JoinedRoomEvent> = _joinedRoomFlow.asSharedFlow()
     
-    private val _errorFlow = MutableSharedFlow<SocketErrorEvent>(replay = 0)
+    private val _errorFlow = MutableSharedFlow<SocketErrorEvent>(replay = 1, extraBufferCapacity = 16)
     val errorFlow: SharedFlow<SocketErrorEvent> = _errorFlow.asSharedFlow()
     
     private val _connectionStateFlow = MutableSharedFlow<Boolean>(replay = 1)
@@ -317,8 +317,8 @@ class SocketManager @Inject constructor() {
             val s = obj.getJSONObject("sender")
             val senderId = s.optString("_id", "")
             val name = s.optString("name", "Unknown")
-            val avatar = if (s.has("avatar") && !s.isNull("avatar")) s.optString("avatar", null) else null
-            Sender(_id = senderId, name = name, avatar = avatar)
+            val profilePicture = if (s.has("profilePicture") && !s.isNull("profilePicture")) s.optString("profilePicture", null) else null
+            Sender(_id = senderId, name = name, profilePicture = profilePicture)
         } else {
             null
         }

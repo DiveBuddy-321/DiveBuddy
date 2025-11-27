@@ -1,12 +1,16 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.events
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,9 +21,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.cpen321.usermanagement.data.remote.dto.Event
+import com.cpen321.usermanagement.ui.screens.events.NoEventsMessage
+import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -27,6 +34,7 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -36,6 +44,38 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.util.concurrent.CancellationException
+
+@Composable
+fun EventsMapContent(
+    events: List<Event>,
+    uiState: EventUiState,
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit
+) {
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        uiState.error != null -> {
+            EventsErrorMessage(error = uiState.error, onClick = onRefresh)
+        }
+        events.isEmpty() -> {
+            NoEventsMessage()
+        }
+        else -> {
+            EventsMapView(
+                events = events,
+                onEventClick = onEventClick,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
 
 @Composable
 fun EventsMapView(
@@ -112,10 +152,10 @@ private fun rememberLocationPermissionLauncher(
 
 @Composable
 private fun checkAndRequestLocationPermission(
-    context: android.content.Context,
+    context: Context,
     hasLocationPermission: Boolean,
     onPermissionGranted: (Boolean) -> Unit,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
+    permissionLauncher: ActivityResultLauncher<Array<String>>
 ) {
     LaunchedEffect(Unit) {
         val fineLocationGranted = ContextCompat.checkSelfPermission(
@@ -144,7 +184,7 @@ private fun checkAndRequestLocationPermission(
 
 @Composable
 private fun fetchUserLocation(
-    context: android.content.Context,
+    context: Context,
     hasLocationPermission: Boolean,
     onLocationReceived: (LatLng) -> Unit
 ) {
@@ -181,7 +221,7 @@ private fun fetchUserLocation(
 private fun updateCameraToUserLocation(
     userLocation: LatLng?,
     events: List<Event>,
-    cameraPositionState: com.google.maps.android.compose.CameraPositionState
+    cameraPositionState: CameraPositionState
 ) {
     LaunchedEffect(userLocation) {
         if (userLocation != null) {
@@ -199,7 +239,7 @@ private fun MapContent(
     events: List<Event>,
     userLocation: LatLng?,
     hasLocationPermission: Boolean,
-    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
+    cameraPositionState: CameraPositionState,
     onEventClick: (Event) -> Unit,
     modifier: Modifier
 ) {
@@ -218,8 +258,8 @@ private fun MapContent(
                 Circle(
                     center = userLocation,
                     radius = 50000.0, // 50km in meters
-                    fillColor = androidx.compose.ui.graphics.Color(0x1E4285F4),
-                    strokeColor = androidx.compose.ui.graphics.Color(0x964285F4),
+                    fillColor = Color(0x1E4285F4),
+                    strokeColor = Color(0x964285F4),
                     strokeWidth = 3f
                 )
             }
@@ -287,7 +327,7 @@ private fun calculateZoomLevel(
     // Calculate distance to farthest event
     val maxDistance = events.mapNotNull { event ->
         val results = FloatArray(1)
-        android.location.Location.distanceBetween(
+        Location.distanceBetween(
             userLocation.latitude,
             userLocation.longitude,
             event.latitude!!,

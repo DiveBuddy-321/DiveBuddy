@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.events
 
 import android.util.Log
 import androidx.compose.foundation.layout.Box
@@ -20,7 +20,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
-fun EventMapView(
+fun SingleEventMapView(
     latitude: Double?,
     longitude: Double?,
     locationName: String?,

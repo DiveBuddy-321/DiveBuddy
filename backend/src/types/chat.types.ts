@@ -6,6 +6,7 @@ export interface IChat {
   isGroup: boolean;
   name?: string | null;
   participants: Id[];                 // keep ids here; populate type separately if needed
+  eventId?: Id | null;                // reference to event for event group chats
   lastMessage?: Id | null;            // unpopulated - just the message ID
   lastMessageAt?: Date | null;        // include to match model & sorting
   createdAt?: Date;

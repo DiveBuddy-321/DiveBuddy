@@ -27,7 +27,13 @@ import androidx.compose.runtime.collectAsState
 import com.cpen321.usermanagement.ui.viewmodels.chat.ChatViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.utils.ChatUtils.formatLastMessageTime
-
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import com.cpen321.usermanagement.R
+import androidx.compose.foundation.shape.CircleShape
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 @Composable
 fun ChatScreen(
     modifier: Modifier = Modifier,
@@ -70,9 +76,9 @@ private fun ChatContent(
             }
         } else {
             LazyColumn(
-                modifier = modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize().padding(vertical = spacing.large),
                 contentPadding = PaddingValues(horizontal = spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(spacing.small)
+                verticalArrangement = Arrangement.spacedBy(spacing.medium)
             ) {
                 items(chats) { chat ->
                     ChatCard(
@@ -82,6 +88,7 @@ private fun ChatContent(
                             selectedChat = chat
                             showSelectedChat = true
                         }
+                        
                     )
                 }
             }
@@ -117,14 +124,12 @@ private fun ChatCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Chat icon
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Direct message",
+            ProfilePictureDisplay(
+                profilePicture = if (!chat.name.isNullOrEmpty()) null else viewModel.getOtherUserProfilePicture(chat),
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
             
             Spacer(modifier = Modifier.width(spacing.medium))
@@ -135,7 +140,7 @@ private fun ChatCard(
             ) {
                 // Chat name
                 Text(
-                    text = viewModel.getOtherUserName(chat),
+                    text = viewModel.getChatDisplayName(chat),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -162,6 +167,35 @@ private fun ChatCard(
                 text = formatLastMessageTime(chat.lastMessageAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfilePictureDisplay(
+    profilePicture: String?,
+    modifier: Modifier = Modifier
+) {
+    if (!profilePicture.isNullOrEmpty()) {
+        AsyncImage(
+            model = RetrofitClient.getPictureUri(profilePicture),
+            contentDescription = "Profile picture",
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(CircleShape)
+        )
+    } else {
+        // Show default profile icon when no picture is available
+        Box(
+            modifier = modifier
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = ImageVector.vectorResource(id = R.drawable.ic_account_circle),
+                contentDescription = "Default profile picture",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

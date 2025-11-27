@@ -1,5 +1,6 @@
 package com.cpen321.usermanagement.ui.screens.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,9 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,9 +37,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import com.cpen321.usermanagement.data.remote.dto.Chat
@@ -51,10 +57,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import java.util.TimeZone
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun SingleChatScreen(
@@ -70,7 +79,20 @@ fun SingleChatScreen(
     val listState = rememberLazyListState()
     val isLoadingMore = remember { mutableStateOf(false) }
     val messageText = remember { mutableStateOf("") }
-    val otherUserName = chatVm.getOtherUserName(chat)
+    val chatDisplayName = chatVm.getChatDisplayName(chat)
+    val otherUserId = chatVm.getOtherUserId(chat)
+    val isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
+    val context = LocalContext.current
+    
+    // Show toast when there's an error; use timestamp to trigger even for repeated messages
+    LaunchedEffect(uiState.connectionState.errorTimestamp) {
+        uiState.connectionState.error?.let { error ->
+            if (error.isNotEmpty()) {
+                Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+	
 	ChatInitializationEffects(chatId = chat._id, chatVm = chatVm)
 	MessagesCollector(
 		chatId = chat._id,
@@ -106,20 +128,30 @@ fun SingleChatScreen(
 			}
 	}
     ChatContent(
-        otherUserName = otherUserName,
+        profilePicture = if (!chat.name.isNullOrEmpty()) null else chatVm.getOtherUserProfilePicture(chat),
+        chatDisplayName = chatDisplayName,
         messages = messages.value,
-        currentUserId = uiState.currentUserId,
+        currentUserId = uiState.userData.currentUserId,
         listState = listState,
         inputState = messageText,
         onSend = {
             if (messageText.value.trim().isNotEmpty()) {
                 chat._id?.let { chatId ->
-                    chatVm.sendMessage(chatId, messageText.value.trim())
+                    chatVm.sendMessage(chatId, messageText.value.trim(), otherUserId)
                     messageText.value = ""
                 }
             }
         },
-        onBack = onBack
+        onBack = onBack,
+        otherUserId = otherUserId,
+        isUserBlocked = isUserBlocked,
+        onBlockUser = {
+            otherUserId?.let { chatVm.blockUser(it) }
+        },
+        onUnblockUser = {
+            otherUserId?.let { chatVm.unblockUser(it) }
+        },
+        isGroupChat = !chat.name.isNullOrEmpty()
     )
 }
 
@@ -151,9 +183,21 @@ private fun MessagesCollector(
 }
 
 @Composable
-private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spacing) {
+private fun ChatTopBar(
+    onBack: () -> Unit, 
+    chatDisplayName: String, 
+    spacing: Spacing,
+    otherUserId: String?,
+    isUserBlocked: Boolean,
+    onBlockUser: () -> Unit,
+	onUnblockUser: () -> Unit,
+	profilePicture: String?,
+	isGroupChat: Boolean
+) {
+	var showMenu by remember { mutableStateOf(false) }
 	Row(
-		verticalAlignment = Alignment.Companion.CenterVertically
+		verticalAlignment = Alignment.Companion.CenterVertically,
+		modifier = Modifier.Companion.fillMaxWidth()
 	) {
 		IconButton(onClick = onBack) {
 			Icon(
@@ -161,18 +205,65 @@ private fun ChatTopBar(onBack: () -> Unit, otherUserName: String, spacing: Spaci
 				contentDescription = "Back to chats"
 			)
 		}
-		Icon(
-			imageVector = Icons.Default.Person,
-			contentDescription = "Direct message",
-			modifier = Modifier.Companion.size(24.dp),
-			tint = MaterialTheme.colorScheme.onSurface
-		)
+		if (!profilePicture.isNullOrEmpty()) {
+			AsyncImage(
+				model = RetrofitClient.getPictureUri(profilePicture),
+				contentDescription = stringResource(R.string.profile_picture),
+				contentScale = ContentScale.Crop,
+				modifier = Modifier.Companion
+					.size(32.dp)
+					.clip(CircleShape)
+			)
+		} else {
+			Icon(
+				imageVector = Icons.Default.Person,
+				contentDescription = if (isGroupChat) "Group chat" else "Direct message",
+				modifier = Modifier.Companion.size(32.dp),
+				tint = MaterialTheme.colorScheme.onSurface
+			)
+		}
 		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Text(
-			text = otherUserName,
+			text = chatDisplayName,
 			style = MaterialTheme.typography.titleLarge,
-			fontWeight = FontWeight.Companion.SemiBold
+			fontWeight = FontWeight.Companion.SemiBold,
+			modifier = Modifier.Companion.weight(1f)
 		)
+		
+		// Three-dot menu (only show for direct messages, not group chats)
+		if (!isGroupChat) {
+			IconButton(onClick = { showMenu = true }) {
+				Icon(
+					imageVector = Icons.Default.MoreVert,
+					contentDescription = "More options"
+				)
+			}
+			DropdownMenu(
+				expanded = showMenu,
+				onDismissRequest = { showMenu = false },
+				modifier = Modifier.Companion.fillMaxWidth()
+			) {
+				if (otherUserId != null) {
+					if (isUserBlocked) {
+						DropdownMenuItem(
+							text = { Text("Unblock User") },
+							onClick = {
+								onUnblockUser()
+								showMenu = false
+							}
+						)
+					} else {
+						DropdownMenuItem(
+							text = { Text("Block User") },
+							onClick = {
+								onBlockUser()
+								showMenu = false
+							}
+						)
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -206,15 +297,9 @@ private fun MessagesList(
 private fun MessageBubbleMine(msg: Message, spacing: Spacing) {
 	Row(
 		modifier = Modifier.fillMaxWidth(),
-		horizontalArrangement = Arrangement.End
+		horizontalArrangement = Arrangement.End,
+		verticalAlignment = Alignment.Bottom
 	) {
-		if (msg.sender?.avatar != null) {
-			AsyncImage(
-				model = RetrofitClient.getPictureUri(msg.sender.avatar),
-				contentDescription = stringResource(R.string.profile_picture),
-				modifier = Modifier.size(12.dp).clip(CircleShape)
-			)
-		}
 		Card(
 			colors = CardDefaults.cardColors(
 				containerColor = MaterialTheme.colorScheme.primary,
@@ -228,22 +313,83 @@ private fun MessageBubbleMine(msg: Message, spacing: Spacing) {
 				modifier = Modifier.Companion.padding(horizontal = spacing.medium, vertical = spacing.small)
 			)
 		}
+		Spacer(modifier = Modifier.Companion.width(spacing.small))
+		// Profile picture and name on the right for own messages
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+			modifier = Modifier.width(48.dp)
+		) {
+			if (!msg.sender?.profilePicture.isNullOrEmpty()) {
+				AsyncImage(
+					model = RetrofitClient.getPictureUri(msg.sender?.profilePicture ?: ""),
+					contentDescription = stringResource(R.string.profile_picture),
+					contentScale = ContentScale.Crop,
+					modifier = Modifier.size(32.dp).clip(CircleShape)
+				)
+			} else {
+				Icon(
+					imageVector = Icons.Default.Person,
+					contentDescription = stringResource(R.string.profile_picture),
+					modifier = Modifier.size(32.dp)
+						.clip(CircleShape)
+						.background(MaterialTheme.colorScheme.primaryContainer)
+						.padding(6.dp),
+					tint = MaterialTheme.colorScheme.onPrimaryContainer
+				)
+			}
+			Text(
+				text = msg.sender?.name ?: "Unknown",
+				style = MaterialTheme.typography.labelSmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
+			)
+		}
 	}
 }
+
 
 @Composable
 private fun MessageBubbleOther(msg: Message, spacing: Spacing) {
 	Row(
 		modifier = Modifier.fillMaxWidth(),
-		horizontalArrangement = Arrangement.Start
+		horizontalArrangement = Arrangement.Start,
+		verticalAlignment = Alignment.Bottom
 	) {
-		if (msg.sender?.avatar != null) {
-			AsyncImage(
-				model = RetrofitClient.getPictureUri(msg.sender.avatar),
-				contentDescription = stringResource(R.string.profile_picture),
-				modifier = Modifier.size(12.dp).clip(CircleShape)
+		// Profile picture and name on the left for other users' messages
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+			modifier = Modifier.width(48.dp)
+		) {
+			if (!msg.sender?.profilePicture.isNullOrEmpty()) {
+				AsyncImage(
+					model = RetrofitClient.getPictureUri(msg.sender?.profilePicture ?: ""),
+					contentDescription = stringResource(R.string.profile_picture),
+					contentScale = ContentScale.Crop,
+					modifier = Modifier.size(32.dp).clip(CircleShape)
+				)
+			} else {
+				Icon(
+					imageVector = Icons.Default.Person,
+					contentDescription = stringResource(R.string.profile_picture),
+					modifier = Modifier.size(32.dp)
+						.clip(CircleShape)
+						.background(MaterialTheme.colorScheme.secondaryContainer)
+						.padding(6.dp),
+					tint = MaterialTheme.colorScheme.onSecondaryContainer
+				)
+			}
+			Text(
+				text = msg.sender?.name ?: "Unknown",
+				style = MaterialTheme.typography.labelSmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
 			)
 		}
+		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Card(
 			colors = CardDefaults.cardColors(
 				containerColor = MaterialTheme.colorScheme.secondary,
@@ -265,7 +411,8 @@ private fun MessageInputBar(
 	message: String,
 	onMessageChange: (String) -> Unit,
 	onSend: () -> Unit,
-	spacing: Spacing
+	spacing: Spacing,
+	isBlocked: Boolean = false
 ) {
 	Row(
 		modifier = Modifier.Companion
@@ -276,21 +423,22 @@ private fun MessageInputBar(
 		OutlinedTextField(
 			value = message,
 			onValueChange = onMessageChange,
-			placeholder = { Text("Type a message...") },
+			placeholder = { Text(if (isBlocked) "You have blocked this user" else "Type a message...") },
 			modifier = Modifier.Companion
 				.weight(1f)
 				.padding(end = spacing.small),
 			shape = RoundedCornerShape(24.dp),
-			maxLines = 4
+			maxLines = 4,
+			enabled = !isBlocked
 		)
 		IconButton(
 			onClick = onSend,
-			enabled = message.trim().isNotEmpty()
+			enabled = message.trim().isNotEmpty() && !isBlocked
 		) {
 			Icon(
 				imageVector = Icons.AutoMirrored.Filled.Send,
 				contentDescription = "Send message",
-				tint = if (message.trim().isNotEmpty())
+				tint = if (message.trim().isNotEmpty() && !isBlocked)
 					MaterialTheme.colorScheme.primary
 				else
 					MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -301,19 +449,35 @@ private fun MessageInputBar(
 
 @Composable
 private fun ChatContent(
-    otherUserName: String,
+	profilePicture: String?,
+    chatDisplayName: String,
     messages: List<Message>,
     currentUserId: String?,
     listState: LazyListState,
     inputState: MutableState<String>,
     onSend: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    otherUserId: String?,
+    isUserBlocked: Boolean,
+    onBlockUser: () -> Unit,
+    onUnblockUser: () -> Unit,
+    isGroupChat: Boolean
 ) {
     val spacing = LocalSpacing.current
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        ChatTopBar(onBack = onBack, otherUserName = otherUserName, spacing = spacing)
+        ChatTopBar(
+            onBack = onBack, 
+            chatDisplayName = chatDisplayName, 
+            spacing = spacing,
+            otherUserId = otherUserId,
+            isUserBlocked = isUserBlocked,
+            onBlockUser = onBlockUser,
+            onUnblockUser = onUnblockUser,
+			profilePicture = profilePicture,
+			isGroupChat = isGroupChat
+        )
         MessagesList(
             messages = messages,
             currentUserId = currentUserId,
@@ -325,7 +489,8 @@ private fun ChatContent(
             message = inputState.value,
             onMessageChange = { inputState.value = it },
             onSend = onSend,
-            spacing = spacing
+            spacing = spacing,
+            isBlocked = isUserBlocked
         )
     }
 }

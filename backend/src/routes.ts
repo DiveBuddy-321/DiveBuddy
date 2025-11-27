@@ -7,6 +7,7 @@ import mediaRoutes from './routes/media.routes';
 import usersRoutes from './routes/user.routes';
 import eventsRoutes from './routes/event.routes';
 import chatRoutes from "./routes/chat.routes";
+import blockRoutes from './routes/block.routes';
 
 const router = Router();
 
@@ -21,5 +22,7 @@ router.use('/media', authenticateToken, mediaRoutes);
 router.use('/events', authenticateToken, eventsRoutes);
 
 router.use("/chats", authenticateToken, chatRoutes);
+
+router.use('/blocks', authenticateToken, blockRoutes);
 
 export default router;
