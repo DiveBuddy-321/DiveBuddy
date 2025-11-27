@@ -358,7 +358,7 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 			location: "Leave Location",
 			latitude: 51.5074,
 			longitude: -0.1278,
-			createdBy: testUser._id.toString(),
+			createdBy: new mongoose.Types.ObjectId().toString(),
 			attendees: [testUser._id.toString()],
 			photo: ""
 		};
