@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.cpen321.usermanagement.data.remote.dto.Event
+import com.cpen321.usermanagement.ui.components.events.EventsErrorMessage
+import com.cpen321.usermanagement.ui.screens.events.NoEventsMessage
+import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -36,6 +40,38 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.util.concurrent.CancellationException
+
+@Composable
+fun EventsMapContent(
+    events: List<Event>,
+    uiState: EventUiState,
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit
+) {
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        uiState.error != null -> {
+            EventsErrorMessage(error = uiState.error, onClick = onRefresh)
+        }
+        events.isEmpty() -> {
+            NoEventsMessage()
+        }
+        else -> {
+            EventsMapView(
+                events = events,
+                onEventClick = onEventClick,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
 
 @Composable
 fun EventsMapView(

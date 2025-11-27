@@ -1,6 +1,5 @@
 package com.cpen321.usermanagement.ui.screens.events
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
@@ -18,8 +15,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,16 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.dto.Event
 import com.cpen321.usermanagement.data.remote.dto.User
-import com.cpen321.usermanagement.ui.components.EventsMapView
+import com.cpen321.usermanagement.ui.components.EventsMapContent
 import com.cpen321.usermanagement.ui.components.events.EventFilter
 import com.cpen321.usermanagement.ui.components.events.EventFilterDropdown
 import com.cpen321.usermanagement.ui.components.events.EventSort
 import com.cpen321.usermanagement.ui.components.events.EventSortDropdown
+import com.cpen321.usermanagement.ui.components.events.EventsList
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.events.EventViewModel
 import com.cpen321.usermanagement.ui.viewmodels.events.EventUiState
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 data class EventNavigationState(
     val selectedEvent: Event? = null,
@@ -301,31 +295,7 @@ private fun DefaultEventsContent(
 }
 
 @Composable
-private fun ErrorMessage(
-    error: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val spacing = LocalSpacing.current
-    
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-        modifier = modifier.fillMaxSize()
-    ) {
-        Text(
-            text = "Error: $error",
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Button(onClick = onClick) {
-            Text("Retry")
-        }
-    }
-}
-
-@Composable
-private fun NoEventsMessage(
+fun NoEventsMessage(
     modifier: Modifier = Modifier
 ) {
     Text(
@@ -454,7 +424,7 @@ private fun EventsMainContent(
                     onRefresh = onRefresh
                 )
             } else {
-                EventsListContent(
+                EventsList(
                     events = eventsState.sortedEvents,
                     uiState = uiState,
                     onEventClick = onEventClick,
@@ -586,155 +556,6 @@ private fun EventFilterSort(
                 imageVector = Icons.Filled.Refresh,
                 contentDescription = "Refresh Events List",
             )
-        }
-    }
-}
-
-@Composable
-private fun EventsListContent(
-    events: List<Event>,
-    uiState: EventUiState,
-    onEventClick: (Event) -> Unit,
-    onRefresh: () -> Unit
-) {
-    when {
-        uiState.isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-        uiState.error != null -> {
-            ErrorMessage(error = uiState.error, onClick = onRefresh)
-        }
-        uiState.events.isEmpty() -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                NoEventsMessage()
-            }
-        }
-        else -> {
-            EventsColumn(
-                events = events,
-                onEventClick = onEventClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun EventsMapContent(
-    events: List<Event>,
-    uiState: EventUiState,
-    onEventClick: (Event) -> Unit,
-    onRefresh: () -> Unit
-) {
-    when {
-        uiState.isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-        uiState.error != null -> {
-            ErrorMessage(error = uiState.error, onClick = onRefresh)
-        }
-        events.isEmpty() -> {
-            NoEventsMessage()
-        }
-        else -> {
-            EventsMapView(
-                events = events,
-                onEventClick = onEventClick,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-private fun EventsColumn(
-    events: List<Event>,
-    onEventClick: (Event) -> Unit
-) {
-    val spacing = LocalSpacing.current
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-        modifier = Modifier.padding(horizontal = spacing.large)
-    ) {
-        items(events) { event ->
-            EventCard(
-                event = event,
-                onClick = { onEventClick(event) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun EventCard(
-    event: Event,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val spacing = LocalSpacing.current
-    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
-    
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(spacing.small)
-        ) {
-            Text(
-                text = event.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            if (event.location != null) {
-                Text(
-                    text = "📍 ${event.location}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(spacing.medium)
-            ) {
-                Text(
-                    text = "📅 ${dateFormatter.format(event.date)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Text(
-                    text = "👥 ${event.attendees.size}/${event.capacity}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (event.skillLevel != null) {
-                    Text(
-                        text = "🤿 Level: ${event.skillLevel}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
         }
     }
 }
