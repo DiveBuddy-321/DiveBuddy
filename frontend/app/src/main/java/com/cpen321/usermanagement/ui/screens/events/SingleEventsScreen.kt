@@ -128,16 +128,19 @@ fun SingleEventScreen(
             onAttendeesClick = { onShowAttendees(updatedEvent) }
         )
 
-        RegisterLeaveButton(
-            isUserAttending = isUserAttending,
-            isBusy = uiState.isJoiningEvent || uiState.isLeavingEvent,
-            enabled = !uiState.isJoiningEvent && !uiState.isLeavingEvent,
-            onClick = {
-                if (isUserAttending) eventViewModel.leaveEvent(updatedEvent._id)
-                else eventViewModel.joinEvent(updatedEvent._id)
-            },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+        // Only show Join/Leave button if user is not the creator
+        if (!isUserCreator) {
+            RegisterLeaveButton(
+                isUserAttending = isUserAttending,
+                isBusy = uiState.isJoiningEvent || uiState.isLeavingEvent,
+                enabled = !uiState.isJoiningEvent && !uiState.isLeavingEvent,
+                onClick = {
+                    if (isUserAttending) eventViewModel.leaveEvent(updatedEvent._id)
+                    else eventViewModel.joinEvent(updatedEvent._id)
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
         ErrorMessages(
             joinError = uiState.joinEventError,
             leaveError = uiState.leaveEventError
