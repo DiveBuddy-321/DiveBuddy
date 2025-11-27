@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.events
 
 import android.util.Log
 import androidx.compose.foundation.clickable
@@ -44,10 +44,14 @@ import com.google.android.libraries.places.api.model.AutocompleteSessionToken
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse
 import com.google.android.libraries.places.api.net.PlacesClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -115,13 +119,13 @@ private fun PredictionsFetcher(
                 }
                 Log.d("LocationSearchDialog", "Predictions: $results")
                 onPredictionsChange(results)
-            } catch (e: java.net.SocketTimeoutException) {
+            } catch (e: SocketTimeoutException) {
                 Log.e("LocationSearchDialog", "Network timeout while finding predictions", e)
                 onPredictionsChange(emptyList())
-            } catch (e: java.net.UnknownHostException) {
+            } catch (e: UnknownHostException) {
                 Log.e("LocationSearchDialog", "Network connection failed while finding predictions", e)
                 onPredictionsChange(emptyList())
-            } catch (e: java.io.IOException) {
+            } catch (e: IOException) {
                 Log.e("LocationSearchDialog", "IO error while finding predictions", e)
                 onPredictionsChange(emptyList())
             } finally {
@@ -286,7 +290,7 @@ private suspend fun findAutocompletePredictions(
         .setSessionToken(AutocompleteSessionToken.newInstance())
         .build()
 
-    val response = suspendCancellableCoroutine<com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse> { continuation ->
+    val response = suspendCancellableCoroutine<FindAutocompletePredictionsResponse> { continuation ->
         placesClient.findAutocompletePredictions(request)
             .addOnSuccessListener { result ->
                 continuation.resume(result)
