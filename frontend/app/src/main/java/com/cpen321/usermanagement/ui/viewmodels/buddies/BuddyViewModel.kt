@@ -50,14 +50,24 @@ open class BuddyViewModel @Inject constructor(
         val maxLevel: Int? = savedStateHandle.get<Int?>(KEY_MAX_LEVEL)
         val minAge: Int? = savedStateHandle.get<Int?>(KEY_MIN_AGE)
         val maxAge: Int? = savedStateHandle.get<Int?>(KEY_MAX_AGE)
-        if (listOfNotNull(minLevel, maxLevel, minAge, maxAge).isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(
-                targetMinLevel = minLevel,
-                targetMaxLevel = maxLevel,
-                targetMinAge = minAge,
-                targetMaxAge = maxAge
-            )
-        }
+
+        // Default to "All levels" and full age range when nothing saved
+        val defaultMinLevel = minLevel ?: Constants.BEGINNER_LEVEL
+        val defaultMaxLevel = maxLevel ?: Constants.ADVANCED_LEVEL
+        val defaultMinAge = minAge ?: Constants.MIN_AGE
+        val defaultMaxAge = maxAge ?: Constants.MAX_AGE
+
+        _uiState.value = _uiState.value.copy(
+            targetMinLevel = defaultMinLevel,
+            targetMaxLevel = defaultMaxLevel,
+            targetMinAge = defaultMinAge,
+            targetMaxAge = defaultMaxAge
+        )
+
+        savedStateHandle[KEY_MIN_LEVEL] = defaultMinLevel
+        savedStateHandle[KEY_MAX_LEVEL] = defaultMaxLevel
+        savedStateHandle[KEY_MIN_AGE] = defaultMinAge
+        savedStateHandle[KEY_MAX_AGE] = defaultMaxAge
     }
 
     fun setFilters(
@@ -85,12 +95,9 @@ open class BuddyViewModel @Inject constructor(
         val minAge = s.targetMinAge
         val maxAge = s.targetMaxAge
 
-        if (minLevel == null || maxLevel == null) {
-            return "Level is required"
-        }
-        if (minAge == null || maxAge == null) {
-            return "Age is required"
-        }
+        // min/max should always be set by init; keep validations below as safety
+        if (minLevel == null || maxLevel == null) return "Level is required"
+        if (minAge == null || maxAge == null) return "Age is required"
 
         if (!(Constants.BEGINNER_LEVEL..Constants.ADVANCED_LEVEL).contains(minLevel) || 
         !(Constants.BEGINNER_LEVEL..Constants.ADVANCED_LEVEL).contains(maxLevel)) {
