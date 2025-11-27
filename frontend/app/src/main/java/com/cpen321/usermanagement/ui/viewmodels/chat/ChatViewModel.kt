@@ -20,7 +20,8 @@ import javax.inject.Inject
 //UserData groups ui state variables related to user info together
 data class UserData(
     val currentUserId: String? = null,
-    val userNames: Map<String, String> = emptyMap() // userId -> userName mapping
+    val userNames: Map<String, String> = emptyMap(), // userId -> userName mapping
+    val profilePictures: Map<String, String?> = emptyMap() // userId -> profilePicture path
 )
 
 //BlockData groups ui state variables related to blocking a user
@@ -137,18 +138,12 @@ class ChatViewModel @Inject constructor(
                         chat.participants.filter { it != profile?._id }
                     }.distinct()
                     
-                    // Fetch user names for all participants
+                    // Fetch user names and profile pictures for all participants
                     val userNamesMap = mutableMapOf<String, String>()
-                    participantIds.forEach { userId ->
-                        profileRepository.getProfileById(userId).getOrNull()?.let { user ->
-                            userNamesMap[userId] = user.name
-                        }
-                    }
-
-                    //Fetch profile pictures for all participants
                     val profilePicturesMap = mutableMapOf<String, String?>()
                     participantIds.forEach { userId ->
                         profileRepository.getProfileById(userId).getOrNull()?.let { user ->
+                            userNamesMap[userId] = user.name
                             profilePicturesMap[userId] = user.profilePicture
                         }
                     }
@@ -158,7 +153,8 @@ class ChatViewModel @Inject constructor(
                         chats = chatList,
                         userData = UserData(
                             currentUserId = profile?._id,
-                            userNames = userNamesMap
+                            userNames = userNamesMap,
+                            profilePictures = profilePicturesMap
                         )
 
                     )
@@ -391,9 +387,9 @@ class ChatViewModel @Inject constructor(
     }
     
     fun getOtherUserProfilePicture(chat: Chat): String? {
-        val currentUserId = _uiState.value.currentUserId
-        val otherUserId = chat.participants.find { it != currentUserId }
-        return otherUserId?.let { _uiState.value.profilePictures[it] }
+		val currentUserId = _uiState.value.userData.currentUserId
+		val otherUserId = chat.participants.find { it != currentUserId }
+		return otherUserId?.let { _uiState.value.userData.profilePictures[it] }
     }
     
     override fun onCleared() {

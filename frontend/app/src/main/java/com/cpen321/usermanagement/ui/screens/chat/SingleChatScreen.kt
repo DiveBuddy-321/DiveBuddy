@@ -187,7 +187,8 @@ private fun ChatTopBar(
     otherUserId: String?,
     isUserBlocked: Boolean,
     onBlockUser: () -> Unit,
-    onUnblockUser: () -> Unit
+	onUnblockUser: () -> Unit,
+	profilePicture: String?
 ) {
 	var showMenu by remember { mutableStateOf(false) }
 	Row(
@@ -387,6 +388,7 @@ private fun MessageInputBar(
 
 @Composable
 private fun ChatContent(
+	profilePicture: String?,
     otherUserName: String,
     messages: List<Message>,
     currentUserId: String?,
@@ -410,7 +412,8 @@ private fun ChatContent(
             otherUserId = otherUserId,
             isUserBlocked = isUserBlocked,
             onBlockUser = onBlockUser,
-            onUnblockUser = onUnblockUser
+            onUnblockUser = onUnblockUser,
+			profilePicture = profilePicture
         )
         MessagesList(
             messages = messages,
