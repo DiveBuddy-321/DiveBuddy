@@ -226,7 +226,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			latitude: 37.7749,
 			longitude: -122.4194,
 			createdBy: testUser._id.toString(),
-			attendees: [],
+			attendees: [testUser._id.toString()],
 			photo: ""
 		};
 
@@ -255,7 +255,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		expect(eventInDb?.latitude).toBe(newEvent.latitude);
 		expect(eventInDb?.longitude).toBe(newEvent.longitude);
 		expect(eventInDb?.createdBy.toString()).toBe(newEvent.createdBy);
-		expect(eventInDb?.attendees.length).toBe(0);
+		expect(eventInDb?.attendees.length).toBe(1);
 		expect(eventInDb?.photo).toBe(newEvent.photo);
 
 		// cleanup - delete the created event
@@ -804,7 +804,7 @@ describe('DELETE /api/users/ - unmocked (requires running server)', () => {
         
         // call the endpoint with the generated token
         const startTime = performance.now();
-        const deleteRes = await request(app).delete('/api/users').set('Authorization', `Bearer ${token}`);
+        const deleteRes = await request(app).delete(`/api/users/${deletedUserId.toString()}`);
         const endTime = performance.now();
 
         expect(endTime - startTime).toBeLessThan(500); // ensure within nfr timeout

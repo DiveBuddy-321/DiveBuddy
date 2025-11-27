@@ -171,7 +171,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 			latitude: 37.7749,
 			longitude: -122.4194,
 			createdBy: testUser._id.toString(),
-			attendees: [],
+			attendees: [testUser._id.toString()],
 			photo: ""
 		};
 
@@ -195,7 +195,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		expect(eventInDb?.latitude).toBe(newEvent.latitude);
 		expect(eventInDb?.longitude).toBe(newEvent.longitude);
 		expect(eventInDb?.createdBy.toString()).toBe(testUser._id.toString());
-		expect(eventInDb?.attendees.length).toBe(0);
+		expect(eventInDb?.attendees.length).toBe(1);
 		expect(eventInDb?.photo).toBe(newEvent.photo);
 
 		// cleanup - delete the created event
