@@ -48,7 +48,7 @@ class SocketManager @Inject constructor() {
     private val _joinedRoomFlow = MutableSharedFlow<JoinedRoomEvent>(replay = 0)
     val joinedRoomFlow: SharedFlow<JoinedRoomEvent> = _joinedRoomFlow.asSharedFlow()
     
-    private val _errorFlow = MutableSharedFlow<SocketErrorEvent>(replay = 0)
+    private val _errorFlow = MutableSharedFlow<SocketErrorEvent>(replay = 1, extraBufferCapacity = 16)
     val errorFlow: SharedFlow<SocketErrorEvent> = _errorFlow.asSharedFlow()
     
     private val _connectionStateFlow = MutableSharedFlow<Boolean>(replay = 1)

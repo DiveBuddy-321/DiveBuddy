@@ -344,7 +344,7 @@ private fun ConfirmDeleteDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete Event") },
-        text = { Text("Are you sure you want to delete \"$eventTitle\"? This action cannot be undone.") },
+        text = { Text("Are you sure you want to delete \"$eventTitle\"? This action cannot be undone. Note that this will also delete all chat history for this event.") },
         confirmButton = {
             Button(
                 onClick = onConfirm,
