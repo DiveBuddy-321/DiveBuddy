@@ -99,7 +99,6 @@ private fun HandleEventMessages(
 
 @Composable
 fun EventsScreen(
-    modifier: Modifier = Modifier,
     eventViewModel: EventViewModel = hiltViewModel()
 ) {
     var selectedEvent by remember { mutableStateOf<Event?>(null) }
@@ -346,18 +345,35 @@ private fun EventsContent(
     initialIsMapView: Boolean = false,
     onViewStateChange: (Boolean) -> Unit
 ) {
-    val spacing = LocalSpacing.current
+    val eventsState = rememberEventsState(
+        uiState = uiState,
+        initialIsMapView = initialIsMapView,
+        onViewStateChange = onViewStateChange
+    )
 
+    EventsMainContent(
+        uiState = uiState,
+        eventsState = eventsState,
+        onCreateEventClick = onCreateEventClick,
+        onEventClick = onEventClick,
+        onRefresh = onRefresh
+    )
+}
+
+@Composable
+private fun rememberEventsState(
+    uiState: EventUiState,
+    initialIsMapView: Boolean,
+    onViewStateChange: (Boolean) -> Unit
+): EventsState {
     var isMapView by remember { mutableStateOf(initialIsMapView) }
     var selectedFilter by remember { mutableStateOf(EventFilter.ALL) }
     var selectedSort by remember { mutableStateOf(EventSort.DATE_ASC) }
     
-    // Update when initialIsMapView changes (when coming back from event detail)
     LaunchedEffect(initialIsMapView) {
         isMapView = initialIsMapView
     }
 
-    // Filter events based on selected filter
     val filteredEvents = remember(uiState.events, uiState.currentUser, selectedFilter) {
         when (selectedFilter) {
             EventFilter.ALL -> uiState.events
@@ -371,8 +387,6 @@ private fun EventsContent(
             }
         }
     }
-
-    // Sort events based on selected sort option
     val sortedEvents = remember(filteredEvents, selectedSort) {
         when (selectedSort) {
             EventSort.NAME_ASC -> filteredEvents.sortedBy { it.title.lowercase() }
@@ -382,31 +396,66 @@ private fun EventsContent(
         }
     }
 
+    return EventsState(
+        isMapView = isMapView,
+        selectedFilter = selectedFilter,
+        selectedSort = selectedSort,
+        filteredEvents = filteredEvents,
+        sortedEvents = sortedEvents,
+        onIsMapViewChange = { newValue ->
+            isMapView = newValue
+            onViewStateChange(newValue)
+        },
+        onFilterChange = { selectedFilter = it },
+        onSortChange = { selectedSort = it }
+    )
+}
+
+private data class EventsState(
+    val isMapView: Boolean,
+    val selectedFilter: EventFilter,
+    val selectedSort: EventSort,
+    val filteredEvents: List<Event>,
+    val sortedEvents: List<Event>,
+    val onIsMapViewChange: (Boolean) -> Unit,
+    val onFilterChange: (EventFilter) -> Unit,
+    val onSortChange: (EventSort) -> Unit
+)
+
+@Composable
+private fun EventsMainContent(
+    uiState: EventUiState,
+    eventsState: EventsState,
+    onCreateEventClick: () -> Unit,
+    onEventClick: (Event) -> Unit,
+    onRefresh: () -> Unit
+) {
+    val spacing = LocalSpacing.current
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
             EventsHeader(
                 onRefresh = onRefresh,
-                isMapView = isMapView,
+                isMapView = eventsState.isMapView,
                 onViewToggle = {
-                    isMapView = !isMapView
-                    onViewStateChange(isMapView)
+                    eventsState.onIsMapViewChange(!eventsState.isMapView)
                 },
-                selectedFilter = selectedFilter,
-                onFilterChange = { selectedFilter = it },
-                selectedSort = selectedSort,
-                onSortChange = { selectedSort = it }
+                selectedFilter = eventsState.selectedFilter,
+                onFilterChange = eventsState.onFilterChange,
+                selectedSort = eventsState.selectedSort,
+                onSortChange = eventsState.onSortChange
             )
 
-            if (isMapView) {
+            if (eventsState.isMapView) {
                 EventsMapContent(
-                    events = filteredEvents,
+                    events = eventsState.filteredEvents,
                     uiState = uiState,
                     onEventClick = onEventClick,
                     onRefresh = onRefresh
                 )
             } else {
                 EventsListContent(
-                    events = sortedEvents,
+                    events = eventsState.sortedEvents,
                     uiState = uiState,
                     onEventClick = onEventClick,
                     onRefresh = onRefresh
