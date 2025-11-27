@@ -298,6 +298,15 @@ class ChatViewModel @Inject constructor(
         return otherUserId?.let { _uiState.value.userData.userNames[it] } ?: "Unknown User"
     }
     
+    fun getChatDisplayName(chat: Chat): String {
+        // If chat has a name field, it's a group chat (event) - use that name directly
+        if (!chat.name.isNullOrEmpty()) {
+            return chat.name
+        }
+        // Otherwise it's a direct message - display the other user's name
+        return getOtherUserName(chat)
+    }
+    
     fun getOtherUserId(chat: Chat): String? {
         val currentUserId = _uiState.value.userData.currentUserId
         return chat.participants.find { it != currentUserId }
