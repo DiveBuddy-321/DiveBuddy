@@ -29,6 +29,8 @@ data class User(
     val longitude: Double? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    val eventsJoined: List<String>? = null,
+    val eventsCreated: List<String>? = null,
 )
 
 

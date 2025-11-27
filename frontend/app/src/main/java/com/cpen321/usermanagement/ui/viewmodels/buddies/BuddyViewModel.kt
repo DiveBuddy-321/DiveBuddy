@@ -95,12 +95,9 @@ open class BuddyViewModel @Inject constructor(
         val minAge = s.targetMinAge
         val maxAge = s.targetMaxAge
 
-        if (minLevel == null || maxLevel == null) {
-            return "Level is required"
-        }
-        if (minAge == null || maxAge == null) {
-            return "Age is required"
-        }
+        // min/max should always be set by init; keep validations below as safety
+        if (minLevel == null || maxLevel == null) return "Level is required"
+        if (minAge == null || maxAge == null) return "Age is required"
 
         if (!(Constants.BEGINNER_LEVEL..Constants.ADVANCED_LEVEL).contains(minLevel) || 
         !(Constants.BEGINNER_LEVEL..Constants.ADVANCED_LEVEL).contains(maxLevel)) {

@@ -61,6 +61,7 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import java.util.TimeZone
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun SingleChatScreen(
@@ -125,6 +126,7 @@ fun SingleChatScreen(
 			}
 	}
     ChatContent(
+        profilePicture = chatVm.getOtherUserProfilePicture(chat),
         otherUserName = otherUserName,
         messages = messages.value,
         currentUserId = uiState.userData.currentUserId,
@@ -198,12 +200,23 @@ private fun ChatTopBar(
 				contentDescription = "Back to chats"
 			)
 		}
-		Icon(
-			imageVector = Icons.Default.Person,
-			contentDescription = "Direct message",
-			modifier = Modifier.Companion.size(24.dp),
-			tint = MaterialTheme.colorScheme.onSurface
-		)
+		if (!profilePicture.isNullOrEmpty()) {
+			AsyncImage(
+				model = RetrofitClient.getPictureUri(profilePicture),
+				contentDescription = stringResource(R.string.profile_picture),
+				contentScale = ContentScale.Crop,
+				modifier = Modifier.Companion
+					.size(32.dp)
+					.clip(CircleShape)
+			)
+		} else {
+			Icon(
+				imageVector = Icons.Default.Person,
+				contentDescription = "Direct message",
+				modifier = Modifier.Companion.size(32.dp),
+				tint = MaterialTheme.colorScheme.onSurface
+			)
+		}
 		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Text(
 			text = otherUserName,

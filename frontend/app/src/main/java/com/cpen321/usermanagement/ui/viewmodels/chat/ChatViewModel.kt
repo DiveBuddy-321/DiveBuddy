@@ -43,6 +43,7 @@ data class ChatUiState(
     val userData: UserData = UserData(),
     val blockData: BlockData = BlockData(),
     val connectionState: ConnectionState = ConnectionState()
+
 )
 
 @HiltViewModel
@@ -143,7 +144,15 @@ class ChatViewModel @Inject constructor(
                             userNamesMap[userId] = user.name
                         }
                     }
-                    
+
+                    //Fetch profile pictures for all participants
+                    val profilePicturesMap = mutableMapOf<String, String?>()
+                    participantIds.forEach { userId ->
+                        profileRepository.getProfileById(userId).getOrNull()?.let { user ->
+                            profilePicturesMap[userId] = user.profilePicture
+                        }
+                    }
+                 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         chats = chatList,
@@ -151,6 +160,7 @@ class ChatViewModel @Inject constructor(
                             currentUserId = profile?._id,
                             userNames = userNamesMap
                         )
+
                     )
                 },
                 onFailure = { e -> 
@@ -378,6 +388,12 @@ class ChatViewModel @Inject constructor(
                 }
             )
         }
+    }
+    
+    fun getOtherUserProfilePicture(chat: Chat): String? {
+        val currentUserId = _uiState.value.currentUserId
+        val otherUserId = chat.participants.find { it != currentUserId }
+        return otherUserId?.let { _uiState.value.profilePictures[it] }
     }
     
     override fun onCleared() {
