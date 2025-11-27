@@ -30,11 +30,21 @@ afterAll(() => {
 });
 
 describe('BlockModel - mocked', () => {
+  /*
+    Inputs: Function call to blockUser with targetUserId being the same as the authenticated user
+    Output: { error: Cannot block yourself }
+    Expected behavior: Returns error when attempting to block oneself
+  */
   test('blockUser throws when blocking self', async () => {
     const id = new mongoose.Types.ObjectId();
     await expect(blockModel.blockUser(id, id)).rejects.toThrow('Cannot block yourself');
   });
 
+  /*
+    Inputs: Function call to blockUser with target being different from the authenticated user
+    Output: { error: Failed to create block record }
+    Expected behavior: Returns an error when database fails in findOneAndUpdate operation
+  */
   test('blockUser throws when findOneAndUpdate returns null (failed to create)', async () => {
     const a = new mongoose.Types.ObjectId();
     const b = new mongoose.Types.ObjectId();
@@ -47,6 +57,12 @@ describe('BlockModel - mocked', () => {
 });
 
 describe('BlockController - mocked error paths', () => {
+  /*
+    Inputs: POST request to /api/block with targetUserId being a valid ObjectId
+    Expected status: 500
+    Output: { error }
+    Expected behavior: Returns error when there is a database error trying to add to the blocked table
+  */
   test('POST /api/block returns 500 when blockUser throws', async () => {
     const targetId = new mongoose.Types.ObjectId();
     const spy = jest.spyOn(blockModel, 'blockUser').mockRejectedValue(new Error('DB error'));
@@ -55,6 +71,12 @@ describe('BlockController - mocked error paths', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  /*
+    Inputs: DELETE request to /api/block/:targetUserId with targetUserId being a valid ObjectId
+    Expected status: 500
+    Output: { error }
+    Expected behavior: Returns error when there is a database error trying to add to the blocked table
+  */
   test('DELETE /api/block/:targetUserId returns 500 when unblockUser throws', async () => {
     const targetId = new mongoose.Types.ObjectId();
     const spy = jest.spyOn(blockModel, 'unblockUser').mockRejectedValue(new Error('DB error'));
@@ -63,6 +85,12 @@ describe('BlockController - mocked error paths', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  /*
+    Inputs: GET request to /api/block
+    Expected status: 500
+    Output: { error }
+    Expected behavior: Returns error when there is a database error trying to get list of blocked users
+  */
   test('GET /api/block returns 500 when getBlockedUsers throws', async () => {
     const spy = jest.spyOn(blockModel, 'getBlockedUsers').mockRejectedValue(new Error('DB error'));
     const res = await request(app).get('/api/block');
@@ -70,6 +98,12 @@ describe('BlockController - mocked error paths', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  /*
+    Inputs: GET request to /api/block/check/:targetUserId with targetUserId being a valid ObjectId
+    Expected status: 500
+    Output: { error }
+    Expected behavior: Returns error when there is a network error trying to check if the user is blocked by the target user
+  */
   test('GET /api/block/check/:targetUserId returns 500 when isBlockedBy throws', async () => {
     const otherId = new mongoose.Types.ObjectId();
     const spy = jest.spyOn(blockModel, 'isBlockedBy').mockRejectedValue(new Error('Network error'));
