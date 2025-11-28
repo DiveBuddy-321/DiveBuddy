@@ -148,82 +148,136 @@ private fun EventNavigationContent(
 ) {
     when {
         navigationState.showCreateEventForm -> {
-            CreateEventScreen(
-                onDismiss = {
-                    onNavigationChange(navigationState.copy(showCreateEventForm = false))
-                },
-                eventViewModel = eventViewModel
-            )
+            ShowCreateEventForm(eventViewModel, navigationState, onNavigationChange)
         }
         navigationState.showEditEventForm != null -> {
-            CreateEventScreen(
-                event = navigationState.showEditEventForm,
-                onDismiss = {
-                    onNavigationChange(navigationState.copy(showEditEventForm = null))
-                },
-                eventViewModel = eventViewModel
-            )
+            ShowEditEventForm(navigationState, eventViewModel, onNavigationChange)
         }
         navigationState.showUserProfile != null -> {
-            AttendeeProfileScreen(
-                user = navigationState.showUserProfile,
-                onBack = {
-                    onNavigationChange(navigationState.copy(showUserProfile = null))
-                }
-            )
+            ShowUserProfile(navigationState, onNavigationChange)
         }
         navigationState.showAttendees != null -> {
-            AttendeesScreen(
-                attendeeIds = navigationState.showAttendees.attendees,
-                onBack = {
-                    onNavigationChange(navigationState.copy(showAttendees = null))
-                },
-                onUserClick = { user ->
-                    onNavigationChange(navigationState.copy(showUserProfile = user))
-                }
-            )
+            ShowAttendees(navigationState, onNavigationChange)
         }
         navigationState.selectedEvent != null -> {
-            SingleEventScreen(
-                event = navigationState.selectedEvent,
-                onBack = {
-                    onNavigationChange(navigationState.copy(
-                        selectedEvent = null,
-                        isMapView = navigationState.isMapView // Preserve view state
-                    ))
-                },
-                onEditEvent = { event ->
-                    onNavigationChange(navigationState.copy(showEditEventForm = event))
-                },
-                onShowAttendees = { event ->
-                    onNavigationChange(navigationState.copy(showAttendees = event))
-                },
-                eventViewModel = eventViewModel
-            )
+            ShowSingleEvent(navigationState, eventViewModel, onNavigationChange)
         }
         else -> {
-            EventsContent(
-                modifier = modifier,
-                uiState = uiState,
-                onCreateEventClick = {
-                    onNavigationChange(navigationState.copy(showCreateEventForm = true))
-                },
-                onEventClick = { event ->
-                    onNavigationChange(navigationState.copy(
-                        selectedEvent = event,
-                        isMapView = navigationState.isMapView // Preserve current view state
-                    ))
-                },
-                onRefresh = {
-                    eventViewModel.refreshEvents()
-                },
-                initialIsMapView = navigationState.isMapView,
-                onViewStateChange = { isMap ->
-                    onNavigationChange(navigationState.copy(isMapView = isMap))
-                }
-            )
+            ShowEventsList(modifier, uiState, navigationState, eventViewModel, onNavigationChange)
         }
     }
+}
+
+@Composable
+private fun ShowCreateEventForm(
+    eventViewModel: EventViewModel,
+    navigationState: EventNavigationState,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    CreateEventScreen(
+        onDismiss = {
+            onNavigationChange(navigationState.copy(showCreateEventForm = false))
+        },
+        eventViewModel = eventViewModel
+    )
+}
+
+@Composable
+private fun ShowEditEventForm(
+    navigationState: EventNavigationState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    CreateEventScreen(
+        event = navigationState.showEditEventForm,
+        onDismiss = {
+            onNavigationChange(navigationState.copy(showEditEventForm = null))
+        },
+        eventViewModel = eventViewModel
+    )
+}
+
+@Composable
+private fun ShowUserProfile(
+    navigationState: EventNavigationState,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    AttendeeProfileScreen(
+        user = navigationState.showUserProfile!!,
+        onBack = {
+            onNavigationChange(navigationState.copy(showUserProfile = null))
+        }
+    )
+}
+
+@Composable
+private fun ShowAttendees(
+    navigationState: EventNavigationState,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    AttendeesScreen(
+        attendeeIds = navigationState.showAttendees!!.attendees,
+        onBack = {
+            onNavigationChange(navigationState.copy(showAttendees = null))
+        },
+        onUserClick = { user ->
+            onNavigationChange(navigationState.copy(showUserProfile = user))
+        }
+    )
+}
+
+@Composable
+private fun ShowSingleEvent(
+    navigationState: EventNavigationState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    SingleEventScreen(
+        event = navigationState.selectedEvent!!,
+        onBack = {
+            onNavigationChange(navigationState.copy(
+                selectedEvent = null,
+                isMapView = navigationState.isMapView
+            ))
+        },
+        onEditEvent = { event ->
+            onNavigationChange(navigationState.copy(showEditEventForm = event))
+        },
+        onShowAttendees = { event ->
+            onNavigationChange(navigationState.copy(showAttendees = event))
+        },
+        eventViewModel = eventViewModel
+    )
+}
+
+@Composable
+private fun ShowEventsList(
+    modifier: Modifier,
+    uiState: EventUiState,
+    navigationState: EventNavigationState,
+    eventViewModel: EventViewModel,
+    onNavigationChange: (EventNavigationState) -> Unit
+) {
+    EventsContent(
+        modifier = modifier,
+        uiState = uiState,
+        onCreateEventClick = {
+            onNavigationChange(navigationState.copy(showCreateEventForm = true))
+        },
+        onEventClick = { event ->
+            onNavigationChange(navigationState.copy(
+                selectedEvent = event,
+                isMapView = navigationState.isMapView
+            ))
+        },
+        onRefresh = {
+            eventViewModel.refreshEvents()
+        },
+        initialIsMapView = navigationState.isMapView,
+        onViewStateChange = { isMap ->
+            onNavigationChange(navigationState.copy(isMapView = isMap))
+        }
+    )
 }
 
 @Composable
@@ -325,17 +379,21 @@ private fun EventsContent(
 
     Column() {
         EventsHeader(
-            onCreateEventClick = onCreateEventClick,
-            onRefresh = onRefresh,
-            isMapView = isMapView,
-            onViewToggle = {
-                isMapView = !isMapView
-                onViewStateChange(isMapView)
-            },
-            selectedFilter = selectedFilter,
-            onFilterChange = { selectedFilter = it },
-            selectedSort = selectedSort,
-            onSortChange = { selectedSort = it }
+            viewState = EventsHeaderViewState(
+                isMapView = isMapView,
+                selectedFilter = selectedFilter,
+                selectedSort = selectedSort
+            ),
+            actions = EventsHeaderActions(
+                onCreateEventClick = onCreateEventClick,
+                onRefresh = onRefresh,
+                onViewToggle = {
+                    isMapView = !isMapView
+                    onViewStateChange(isMapView)
+                },
+                onFilterChange = { selectedFilter = it },
+                onSortChange = { selectedSort = it }
+            )
         )
 
         if (isMapView) {
@@ -356,17 +414,25 @@ private fun EventsContent(
     }
 }
 
+data class EventsHeaderViewState(
+    val isMapView: Boolean,
+    val selectedFilter: EventFilter,
+    val selectedSort: EventSort
+)
+
+data class EventsHeaderActions(
+    val onCreateEventClick: () -> Unit,
+    val onRefresh: () -> Unit,
+    val onViewToggle: () -> Unit,
+    val onFilterChange: (EventFilter) -> Unit,
+    val onSortChange: (EventSort) -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventsHeader(
-    onCreateEventClick: () -> Unit,
-    onRefresh: () -> Unit,
-    isMapView: Boolean,
-    onViewToggle: () -> Unit,
-    selectedFilter: EventFilter,
-    onFilterChange: (EventFilter) -> Unit,
-    selectedSort: EventSort,
-    onSortChange: (EventSort) -> Unit
+    viewState: EventsHeaderViewState,
+    actions: EventsHeaderActions
 ) {
     val spacing = LocalSpacing.current
     var filterExpanded by remember { mutableStateOf(false) }
@@ -379,71 +445,100 @@ private fun EventsHeader(
             .padding(top = spacing.small, bottom = spacing.small),
         verticalArrangement = Arrangement.spacedBy(spacing.small)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Upcoming Events",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            IconButton(onClick = onViewToggle) {
-                Icon(
-                    imageVector = if (isMapView) Icons.AutoMirrored.Filled.List else Icons.Filled.LocationOn,
-                    contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
-                )
-            }
-        }
+        EventsHeaderTitle(
+            isMapView = viewState.isMapView,
+            onViewToggle = actions.onViewToggle
+        )
+        EventsHeaderCreateButton(onClick = actions.onCreateEventClick)
+        EventsHeaderControls(
+            viewState = viewState,
+            actions = actions,
+            filterExpanded = filterExpanded,
+            sortExpanded = sortExpanded,
+            onFilterExpandedChange = { filterExpanded = it },
+            onSortExpandedChange = { sortExpanded = it }
+        )
+    }
+}
 
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            CreateEventButton(
-                onClick = onCreateEventClick,
-                modifier = Modifier.width(200.dp)
+@Composable
+private fun EventsHeaderTitle(
+    isMapView: Boolean,
+    onViewToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Upcoming Events",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        IconButton(onClick = onViewToggle) {
+            Icon(
+                imageVector = if (isMapView) Icons.AutoMirrored.Filled.List else Icons.Filled.LocationOn,
+                contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
             )
         }
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            EventFilterDropdown(
-                selectedFilter = selectedFilter,
-                onFilterChange = { 
-                    onFilterChange(it)
-                    filterExpanded = false
-                },
-                expanded = filterExpanded,
-                onExpandedChange = { filterExpanded = it },
-                modifier = Modifier.width(150.dp)
+    }
+}
+
+@Composable
+private fun EventsHeaderCreateButton(onClick: () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        CreateEventButton(
+            onClick = onClick,
+            modifier = Modifier.width(200.dp)
+        )
+    }
+}
+
+@Composable
+private fun EventsHeaderControls(
+    viewState: EventsHeaderViewState,
+    actions: EventsHeaderActions,
+    filterExpanded: Boolean,
+    sortExpanded: Boolean,
+    onFilterExpandedChange: (Boolean) -> Unit,
+    onSortExpandedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        EventFilterDropdown(
+            selectedFilter = viewState.selectedFilter,
+            onFilterChange = { 
+                actions.onFilterChange(it)
+                onFilterExpandedChange(false)
+            },
+            expanded = filterExpanded,
+            onExpandedChange = onFilterExpandedChange,
+            modifier = Modifier.width(150.dp)
+        )
+        EventSortDropdown(
+            selectedSort = viewState.selectedSort,
+            onSortChange = {
+                actions.onSortChange(it)
+                onSortExpandedChange(false)
+            },
+            expanded = sortExpanded,
+            onExpandedChange = onSortExpandedChange,
+            enabled = !viewState.isMapView,
+            modifier = Modifier.width(175.dp)
+        )
+        IconButton(onClick = actions.onRefresh) {
+            Icon(
+                imageVector = Icons.Filled.Refresh,
+                contentDescription = "Refresh Events List",
             )
-            
-            // Only enable sort dropdown in list view
-            EventSortDropdown(
-                selectedSort = selectedSort,
-                onSortChange = {
-                    onSortChange(it)
-                    sortExpanded = false
-                },
-                expanded = sortExpanded,
-                onExpandedChange = { sortExpanded = it },
-                enabled = !isMapView,
-                modifier = Modifier.width(175.dp)
-            )
-            
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = "Refresh Events List",
-                )
-            }
         }
     }
 }
