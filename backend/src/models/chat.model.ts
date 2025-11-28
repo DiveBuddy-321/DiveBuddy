@@ -9,8 +9,7 @@ import type { IChat, IChatWithLastMessage, IMessage } from "../types/chat.types"
 export interface IChatDocument extends Omit<IChat, "_id" | "isGroup">, Document {
   _id: mongoose.Types.ObjectId;
   eventId?: mongoose.Types.ObjectId | null;
-  isGroup: boolean; // virtual (participants.length >= 3)
-  isDirect: boolean; // virtual (participants.length === 2)
+  isGroup: boolean;
 }
 
 export interface IChatModel extends Model<IChatDocument> {
@@ -32,6 +31,7 @@ const chatSchema = new Schema<IChatDocument, IChatModel>(
     eventId: { type: Schema.Types.ObjectId, ref: "Event", default: null },
     lastMessage: { type: Schema.Types.ObjectId, ref: "Message", default: null },
     lastMessageAt: { type: Date, default: null, index: true },
+    isGroup: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -40,15 +40,6 @@ const chatSchema = new Schema<IChatDocument, IChatModel>(
     toObject: { virtuals: true },
   }
 );
-
-/* Virtuals */
-chatSchema.virtual("isDirect").get(function (this: IChatDocument) {
-  return Array.isArray(this.participants) && this.participants.length === 2;
-});
-
-chatSchema.virtual("isGroup").get(function (this: IChatDocument) {
-  return Array.isArray(this.participants) && this.participants.length >= 3;
-});
 
 /* Indexes */
 chatSchema.index({ participants: 1 });
@@ -115,6 +106,7 @@ chatSchema.statics.createPair = function (
   return this.create({
     name: name?.trim() ?? null,
     participants: dedup,
+    isGroup: false,
   } as unknown as IChatDocument);
 };
 
@@ -126,6 +118,7 @@ chatSchema.statics.findDirectPair = function (
   const [aId, bId] = [new mongoose.Types.ObjectId(a), new mongoose.Types.ObjectId(b)];
   return this.findOne({
     participants: { $all: [aId, bId] },
+    isGroup: false,
     $expr: { $eq: [{ $size: "$participants" }, 2] },
   }).exec();
 };
@@ -147,6 +140,7 @@ chatSchema.statics.findOrCreateEventChat = async function (
       name: eventTitle,
       eventId: eventObjectId,
       participants: [creatorId],
+      isGroup: true,
     } as unknown as IChatDocument);
   }
   
