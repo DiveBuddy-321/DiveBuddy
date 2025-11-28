@@ -10,7 +10,8 @@
  | Oct 27, 2025 | 3.4 Use Case Description | Updated use case descriptions to be more consistent with our actual implementation and use case specifications: <ul><li>Feature 2: Removes diving conditions and certificates in favor of adding bio and name. Diving conditions and certificates are relatively open ended responses that can easily be explained in the bio section.</li> <li>Feature 3: Some name/field changes to improve consistency with the rest of the document. </li><li> Feature 4: Reflects the fact that we split Match with Other User into two use cases: Find Matches and Match with Other User</li></ul>
  | Oct 27, 2025 | 3.2 Use Case Diagram | Updated to reflect how we split the Match with Other User use case into two use cases as described above. |
 | Oct 27, 2025 | 4.4 Frameworks | Added Retrofit and Socket.IO frameworks for Android because they are used on the frontend for HTTP requests and live websocket for chats. |
-
+| Nov 28, 2025 | 4.2 Databases | Changed MongoDB description to include new table for storing blocked users in (blocker, blocked) pairs. |
+| NOv 28,, 2025 | 4.1 APIs | Added a section for backend and REST interfaces related to the block user functionality. |
 ---
 
 ## 2. Project Description
@@ -702,11 +703,61 @@ Users can view all of the events they have joined/created, as well as their stat
             error: string
           }
           ```
+5. **Block**
+	- Purpose: Facilitate the ability for users to block and unblock other users
+	- Backend Interface:
+		- blockUser: Interacts with Users component
+			- Purpose: Blocks the target user from being able to communicate with the calling user
+			- Parameters: targetUserId (required)
+			- Returns: Success message if successfully blocked target user, otherwise error message.
+			```
+			{
+  				"message": "User blocked successfully"
+			}
+  			```
+		- unblockUser: interacts with Users component
+			- Purpose: Unblocks the target user, allowing them to communicate with the calling user again
+			- Parameters: targetUserId (required)
+			- Returns: Success message if successfully unblocked target user, otherwise error message
+     		```
+			{
+  				“message”: ‘User unblocked successfully’
+			}
+			```
+		- getBlockedUsers: interacts with Users component
+			- Purpose: Fetches a list of all users that the calling user has blocked
+			- Parameters: none
+			- Returns: A list of users that the calling user has blocked
+           ```
+			{
+  				"message”: “Blocked users fetched successfully”,
+  				“data”: User[ ]
+			}
+			```
+
+		- checkIfBlockedBy: interacts with Users component
+			- Purpose: Checks if the calling user is blocked by the target user
+			- Parameters: targetUserId (required)
+			- Returns: A success message and True if the calling user is blocked by the target user, a success message and False if the calling user is not blocked by the target user, an error message if an error is encountered while 		determining whether or not the calling user has been blocked by the target user
+			```
+			{
+  				“message”: “Block status checked successfully”,
+  				“data”: true
+			}
+			```
+	- REST Interfaces:
+		- POST /block/
+		- Purpose: Adds the target user to the calling user’s blocked users
+		Parameters: 
+		- DELETE /block/:targetUserId
+		- GET /block	
+		-GET /block/check/:targetUserId
+
 
 ### **4.2. Databases**
 
 1. **MongoDB**
-    - **Purpose**: For storing data related to profiles, events, and chat message
+    - **Purpose**: For storing data related to users, events, and chats, and blocked users. We will use 1 database with 4 collections: users, events, chats, and blocks.
     - **Reason**: NoSQL database was chosen over SQL database for more flexible schemas that may evolve over time
 
 ### **4.3. External Modules**
