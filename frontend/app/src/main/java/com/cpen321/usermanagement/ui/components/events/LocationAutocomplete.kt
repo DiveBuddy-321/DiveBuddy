@@ -88,20 +88,17 @@ fun LocationAutocomplete(
 ) {
     val context = LocalContext.current
     val placesClient = remember { Places.createClient(context) }
-    
     var searchQuery by remember { mutableStateOf(value) }
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
     var hasSelectedLocation by remember { mutableStateOf(value.isNotEmpty()) }
-    
     LaunchedEffect(value) {
         if (value != searchQuery) {
             searchQuery = value
             hasSelectedLocation = value.isNotEmpty()
         }
     }
-    
     PredictionsFetcher(
         query = searchQuery,
         placesClient = placesClient,
@@ -109,10 +106,8 @@ fun LocationAutocomplete(
         onPredictionsChange = { predictions = it },
         enabled = hasFocus && !hasSelectedLocation
     )
-    
     val showDropdown = hasFocus && searchQuery.length >= 2 && 
-                       predictions.isNotEmpty() && !hasSelectedLocation
-    
+                       predictions.isNotEmpty() && !hasSelectedLocation 
     Column(modifier = modifier.fillMaxWidth()) {
         LocationTextField(
             state = LocationTextFieldState(

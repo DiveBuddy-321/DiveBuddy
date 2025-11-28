@@ -49,23 +49,6 @@ data class EventsHeaderActions(
 )
 
 @Composable
-fun CreateEventButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-    ) {
-        Text(
-            text = "Create Event",
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.bodyMedium
-        )
-    }
-}
-
-@Composable
 fun NoEventsMessage(
     modifier: Modifier = Modifier
 ) {
@@ -97,7 +80,6 @@ fun EventsHeader(
             isMapView = viewState.isMapView,
             onViewToggle = actions.onViewToggle
         )
-        EventsHeaderCreateButton(onClick = actions.onCreateEventClick)
         EventsHeaderControls(
             viewState = viewState,
             actions = actions,
@@ -131,19 +113,6 @@ private fun EventsHeaderTitle(
                 contentDescription = if (isMapView) "Switch to List View" else "Switch to Map View",
             )
         }
-    }
-}
-
-@Composable
-private fun EventsHeaderCreateButton(onClick: () -> Unit) {
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        CreateEventButton(
-            onClick = onClick,
-            modifier = Modifier.width(200.dp)
-        )
     }
 }
 
