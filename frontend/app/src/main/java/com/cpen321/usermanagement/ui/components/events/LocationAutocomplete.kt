@@ -64,6 +64,18 @@ data class LocationResult(
     val coordinates: LatLng? = null
 )
 
+data class LocationTextFieldState(
+    val searchQuery: String,
+    val hasSelectedLocation: Boolean,
+    val isLoading: Boolean
+)
+
+data class LocationTextFieldCallbacks(
+    val onSearchQueryChange: (String) -> Unit,
+    val onFocusChanged: (Boolean) -> Unit,
+    val onClear: () -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationAutocomplete(
@@ -103,22 +115,26 @@ fun LocationAutocomplete(
     
     Column(modifier = modifier.fillMaxWidth()) {
         LocationTextField(
-            searchQuery = searchQuery,
-            onSearchQueryChange = { newValue ->
-                searchQuery = newValue
-                onValueChange(newValue)
-                hasSelectedLocation = false
-            },
+            state = LocationTextFieldState(
+                searchQuery = searchQuery,
+                hasSelectedLocation = hasSelectedLocation,
+                isLoading = isLoading
+            ),
+            callbacks = LocationTextFieldCallbacks(
+                onSearchQueryChange = { newValue ->
+                    searchQuery = newValue
+                    onValueChange(newValue)
+                    hasSelectedLocation = false
+                },
+                onFocusChanged = { hasFocus = it },
+                onClear = {
+                    searchQuery = ""
+                    onValueChange("")
+                    hasSelectedLocation = false
+                }
+            ),
             label = label,
-            placeholder = placeholder,
-            hasSelectedLocation = hasSelectedLocation,
-            isLoading = isLoading,
-            onFocusChanged = { hasFocus = it },
-            onClear = {
-                searchQuery = ""
-                onValueChange("")
-                hasSelectedLocation = false
-            }
+            placeholder = placeholder
         )
         if (showDropdown) {
             LocationDropdown(
@@ -137,30 +153,26 @@ fun LocationAutocomplete(
 
 @Composable
 private fun LocationTextField(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
+    state: LocationTextFieldState,
+    callbacks: LocationTextFieldCallbacks,
     label: String,
-    placeholder: String,
-    hasSelectedLocation: Boolean,
-    isLoading: Boolean,
-    onFocusChanged: (Boolean) -> Unit,
-    onClear: () -> Unit
+    placeholder: String
 ) {
     OutlinedTextField(
-        value = searchQuery,
-        onValueChange = onSearchQueryChange,
+        value = state.searchQuery,
+        onValueChange = callbacks.onSearchQueryChange,
         label = { RequiredTextLabel(label) },
         placeholder = { Text(placeholder) },
         modifier = Modifier
             .fillMaxWidth()
-            .onFocusChanged { onFocusChanged(it.isFocused) },
+            .onFocusChanged { callbacks.onFocusChanged(it.isFocused) },
         singleLine = true,
         trailingIcon = {
             LocationTextFieldIcon(
-                hasSelectedLocation = hasSelectedLocation,
-                searchQuery = searchQuery,
-                isLoading = isLoading,
-                onClear = onClear
+                hasSelectedLocation = state.hasSelectedLocation,
+                searchQuery = state.searchQuery,
+                isLoading = state.isLoading,
+                onClear = callbacks.onClear
             )
         }
     )
