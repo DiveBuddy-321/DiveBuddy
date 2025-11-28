@@ -6,6 +6,7 @@ import { eventModel } from '../../src/models/event.model';
 import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
 import { CreateUserRequest } from '../../src/types/user.types';
 import { userModel } from '../../src/models/user.model';
+import { Chat } from '../../src/models/chat.model';
 import express from 'express';
 import eventRoutes from '../../src/routes/event.routes';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errorHandler.middleware';
@@ -395,6 +396,93 @@ describe('PUT /api/events/leave/:eventId - unmocked (requires running server)', 
 		// verify error response
 		expect(res.status).toBe(400);
 		expect(res.body).toHaveProperty('message');
+	});
+
+	/*
+		Inputs: Valid event ID with existing chat, authenticated user who is an attendee
+		Expected status: 200
+		Output: { message: string, data: { event: IEvent } }
+		Expected behavior: Removes user from event's attendees, event from user's eventsJoined, and user from event chat
+	*/
+	test('user leaves an event with existing chat and is removed from chat participants', async () => {
+		// Create a second user to be the event creator (so testUser can leave)
+		const creatorData: CreateUserRequest = {
+			email: `creator-${Date.now()}@example.com`,
+			name: 'Event Creator',
+			googleId: `creator-google-${Date.now()}`,
+			age: 30,
+			profilePicture: 'http://example.com/creator.jpg',
+			bio: 'Creator bio',
+			location: 'Vancouver, BC',
+			latitude: 49.2827,
+			longitude: -123.1207,
+			skillLevel: 'Expert',
+			eventsCreated: [],
+			eventsJoined: []
+		};
+		const creator = await userModel.create(creatorData);
+
+		// Create an event with testUser already as an attendee
+		const newEvent: CreateEventRequest = {
+			title: "Event with Chat for Leave Test",
+			description: "Testing leave event with chat",
+			date: new Date(Date.now() + 86400000),
+			capacity: 10,
+			skillLevel: "Intermediate",
+			location: "Chat Test Location",
+			latitude: 49.2827,
+			longitude: -123.1207,
+			createdBy: creator._id.toString(),
+			attendees: [creator._id.toString(), testUser._id.toString()],
+			photo: ""
+		};
+		const created = await eventModel.create(newEvent);
+		const eventId = created._id;
+
+		// Manually create the event chat and add both users
+		const eventChat = await Chat.findOrCreateEventChat(
+			eventId,
+			newEvent.title,
+			creator._id
+		);
+		expect(eventChat).not.toBeNull();
+		
+		// Add testUser to the chat using addParticipant
+		await Chat.addParticipant(String(eventChat!._id), testUser._id);
+
+		// Verify both users are in the chat
+		const chatBeforeLeave = await Chat.findById(eventChat!._id);
+		expect(chatBeforeLeave).not.toBeNull();
+		expect(chatBeforeLeave!.participants.map(p => p.toString())).toContain(creator._id.toString());
+		expect(chatBeforeLeave!.participants.map(p => p.toString())).toContain(testUser._id.toString());
+		const participantCountBeforeLeave = chatBeforeLeave!.participants.length;
+
+		// TestUser leaves the event (this should remove them from the chat via removeParticipant)
+		const leaveRes = await request(app).put(`/api/events/leave/${eventId.toString()}`);
+		expect(leaveRes.status).toBe(200);
+		expect(leaveRes.body).toHaveProperty('message');
+		expect(leaveRes.body).toHaveProperty('data');
+		expect(leaveRes.body.data).toHaveProperty('event');
+
+		// Verify testUser was removed from the event
+		const eventInDb = await eventModel.findById(eventId);
+		expect(eventInDb).not.toBeNull();
+		expect(eventInDb?.attendees.map(a => a.toString())).not.toContain(testUser._id.toString());
+
+		// Verify testUser was removed from the event chat (covers removeParticipant in chat.model.ts)
+		const chatAfterLeave = await Chat.findById(eventChat!._id);
+		expect(chatAfterLeave).not.toBeNull();
+		expect(chatAfterLeave!.participants.map(p => p.toString())).not.toContain(testUser._id.toString());
+		expect(chatAfterLeave!.participants.length).toBe(participantCountBeforeLeave - 1);
+		
+		// Verify event chat still exists (event chats should be preserved even when users leave)
+		expect(chatAfterLeave!.eventId).toBeDefined();
+		expect(chatAfterLeave!.eventId?.toString()).toBe(eventId.toString());
+
+		// Cleanup
+		await eventModel.delete(eventId);
+		await Chat.deleteOne({ _id: eventChat!._id });
+		await userModel.delete(creator._id);
 	});
 });
 

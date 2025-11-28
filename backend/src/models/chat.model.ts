@@ -22,7 +22,6 @@ export interface IChatModel extends Model<IChatDocument> {
   addParticipant(chatId: string, userId: mongoose.Types.ObjectId): Promise<IChatDocument | null>;
   removeParticipant(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;
   getLastConversation(chatId: string, limit?: number): Promise<IMessage[]>; // messages (lean)
-  leave(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;
 }
 
 const chatSchema = new Schema<IChatDocument, IChatModel>(
@@ -208,33 +207,6 @@ chatSchema.statics.removeParticipant = async function (
     return "left";
   }
   
-  return "noop";
-};
-
-// Note: Message queries are handled by Message model for better separation of concerns
-
-// 8) Leave a chat; delete if it becomes empty (for non-event chats)
-chatSchema.statics.leave = async function (
-  chatId: string,
-  userId: mongoose.Types.ObjectId
-): Promise<"left" | "deleted" | "noop"> {
-  const chat = await this.findById(chatId).exec();
-  if (!chat) return "noop";
-
-  const before = chat.participants.length;
-  chat.participants = chat.participants.filter((p) => String(p) !== String(userId));
-
-  // Don't delete event chats even if empty
-  if (chat.participants.length === 0 && !chat.eventId) {
-    await this.deleteOne({ _id: chat._id });
-    return "deleted";
-  }
-
-  if (chat.participants.length !== before) {
-    chat.updatedAt = new Date();
-    await chat.save();
-    return "left";
-  }
   return "noop";
 };
 

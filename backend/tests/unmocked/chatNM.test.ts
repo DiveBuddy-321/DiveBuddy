@@ -219,6 +219,59 @@ describe('POST /api/chats - unmocked (no mocking)', () => {
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');
   });
+
+  /**
+   * Inputs: { peerId: THIRD_USER } for creating a chat via API
+   * Expected status: 201 for create, 200 for fetching chat
+   * Output: Chat with 2 participants (not 3 after attempting to add duplicate)
+   * Expected behavior: Tests addParticipant deduplication
+   */
+  test('does not duplicate participants when adding existing participant', async () => {
+    // Create a new chat with a unique third user via API to avoid reusing the main chatId
+    const thirdUserId = new mongoose.Types.ObjectId();
+    
+    // First, create the third user in database
+    const thirdUserData: CreateUserRequest = {
+      email: `third-user-${Date.now()}@example.com`,
+      name: 'Third User',
+      googleId: `third-google-${Date.now()}`,
+      age: 28,
+      profilePicture: 'http://example.com/third.jpg',
+      bio: 'Third user bio',
+      location: 'Vancouver, BC',
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Beginner'
+    };
+    const thirdUser = await userModel.create(thirdUserData);
+    
+    // Create chat via API
+    const res = await request(app).post('/api/chats').send({
+      peerId: thirdUser._id.toString(),
+      name: 'Test Participant Dedup'
+    });
+    expect(res.status).toBe(201);
+    const newChatId = String(res.body._id);
+    
+    // Verify initial participant count via API
+    const getRes = await request(app).get(`/api/chats/${newChatId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.participants).toHaveLength(2);
+    
+    // Try adding testUser again via addParticipant method directly
+    const updatedChat = await Chat.addParticipant(newChatId, testUser._id);
+    expect(updatedChat).not.toBeNull();
+    expect(updatedChat!.participants).toHaveLength(2); // Still 2, not 3
+
+    // Try adding to a non-existent chat
+    const fakeId = new mongoose.Types.ObjectId();
+    const result = await Chat.addParticipant(String(fakeId), testUser._id);
+    expect(result).toBeNull();
+    
+    // Cleanup
+    await Chat.deleteOne({ _id: newChatId });
+    await userModel.delete(thirdUser._id);
+  });
 });
 
 describe('GET /api/chats - unmocked (no mocking)', () => {
@@ -316,6 +369,19 @@ describe('GET /api/chats/:chatId - unmocked (no mocking)', () => {
 
     // Cleanup
     await Chat.deleteOne({ _id: otherChatId });
+  });
+
+  /**
+   * Inputs: path param with invalid chatId format (not ObjectId)
+   * Expected status: 400
+   * Output: error message 'Invalid chatId' in response.body.error
+   * Expected behavior: Validates chatId format and throws error for invalid format
+   */
+  test('returns 400 and validates chatId format in getForUser', async () => {
+    const res = await request(app).get('/api/chats/not-a-valid-object-id');
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toBe('Invalid chatId');
   });
 });
 

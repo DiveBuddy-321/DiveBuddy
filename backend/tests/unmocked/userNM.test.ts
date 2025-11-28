@@ -6,6 +6,7 @@ import { eventModel } from '../../src/models/event.model';
 import { CreateEventRequest, UpdateEventRequest } from '../../src/types/event.types';
 import { CreateUserRequest, UpdateProfileRequest } from '../../src/types/user.types';
 import { userModel } from '../../src/models/user.model';
+import { blockModel } from '../../src/models/block.model';
 import { AuthenticateUserRequest } from '../../src/types/auth.types';
 import express from 'express';
 import userRoutes from '../../src/routes/user.routes';
@@ -162,6 +163,61 @@ describe('GET /api/users/:id - unmocked (requires running server)', () => {
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('message');
     expect(res.body.message).toBe('User not found');
+  });
+
+  /*
+    Inputs: path param id (valid user ID who has blocked the requesting user)
+    Expected status: 200
+    Output: { message: 'Profile fetched successfully', data: { user: anonymousUser } }
+    Expected behavior: Returns anonymous user data (name: 'Unknown User', no bio, age, skillLevel, location, etc.) when requesting user is blocked
+  */
+  test('returns anonymous user data when requesting user is blocked by target user', async () => {
+    // Create another user who will block testUser
+    const blockerData: CreateUserRequest = {
+      email: `blocker-${Date.now()}@example.com`,
+      name: 'Blocker User',
+      googleId: `blocker-google-${Date.now()}`,
+      age: 28,
+      profilePicture: 'http://example.com/blocker.jpg',
+      bio: 'This is my private bio',
+      location: 'Vancouver, BC',
+      latitude: 49.2827,
+      longitude: -123.1207,
+      skillLevel: 'Expert',
+      eventsCreated: [],
+      eventsJoined: []
+    };
+    const blocker = await userModel.create(blockerData);
+
+    // Blocker blocks testUser using blockUser method
+    await blockModel.blockUser(blocker._id, testUser._id);
+
+    // TestUser tries to access blocker's profile
+    const res = await request(app).get(`/api/users/${blocker._id.toString()}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toBe('Profile fetched successfully');
+    expect(res.body).toHaveProperty('data');
+    expect(res.body.data).toHaveProperty('user');
+
+    // Verify anonymous user data is returned
+    const user = res.body.data.user;
+    expect(user._id).toBe(blocker._id.toString());
+    expect(user.name).toBe('Unknown User'); // Anonymous name
+    expect(user.bio).toBeUndefined(); // Personal info hidden
+    expect(user.profilePicture).toBeUndefined();
+    expect(user.age).toBeUndefined();
+    expect(user.skillLevel).toBeUndefined();
+    expect(user.location).toBeUndefined();
+    expect(user.latitude).toBeUndefined();
+    expect(user.longitude).toBeUndefined();
+    // Public fields should still be present
+    expect(user.googleId).toBe(blocker.googleId);
+    expect(user.email).toBe(blocker.email);
+
+    // Cleanup - unblock using unblockUser method
+    await blockModel.unblockUser(blocker._id, testUser._id);
+    await userModel.delete(blocker._id);
   });
 });
 
