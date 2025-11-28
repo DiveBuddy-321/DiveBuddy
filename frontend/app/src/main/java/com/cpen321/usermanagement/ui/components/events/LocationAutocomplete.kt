@@ -128,8 +128,7 @@ fun LocationAutocomplete(
                     hasSelectedLocation = false
                 }
             ),
-            label = label,
-            placeholder = placeholder
+            label = label, placeholder = placeholder
         )
         if (showDropdown) {
             LocationDropdown(
