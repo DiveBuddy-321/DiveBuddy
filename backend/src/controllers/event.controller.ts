@@ -70,9 +70,9 @@ export class EventController {
           created.title,
           requester._id
         );
-        logger.info(`Event group chat created for event: ${created._id}`);
+        logger.info(`Event group chat created for event: ${String(created._id)}`);
       } catch (chatError) {
-        logger.error(`Failed to create event group chat for event ${created._id}:`, chatError);
+        logger.error(`Failed to create event group chat for event ${String(created._id)}:`, chatError);
         // Don't fail event creation if chat creation fails
       }
 
@@ -133,6 +133,23 @@ export class EventController {
       const updated = await eventModel.update(eventId, req.body as unknown as Partial<IEvent>);
       if (!updated) {
         return res.status(500).json({ message: 'Failed to update event' });
+      }
+
+      // Update event group chat name if title changed
+      if (req.body.title && req.body.title !== existing.title) {
+        try {
+          const eventChat = await Chat.findOne({ eventId: eventId });
+          if (eventChat) {
+            await Chat.updateOne(
+              { _id: eventChat._id },
+              { $set: { name: req.body.title } }
+            );
+            logger.info(`Event group chat name updated for event: ${String(eventId)}`);
+          }
+        } catch (chatError) {
+          logger.error(`Failed to update event group chat name for event ${String(eventId)}:`, chatError);
+          // Don't fail event update if chat update fails
+        }
       }
 
       res.status(200).json({ message: 'Event updated successfully', data: { event: updated } });
@@ -208,10 +225,10 @@ export class EventController {
         const eventChat = await Chat.findOne({ eventId: eventId });
         if (eventChat) {
           await Chat.addParticipant(String(eventChat._id), requester._id);
-          logger.info(`User ${requester._id} added to event group chat for event: ${eventId}`);
+          logger.info(`User ${String(requester._id)} added to event group chat for event: ${String(eventId)}`);
         }
       } catch (chatError) {
-        logger.error(`Failed to add user to event group chat for event ${eventId}:`, chatError);
+        logger.error(`Failed to add user to event group chat for event ${String(eventId)}:`, chatError);
         // Don't fail join if chat update fails
       }
 
@@ -288,10 +305,10 @@ export class EventController {
         const eventChat = await Chat.findOne({ eventId: eventId });
         if (eventChat) {
           await Chat.removeParticipant(String(eventChat._id), requester._id);
-          logger.info(`User ${requester._id} removed from event group chat for event: ${eventId}`);
+          logger.info(`User ${String(requester._id)} removed from event group chat for event: ${String(eventId)}`);
         }
       } catch (chatError) {
-        logger.error(`Failed to remove user from event group chat for event ${eventId}:`, chatError);
+        logger.error(`Failed to remove user from event group chat for event ${String(eventId)}:`, chatError);
         // Don't fail leave if chat update fails
       }
 
@@ -326,10 +343,10 @@ export class EventController {
         const eventChat = await Chat.findOne({ eventId: eventId });
         if (eventChat) {
           await Chat.deleteOne({ _id: eventChat._id });
-          logger.info(`Event group chat deleted for event: ${eventId} (owner and all participants removed)`);
+          logger.info(`Event group chat deleted for event: ${String(eventId)} (owner and all participants removed)`);
         }
       } catch (chatError) {
-        logger.error(`Failed to delete event group chat for event ${eventId}:`, chatError);
+        logger.error(`Failed to delete event group chat for event ${String(eventId)}:`, chatError);
         // Don't fail event deletion if chat cleanup fails
       }
 

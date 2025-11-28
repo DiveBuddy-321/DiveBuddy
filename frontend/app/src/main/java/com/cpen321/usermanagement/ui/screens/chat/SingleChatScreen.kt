@@ -72,18 +72,13 @@ fun SingleChatScreen(
     modifier: Modifier = Modifier,
     chatViewModel: ChatViewModel = hiltViewModel()
 ) {
-    val spacing = LocalSpacing.current
     val chatVm: ChatViewModel = chatViewModel
     val uiState by chatVm.uiState.collectAsState()
     val messages = remember { mutableStateOf<List<Message>>(emptyList()) }
     val listState = rememberLazyListState()
     val isLoadingMore = remember { mutableStateOf(false) }
     val messageText = remember { mutableStateOf("") }
-    val chatDisplayName = chatVm.getChatDisplayName(chat)
-    val otherUserId = chatVm.getOtherUserId(chat)
-    val isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
     val context = LocalContext.current
-    
     // Show toast when there's an error; use timestamp to trigger even for repeated messages
     LaunchedEffect(uiState.connectionState.errorTimestamp) {
         uiState.connectionState.error?.let { error ->
@@ -92,14 +87,12 @@ fun SingleChatScreen(
             }
         }
     }
-	
 	ChatInitializationEffects(chatId = chat._id, chatVm = chatVm)
 	MessagesCollector(
 		chatId = chat._id,
 		messagesByChat = uiState.messagesByChat,
 		onMessagesChanged = { newMessages -> messages.value = newMessages }
 	)
-	// Detect when user scrolls near the top to load more older messages
 	LaunchedEffect(listState) {
 		snapshotFlow {
 			val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
@@ -108,51 +101,98 @@ fun SingleChatScreen(
 		}
 			.distinctUntilChanged()
 			.collect { (lastVisibleIndex, totalItems) ->
-                val canLoadMore = !isLoadingMore.value && messages.value.isNotEmpty() && totalItems > 0;
-                val isItemsOK = lastVisibleIndex != null && lastVisibleIndex >= totalItems - 3 && canLoadMore;
-				if (isItemsOK && canLoadMore) {
+				if (shouldLoadMoreMessages(lastVisibleIndex, totalItems, isLoadingMore.value, messages.value)) {
 					isLoadingMore.value = true
-					// Backend returns messages newest first, so last item is the oldest
-					val oldestMessage = messages.value.lastOrNull()
-					val beforeTimestamp = oldestMessage?.createdAt?.let {
-						SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-							timeZone = TimeZone.getTimeZone("UTC")
-						}.format(it)
-					}
+					val beforeTimestamp = formatMessageTimestamp(messages.value.lastOrNull())
 					chat._id?.let { id ->
 						chatVm.loadMessages(id, limit = 20, before = beforeTimestamp, append = true)
 					}
-                    delay(1000)
+					delay(1000)
 					isLoadingMore.value = false
 				}
 			}
 	}
-    ChatContent(
-        profilePicture = if (!chat.name.isNullOrEmpty()) null else chatVm.getOtherUserProfilePicture(chat),
-        chatDisplayName = chatDisplayName,
-        messages = messages.value,
-        currentUserId = uiState.userData.currentUserId,
-        listState = listState,
-        inputState = messageText,
-        onSend = {
-            if (messageText.value.trim().isNotEmpty()) {
-                chat._id?.let { chatId ->
-                    chatVm.sendMessage(chatId, messageText.value.trim(), otherUserId)
-                    messageText.value = ""
-                }
-            }
-        },
-        onBack = onBack,
-        otherUserId = otherUserId,
-        isUserBlocked = isUserBlocked,
-        onBlockUser = {
-            otherUserId?.let { chatVm.blockUser(it) }
-        },
-        onUnblockUser = {
-            otherUserId?.let { chatVm.unblockUser(it) }
-        },
-        isGroupChat = !chat.name.isNullOrEmpty()
-    )
+	val header = buildHeaderState(chat = chat, chatVm = chatVm)
+	val body = buildBodyState(
+		messages = messages.value,
+		currentUserId = uiState.userData.currentUserId,
+		listState = listState,
+		inputState = messageText
+	)
+	val actions = buildChatActions(
+		onBack = onBack,
+		chatVm = chatVm,
+		otherUserId = header.otherUserId,
+		messageText = messageText,
+		chatId = chat._id
+	)
+	ChatContent(header = header, body = body,actions = actions)
+}
+
+private fun shouldLoadMoreMessages(
+	lastVisibleIndex: Int?,
+	totalItems: Int,
+	isLoadingMore: Boolean,
+	messages: List<Message>
+): Boolean {
+	val canLoadMore = !isLoadingMore && messages.isNotEmpty() && totalItems > 0
+	val isNearEnd = lastVisibleIndex != null && lastVisibleIndex >= totalItems - 3
+	return isNearEnd && canLoadMore
+}
+
+private fun formatMessageTimestamp(message: Message?): String? {
+	return message?.createdAt?.let {
+		SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+			timeZone = TimeZone.getTimeZone("UTC")
+		}.format(it)
+	}
+}
+
+private fun buildHeaderState(chat: Chat, chatVm: ChatViewModel): ChatHeaderState {
+	val otherUserId = chatVm.getOtherUserId(chat)
+	return ChatHeaderState(
+		profilePicture = if (!chat.name.isNullOrEmpty()) null else chatVm.getOtherUserProfilePicture(chat),
+		chatDisplayName = chatVm.getChatDisplayName(chat),
+		isGroupChat = !chat.name.isNullOrEmpty(),
+		otherUserId = otherUserId,
+		isUserBlocked = otherUserId?.let { chatVm.isUserBlocked(it) } ?: false
+	)
+}
+
+private fun buildBodyState(
+	messages: List<Message>,
+	currentUserId: String?,
+	listState: LazyListState,
+	inputState: MutableState<String>
+): ChatBodyState {
+	return ChatBodyState(
+		messages = messages,
+		currentUserId = currentUserId,
+		listState = listState,
+		inputState = inputState
+	)
+}
+
+private fun buildChatActions(
+	onBack: () -> Unit,
+	chatVm: ChatViewModel,
+	otherUserId: String?,
+	messageText: MutableState<String>,
+	chatId: String?
+): ChatActions {
+	return ChatActions(
+		onBack = onBack,
+		onBlockUser = { otherUserId?.let { chatVm.blockUser(it) } },
+		onUnblockUser = { otherUserId?.let { chatVm.unblockUser(it) } },
+		onSend = {
+			if (messageText.value.trim().isNotEmpty()) {
+				chatId?.let { cid ->
+					chatVm.sendMessage(cid, messageText.value.trim(), otherUserId)
+					messageText.value = ""
+				}
+			}
+		}
+	)
 }
 
 @Composable
@@ -182,86 +222,122 @@ private fun MessagesCollector(
 	}
 }
 
+data class ChatHeaderState(
+	val profilePicture: String?,
+	val chatDisplayName: String,
+	val isGroupChat: Boolean,
+	val otherUserId: String?,
+	val isUserBlocked: Boolean
+)
+
+data class ChatBodyState(
+	val messages: List<Message>,
+	val currentUserId: String?,
+	val listState: LazyListState,
+	val inputState: MutableState<String>
+)
+
+data class ChatActions(
+	val onBack: () -> Unit,
+	val onBlockUser: () -> Unit,
+	val onUnblockUser: () -> Unit,
+	val onSend: () -> Unit
+)
+
 @Composable
 private fun ChatTopBar(
-    onBack: () -> Unit, 
-    chatDisplayName: String, 
-    spacing: Spacing,
-    otherUserId: String?,
-    isUserBlocked: Boolean,
-    onBlockUser: () -> Unit,
-	onUnblockUser: () -> Unit,
-	profilePicture: String?,
-	isGroupChat: Boolean
+	header: ChatHeaderState,
+	actions: ChatActions,
+	spacing: Spacing
 ) {
 	var showMenu by remember { mutableStateOf(false) }
 	Row(
 		verticalAlignment = Alignment.Companion.CenterVertically,
 		modifier = Modifier.Companion.fillMaxWidth()
 	) {
-		IconButton(onClick = onBack) {
+		IconButton(onClick = actions.onBack) {
 			Icon(
 				imageVector = Icons.AutoMirrored.Filled.ArrowBack,
 				contentDescription = "Back to chats"
 			)
 		}
-		if (!profilePicture.isNullOrEmpty()) {
-			AsyncImage(
-				model = RetrofitClient.getPictureUri(profilePicture),
-				contentDescription = stringResource(R.string.profile_picture),
-				contentScale = ContentScale.Crop,
-				modifier = Modifier.Companion
-					.size(32.dp)
-					.clip(CircleShape)
-			)
-		} else {
-			Icon(
-				imageVector = Icons.Default.Person,
-				contentDescription = if (isGroupChat) "Group chat" else "Direct message",
-				modifier = Modifier.Companion.size(32.dp),
-				tint = MaterialTheme.colorScheme.onSurface
-			)
-		}
+		ProfileAvatarSmall(profilePicture = header.profilePicture, isGroupChat = header.isGroupChat)
 		Spacer(modifier = Modifier.Companion.width(spacing.small))
 		Text(
-			text = chatDisplayName,
+			text = header.chatDisplayName,
 			style = MaterialTheme.typography.titleLarge,
 			fontWeight = FontWeight.Companion.SemiBold,
 			modifier = Modifier.Companion.weight(1f)
 		)
 		
 		// Three-dot menu (only show for direct messages, not group chats)
-		if (!isGroupChat) {
+		if (!header.isGroupChat) {
 			IconButton(onClick = { showMenu = true }) {
 				Icon(
 					imageVector = Icons.Default.MoreVert,
 					contentDescription = "More options"
 				)
 			}
-			DropdownMenu(
+			TopBarMenu(
 				expanded = showMenu,
-				onDismissRequest = { showMenu = false },
-				modifier = Modifier.Companion.fillMaxWidth()
-			) {
-				if (otherUserId != null) {
-					if (isUserBlocked) {
-						DropdownMenuItem(
-							text = { Text("Unblock User") },
-							onClick = {
-								onUnblockUser()
-								showMenu = false
-							}
-						)
-					} else {
-						DropdownMenuItem(
-							text = { Text("Block User") },
-							onClick = {
-								onBlockUser()
-								showMenu = false
-							}
-						)
+				onDismiss = { showMenu = false },
+				header = header,
+				actions = actions
+			)
+		}
+	}
+}
+
+@Composable
+private fun ProfileAvatarSmall(profilePicture: String?, isGroupChat: Boolean) {
+	if (!profilePicture.isNullOrEmpty()) {
+		AsyncImage(
+			model = RetrofitClient.getPictureUri(profilePicture),
+			contentDescription = stringResource(R.string.profile_picture),
+			contentScale = ContentScale.Crop,
+			modifier = Modifier.Companion
+				.size(32.dp)
+				.clip(CircleShape)
+		)
+	} else {
+		Icon(
+			imageVector = Icons.Default.Person,
+			contentDescription = if (isGroupChat) "Group chat" else "Direct message",
+			modifier = Modifier.Companion.size(32.dp),
+			tint = MaterialTheme.colorScheme.onSurface
+		)
+	}
+}
+
+@Composable
+private fun TopBarMenu(
+	expanded: Boolean,
+	onDismiss: () -> Unit,
+	header: ChatHeaderState,
+	actions: ChatActions
+) {
+	DropdownMenu(
+		expanded = expanded,
+		onDismissRequest = onDismiss,
+		modifier = Modifier.Companion.fillMaxWidth()
+	) {
+		if (header.otherUserId != null) {
+			if (header.isUserBlocked) {
+				DropdownMenuItem(
+					text = { Text("Unblock User") },
+					onClick = {
+						actions.onUnblockUser()
+						onDismiss()
 					}
-				}
+				)
+			} else {
+				DropdownMenuItem(
+					text = { Text("Block User") },
+					onClick = {
+						actions.onBlockUser()
+						onDismiss()
+					}
+				)
 			}
 		}
 	}
@@ -449,48 +525,32 @@ private fun MessageInputBar(
 
 @Composable
 private fun ChatContent(
-	profilePicture: String?,
-    chatDisplayName: String,
-    messages: List<Message>,
-    currentUserId: String?,
-    listState: LazyListState,
-    inputState: MutableState<String>,
-    onSend: () -> Unit,
-    onBack: () -> Unit,
-    otherUserId: String?,
-    isUserBlocked: Boolean,
-    onBlockUser: () -> Unit,
-    onUnblockUser: () -> Unit,
-    isGroupChat: Boolean
+	header: ChatHeaderState,
+	body: ChatBodyState,
+	actions: ChatActions
 ) {
     val spacing = LocalSpacing.current
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         ChatTopBar(
-            onBack = onBack, 
-            chatDisplayName = chatDisplayName, 
-            spacing = spacing,
-            otherUserId = otherUserId,
-            isUserBlocked = isUserBlocked,
-            onBlockUser = onBlockUser,
-            onUnblockUser = onUnblockUser,
-			profilePicture = profilePicture,
-			isGroupChat = isGroupChat
+			header = header,
+			actions = actions,
+			spacing = spacing
         )
         MessagesList(
-            messages = messages,
-            currentUserId = currentUserId,
+            messages = body.messages,
+            currentUserId = body.currentUserId,
             spacing = spacing,
-            listState = listState,
+            listState = body.listState,
             modifier = Modifier.weight(1f)
         )
         MessageInputBar(
-            message = inputState.value,
-            onMessageChange = { inputState.value = it },
-            onSend = onSend,
+            message = body.inputState.value,
+            onMessageChange = { body.inputState.value = it },
+            onSend = actions.onSend,
             spacing = spacing,
-            isBlocked = isUserBlocked
+            isBlocked = header.isUserBlocked
         )
     }
 }
