@@ -437,7 +437,7 @@ private fun EventsMainContent(
             containerColor = MaterialTheme.colorScheme.secondary,
             contentColor = MaterialTheme.colorScheme.onSecondary,
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.BottomEnd)
                 .padding(spacing.medium)
         ) {
             Icon(
