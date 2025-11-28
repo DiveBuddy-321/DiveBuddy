@@ -9,8 +9,7 @@ import type { IChat, IChatWithLastMessage, IMessage } from "../types/chat.types"
 export interface IChatDocument extends Omit<IChat, "_id" | "isGroup">, Document {
   _id: mongoose.Types.ObjectId;
   eventId?: mongoose.Types.ObjectId | null;
-  isGroup: boolean; // virtual (participants.length >= 3)
-  isDirect: boolean; // virtual (participants.length === 2)
+  isGroup: boolean;
 }
 
 export interface IChatModel extends Model<IChatDocument> {
@@ -22,7 +21,6 @@ export interface IChatModel extends Model<IChatDocument> {
   addParticipant(chatId: string, userId: mongoose.Types.ObjectId): Promise<IChatDocument | null>;
   removeParticipant(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;
   getLastConversation(chatId: string, limit?: number): Promise<IMessage[]>; // messages (lean)
-  leave(chatId: string, userId: mongoose.Types.ObjectId): Promise<"left" | "deleted" | "noop">;
 }
 
 const chatSchema = new Schema<IChatDocument, IChatModel>(
@@ -33,6 +31,7 @@ const chatSchema = new Schema<IChatDocument, IChatModel>(
     eventId: { type: Schema.Types.ObjectId, ref: "Event", default: null },
     lastMessage: { type: Schema.Types.ObjectId, ref: "Message", default: null },
     lastMessageAt: { type: Date, default: null, index: true },
+    isGroup: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -41,15 +40,6 @@ const chatSchema = new Schema<IChatDocument, IChatModel>(
     toObject: { virtuals: true },
   }
 );
-
-/* Virtuals */
-chatSchema.virtual("isDirect").get(function (this: IChatDocument) {
-  return Array.isArray(this.participants) && this.participants.length === 2;
-});
-
-chatSchema.virtual("isGroup").get(function (this: IChatDocument) {
-  return Array.isArray(this.participants) && this.participants.length >= 3;
-});
 
 /* Indexes */
 chatSchema.index({ participants: 1 });
@@ -116,6 +106,7 @@ chatSchema.statics.createPair = function (
   return this.create({
     name: name?.trim() ?? null,
     participants: dedup,
+    isGroup: false,
   } as unknown as IChatDocument);
 };
 
@@ -127,6 +118,7 @@ chatSchema.statics.findDirectPair = function (
   const [aId, bId] = [new mongoose.Types.ObjectId(a), new mongoose.Types.ObjectId(b)];
   return this.findOne({
     participants: { $all: [aId, bId] },
+    isGroup: false,
     $expr: { $eq: [{ $size: "$participants" }, 2] },
   }).exec();
 };
@@ -148,6 +140,7 @@ chatSchema.statics.findOrCreateEventChat = async function (
       name: eventTitle,
       eventId: eventObjectId,
       participants: [creatorId],
+      isGroup: true,
     } as unknown as IChatDocument);
   }
   
@@ -208,33 +201,6 @@ chatSchema.statics.removeParticipant = async function (
     return "left";
   }
   
-  return "noop";
-};
-
-// Note: Message queries are handled by Message model for better separation of concerns
-
-// 8) Leave a chat; delete if it becomes empty (for non-event chats)
-chatSchema.statics.leave = async function (
-  chatId: string,
-  userId: mongoose.Types.ObjectId
-): Promise<"left" | "deleted" | "noop"> {
-  const chat = await this.findById(chatId).exec();
-  if (!chat) return "noop";
-
-  const before = chat.participants.length;
-  chat.participants = chat.participants.filter((p) => String(p) !== String(userId));
-
-  // Don't delete event chats even if empty
-  if (chat.participants.length === 0 && !chat.eventId) {
-    await this.deleteOne({ _id: chat._id });
-    return "deleted";
-  }
-
-  if (chat.participants.length !== before) {
-    chat.updatedAt = new Date();
-    await chat.save();
-    return "left";
-  }
   return "noop";
 };
 

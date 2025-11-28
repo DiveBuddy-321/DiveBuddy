@@ -3,7 +3,6 @@ package com.cpen321.usermanagement.ui.screens.events
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +44,7 @@ import java.util.Locale
 import androidx.compose.foundation.layout.wrapContentWidth
 import com.cpen321.usermanagement.ui.components.ClickableDetailsRow
 import com.cpen321.usermanagement.ui.components.DetailsRow
-import com.cpen321.usermanagement.ui.components.EventMapView
+import com.cpen321.usermanagement.ui.components.events.SingleEventMapView
 
 
 @Composable
@@ -113,7 +112,7 @@ fun SingleEventScreen(
 
         EventDescriptionCard(description = updatedEvent.description)
 
-        EventMapView(
+        SingleEventMapView(
             latitude = updatedEvent.latitude,
             longitude = updatedEvent.longitude,
             locationName = updatedEvent.location,

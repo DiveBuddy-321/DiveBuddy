@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.events
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
