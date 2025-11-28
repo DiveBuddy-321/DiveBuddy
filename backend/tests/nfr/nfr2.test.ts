@@ -260,6 +260,7 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 
 		// cleanup - delete the created event
 		await eventModel.delete(eventInDb!._id);
+    await Chat.deleteOne({ eventId: eventInDb!._id });
 	});
 });
 

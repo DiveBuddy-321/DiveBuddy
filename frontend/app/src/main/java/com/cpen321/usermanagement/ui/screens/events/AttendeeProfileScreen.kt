@@ -88,6 +88,7 @@ fun AttendeeProfileScreen(
             val displayUser = uiState.user ?: user
             ProfileInfoSection(
                 user = displayUser,
+                currentUserId = uiState.currentUserId,
                 isCreatingChat = uiState.isCreatingChat,
                 onChatClick = { attendeeProfileViewModel.onChatClick() }
             )
@@ -98,6 +99,7 @@ fun AttendeeProfileScreen(
 @Composable
 private fun ProfileInfoSection(
     user: User,
+    currentUserId: String?,
     isCreatingChat: Boolean,
     onChatClick: () -> Unit
 ) {
@@ -130,19 +132,21 @@ private fun ProfileInfoSection(
 
         Spacer(modifier = Modifier.height(spacing.medium))
 
-        // Chat button
-        Button(
-            onClick = onChatClick,
-            enabled = !isCreatingChat,
-            fullWidth = true
-        ) {
-            if (isCreatingChat) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text(text = "Chat")
+        // Chat button - only show if not viewing own profile
+        if (user._id != null && user._id != currentUserId) {
+            Button(
+                onClick = onChatClick,
+                enabled = !isCreatingChat,
+                fullWidth = true
+            ) {
+                if (isCreatingChat) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(text = "Chat")
+                }
             }
         }
     }

@@ -200,8 +200,8 @@ describe('POST /api/events - unmocked (requires running server)', () => {
 		expect(eventInDb?.photo).toBe(newEvent.photo);
 
 		// cleanup - delete the created event
-		const del = (await request(app).delete(`/api/events/${eventInDb!._id.toString()}`));
-		// await eventModel.delete(eventInDb!._id);
+		await eventModel.delete(eventInDb!._id);
+    	await Chat.deleteOne({ eventId: eventInDb!._id });
 	});
 
 	/*
