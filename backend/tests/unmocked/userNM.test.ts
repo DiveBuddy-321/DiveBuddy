@@ -90,7 +90,7 @@ describe('GET /api/users - unmocked (requires running server)', () => {
     test('returns list of users (200) when server is available', async () => {
         
         // make sure GET endpoint works
-        const res = await request(app).get('/api/users');//.set('Authorization', `Bearer ${TOKEN}`);
+        const res = await request(app).get('/api/users');
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('data');
@@ -108,7 +108,7 @@ describe('GET /api/users/profile - unmocked (requires running server)', () => {
      */
     test('returns current user (200) when server is available', async () => {
         // call the endpoint
-        const res = await request(app).get('/api/users/profile');//.set('Authorization', `Bearer ${TOKEN}`);
+        const res = await request(app).get('/api/users/profile');
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('data');
