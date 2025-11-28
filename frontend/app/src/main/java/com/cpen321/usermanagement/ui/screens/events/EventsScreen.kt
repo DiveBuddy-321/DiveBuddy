@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -92,6 +93,7 @@ private fun HandleEventMessages(
 
 @Composable
 fun EventsScreen(
+    modifier: Modifier = Modifier,
     eventViewModel: EventViewModel = hiltViewModel()
 ) {
     var selectedEvent by remember { mutableStateOf<Event?>(null) }
@@ -107,8 +109,9 @@ fun EventsScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) {
+    ) { paddingValues ->
         EventNavigationContent(
+            modifier = modifier.padding(paddingValues),
             navigationState = EventNavigationState(
                 selectedEvent = selectedEvent,
                 showCreateEventForm = showCreateEventForm,
@@ -133,6 +136,7 @@ fun EventsScreen(
 
 @Composable
 private fun EventNavigationContent(
+    modifier: Modifier = Modifier,
     navigationState: EventNavigationState,
     uiState: EventUiState,
     eventViewModel: EventViewModel,
@@ -277,108 +281,16 @@ private fun CreateEventButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    CreateEventScreen(
-        onDismiss = {
-            onNavigationChange(navigationState.copy(showCreateEventForm = false))
-        },
-        eventViewModel = eventViewModel
-    )
-}
-
-@Composable
-private fun EditEventFormContent(
-    navigationState: EventNavigationState,
-    eventViewModel: EventViewModel,
-    onNavigationChange: (EventNavigationState) -> Unit
-) {
-    CreateEventScreen(
-        event = navigationState.showEditEventForm,
-        onDismiss = {
-            onNavigationChange(navigationState.copy(showEditEventForm = null))
-        },
-        eventViewModel = eventViewModel
-    )
-}
-
-@Composable
-private fun UserProfileContent(
-    navigationState: EventNavigationState,
-    onNavigationChange: (EventNavigationState) -> Unit
-) {
-    AttendeeProfileScreen(
-        user = navigationState.showUserProfile!!,
-        onBack = {
-            onNavigationChange(navigationState.copy(showUserProfile = null))
-        }
-    )
-}
-
-@Composable
-private fun AttendeesContent(
-    navigationState: EventNavigationState,
-    onNavigationChange: (EventNavigationState) -> Unit
-) {
-    AttendeesScreen(
-        attendeeIds = navigationState.showAttendees!!.attendees,
-        onBack = {
-            onNavigationChange(navigationState.copy(showAttendees = null))
-        },
-        onUserClick = { user ->
-            onNavigationChange(navigationState.copy(showUserProfile = user))
-        }
-    )
-}
-
-@Composable
-private fun SingleEventContent(
-    navigationState: EventNavigationState,
-    eventViewModel: EventViewModel,
-    onNavigationChange: (EventNavigationState) -> Unit
-) {
-    SingleEventScreen(
-        event = navigationState.selectedEvent!!,
-        onBack = {
-            onNavigationChange(navigationState.copy(
-                selectedEvent = null,
-                isMapView = navigationState.isMapView // Preserve view state
-            ))
-        },
-        onEditEvent = { event ->
-            onNavigationChange(navigationState.copy(showEditEventForm = event))
-        },
-        onShowAttendees = { event ->
-            onNavigationChange(navigationState.copy(showAttendees = event))
-        },
-        eventViewModel = eventViewModel
-    )
-}
-
-@Composable
-private fun DefaultEventsContent(
-    navigationState: EventNavigationState,
-    uiState: EventUiState,
-    eventViewModel: EventViewModel,
-    onNavigationChange: (EventNavigationState) -> Unit
-) {
-    EventsContent(
-        uiState = uiState,
-        onCreateEventClick = {
-            onNavigationChange(navigationState.copy(showCreateEventForm = true))
-        },
-        onEventClick = { event ->
-            onNavigationChange(navigationState.copy(
-                selectedEvent = event,
-                isMapView = navigationState.isMapView // Preserve current view state
-            ))
-        },
-        onRefresh = {
-            eventViewModel.refreshEvents()
-        },
-        initialIsMapView = navigationState.isMapView,
-        onViewStateChange = { isMap ->
-            onNavigationChange(navigationState.copy(isMapView = isMap))
-        }
-    )
+    Button(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Text(
+            text = "Create Event",
+            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
 }
 
 @Composable
@@ -395,6 +307,7 @@ fun NoEventsMessage(
 
 @Composable
 private fun EventsContent(
+    modifier: Modifier = Modifier,
     uiState: EventUiState,
     onCreateEventClick: () -> Unit,
     onEventClick: (Event) -> Unit,
@@ -432,45 +345,54 @@ private fun rememberEventsState(
     }
 
     val filteredEvents = remember(uiState.events, uiState.currentUser, selectedFilter) {
-        when (selectedFilter) {
-            EventFilter.ALL -> uiState.events
-            EventFilter.JOINED -> {
-                val joinedIds = uiState.currentUser?.eventsJoined ?: emptyList()
-                uiState.events.filter { it._id in joinedIds }
-            }
-            EventFilter.CREATED -> {
-                val createdIds = uiState.currentUser?.eventsCreated ?: emptyList()
-                uiState.events.filter { it._id in createdIds }
-            }
-        }
+        filterEventsByType(uiState.events, uiState.currentUser, selectedFilter)
     }
+    
     val sortedEvents = remember(filteredEvents, selectedSort) {
-        when (selectedSort) {
-            EventSort.NAME_ASC -> filteredEvents.sortedBy { it.title.lowercase() }
-            EventSort.NAME_DESC -> filteredEvents.sortedByDescending { it.title.lowercase() }
-            EventSort.DATE_ASC -> filteredEvents.sortedBy { it.date }
-            EventSort.DATE_DESC -> filteredEvents.sortedByDescending { it.date }
-        }
+        sortEventsByType(filteredEvents, selectedSort)
     }
 
-    Column() {
-        EventsHeader(
-            viewState = EventsHeaderViewState(
-                isMapView = isMapView,
-                selectedFilter = selectedFilter,
-                selectedSort = selectedSort
-            ),
-            actions = EventsHeaderActions(
-                onCreateEventClick = onCreateEventClick,
-                onRefresh = onRefresh,
-                onViewToggle = {
-                    isMapView = !isMapView
-                    onViewStateChange(isMapView)
-                },
-                onFilterChange = { selectedFilter = it },
-                onSortChange = { selectedSort = it }
-            )
-        )
+    return EventsState(
+        isMapView = isMapView,
+        selectedFilter = selectedFilter,
+        selectedSort = selectedSort,
+        filteredEvents = filteredEvents,
+        sortedEvents = sortedEvents,
+        onIsMapViewChange = { newValue ->
+            isMapView = newValue
+            onViewStateChange(newValue)
+        },
+        onFilterChange = { selectedFilter = it },
+        onSortChange = { selectedSort = it }
+    )
+}
+
+private fun filterEventsByType(
+    events: List<Event>,
+    currentUser: User?,
+    filter: EventFilter
+): List<Event> {
+    return when (filter) {
+        EventFilter.ALL -> events
+        EventFilter.JOINED -> {
+            val joinedIds = currentUser?.eventsJoined ?: emptyList()
+            events.filter { it._id in joinedIds }
+        }
+        EventFilter.CREATED -> {
+            val createdIds = currentUser?.eventsCreated ?: emptyList()
+            events.filter { it._id in createdIds }
+        }
+    }
+}
+
+private fun sortEventsByType(events: List<Event>, sort: EventSort): List<Event> {
+    return when (sort) {
+        EventSort.NAME_ASC -> events.sortedBy { it.title.lowercase() }
+        EventSort.NAME_DESC -> events.sortedByDescending { it.title.lowercase() }
+        EventSort.DATE_ASC -> events.sortedBy { it.date }
+        EventSort.DATE_DESC -> events.sortedByDescending { it.date }
+    }
+}
 
 private data class EventsState(
     val isMapView: Boolean,
@@ -496,15 +418,20 @@ private fun EventsMainContent(
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
             EventsHeader(
-                onRefresh = onRefresh,
-                isMapView = eventsState.isMapView,
-                onViewToggle = {
-                    eventsState.onIsMapViewChange(!eventsState.isMapView)
-                },
-                selectedFilter = eventsState.selectedFilter,
-                onFilterChange = eventsState.onFilterChange,
-                selectedSort = eventsState.selectedSort,
-                onSortChange = eventsState.onSortChange
+                viewState = EventsHeaderViewState(
+                    isMapView = eventsState.isMapView,
+                    selectedFilter = eventsState.selectedFilter,
+                    selectedSort = eventsState.selectedSort
+                ),
+                actions = EventsHeaderActions(
+                    onCreateEventClick = onCreateEventClick,
+                    onRefresh = onRefresh,
+                    onViewToggle = {
+                        eventsState.onIsMapViewChange(!eventsState.isMapView)
+                    },
+                    onFilterChange = eventsState.onFilterChange,
+                    onSortChange = eventsState.onSortChange
+                )
             )
 
             if (eventsState.isMapView) {
@@ -561,6 +488,8 @@ private fun EventsHeader(
     actions: EventsHeaderActions
 ) {
     val spacing = LocalSpacing.current
+    var filterExpanded by remember { mutableStateOf(false) }
+    var sortExpanded by remember { mutableStateOf(false) }
     
     Column(
         modifier = Modifier

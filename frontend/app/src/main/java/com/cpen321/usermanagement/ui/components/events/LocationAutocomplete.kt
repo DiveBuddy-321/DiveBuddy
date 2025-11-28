@@ -83,7 +83,6 @@ fun LocationAutocomplete(
     var hasFocus by remember { mutableStateOf(false) }
     var hasSelectedLocation by remember { mutableStateOf(value.isNotEmpty()) }
     
-    // Update searchQuery when value changes externally
     LaunchedEffect(value) {
         if (value != searchQuery) {
             searchQuery = value
@@ -99,76 +98,125 @@ fun LocationAutocomplete(
         enabled = hasFocus && !hasSelectedLocation
     )
     
-    val showDropdown = hasFocus && searchQuery.length >= 2 && predictions.isNotEmpty() && !hasSelectedLocation
+    val showDropdown = hasFocus && searchQuery.length >= 2 && 
+                       predictions.isNotEmpty() && !hasSelectedLocation
     
     Column(modifier = modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { newValue ->
+        LocationTextField(
+            searchQuery = searchQuery,
+            onSearchQueryChange = { newValue ->
                 searchQuery = newValue
                 onValueChange(newValue)
                 hasSelectedLocation = false
             },
-            label = { RequiredTextLabel(label) },
-            placeholder = { Text(placeholder) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged {
-                    hasFocus = it.isFocused
-                },
-            singleLine = true,
-            trailingIcon = {
-                when {
-                    hasSelectedLocation && searchQuery.isNotEmpty() -> {
-                        IconButton(onClick = {
-                            searchQuery = ""
-                            onValueChange("")
-                            hasSelectedLocation = false
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
-                        }
-                    }
-                    isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(12.dp),
-                            strokeWidth = 2.dp
-                        )
-                    }
-                }
+            label = label,
+            placeholder = placeholder,
+            hasSelectedLocation = hasSelectedLocation,
+            isLoading = isLoading,
+            onFocusChanged = { hasFocus = it },
+            onClear = {
+                searchQuery = ""
+                onValueChange("")
+                hasSelectedLocation = false
             }
         )
-        
         if (showDropdown) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 300.dp)
-                    .padding(top = 4.dp)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outline,
-                        shape = MaterialTheme.shapes.small
-                    )
-            ) {
-                items(predictions.take(10)) { prediction ->
-                    PredictionDropdownItem(
-                        prediction = prediction,
-                        onClick = {
-                            fetchPlaceDetails(placesClient, prediction.placeId) { locationResult ->
-                                searchQuery = locationResult.address
-                                onValueChange(locationResult.address)
-                                hasSelectedLocation = true
-                                onLocationSelected(locationResult)
-                            }
-                        }
-                    )
-                    if (prediction != predictions.take(10).last()) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        )
-                    }
+            LocationDropdown(
+                predictions = predictions,
+                placesClient = placesClient,
+                onLocationSelected = { locationResult ->
+                    searchQuery = locationResult.address
+                    onValueChange(locationResult.address)
+                    hasSelectedLocation = true
+                    onLocationSelected(locationResult)
                 }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocationTextField(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    hasSelectedLocation: Boolean,
+    isLoading: Boolean,
+    onFocusChanged: (Boolean) -> Unit,
+    onClear: () -> Unit
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        label = { RequiredTextLabel(label) },
+        placeholder = { Text(placeholder) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { onFocusChanged(it.isFocused) },
+        singleLine = true,
+        trailingIcon = {
+            LocationTextFieldIcon(
+                hasSelectedLocation = hasSelectedLocation,
+                searchQuery = searchQuery,
+                isLoading = isLoading,
+                onClear = onClear
+            )
+        }
+    )
+}
+
+@Composable
+private fun LocationTextFieldIcon(
+    hasSelectedLocation: Boolean,
+    searchQuery: String,
+    isLoading: Boolean,
+    onClear: () -> Unit
+) {
+    when {
+        hasSelectedLocation && searchQuery.isNotEmpty() -> {
+            IconButton(onClick = onClear) {
+                Icon(Icons.Default.Close, contentDescription = "Clear")
+            }
+        }
+        isLoading -> {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(12.dp),
+                strokeWidth = 2.dp
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocationDropdown(
+    predictions: List<AutocompletePrediction>,
+    placesClient: PlacesClient,
+    onLocationSelected: (LocationResult) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 300.dp)
+            .padding(top = 4.dp)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = MaterialTheme.shapes.small
+            )
+    ) {
+        items(predictions.take(10)) { prediction ->
+            PredictionDropdownItem(
+                prediction = prediction,
+                onClick = {
+                    fetchPlaceDetails(placesClient, prediction.placeId, onLocationSelected)
+                }
+            )
+            if (prediction != predictions.take(10).last()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
             }
         }
     }

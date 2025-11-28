@@ -257,86 +257,122 @@ data class ProfileCityAutocompleteCallbacks(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CityAutocompleteField(data: ProfileCityAutocompleteData, 
-                            callbacks: ProfileCityAutocompleteCallbacks, 
-                            modifier: Modifier = Modifier) {
+fun CityAutocompleteField(
+    data: ProfileCityAutocompleteData, 
+    callbacks: ProfileCityAutocompleteCallbacks, 
+    modifier: Modifier = Modifier
+) {
     var hasFocus by remember { mutableStateOf(false) }
-    val textValue = when {
-        hasFocus && data.query.isNotEmpty() -> data.query
-        !data.selectedCity.isNullOrEmpty() -> data.selectedCity
-        else -> data.query
-    }
+    val textValue = getCityTextValue(hasFocus, data.query, data.selectedCity)
     val showMenu = data.isEnabled && hasFocus && data.query.length >= 2 && data.suggestions.isNotEmpty()
 
     Column(modifier = modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = textValue,
-            onValueChange = {
-                if (data.selectedCity != null) callbacks.onClearSelection()
-                callbacks.onQueryChange(it)
-            },
-            label = { Text("City") },
-            placeholder = { Text("Start typing…") },
-            singleLine = true,
-            isError = data.error != null,
-            enabled = data.isEnabled,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrectEnabled = false),
-            trailingIcon = {
-                when {
-                    data.selectedCity != null -> IconButton(onClick = {
-                        callbacks.onClearSelection()
-                    }) { M3Icon(Icons.Default.Close, contentDescription = "Clear") }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged {
-                    hasFocus = it.isFocused
-                }
+        CityTextField(
+            textValue = textValue,
+            data = data,
+            callbacks = callbacks,
+            onFocusChanged = { hasFocus = it }
         )
-        
         if (showMenu) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 300.dp)
-                    .padding(top = 4.dp)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outline,
-                        shape = MaterialTheme.shapes.small
-                    )
-            ) {
-                items(data.suggestions.take(8)) { s ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { callbacks.onSelect(s) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        M3Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = "Location",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = s,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                    if (s != data.suggestions.take(8).last()) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        )
-                    }
+            CitySuggestionsDropdown(
+                suggestions = data.suggestions,
+                onSelect = callbacks.onSelect
+            )
+        }
+        ErrorText(error = data.error)
+    }
+}
+
+private fun getCityTextValue(hasFocus: Boolean, query: String, selectedCity: String?): String {
+    return when {
+        hasFocus && query.isNotEmpty() -> query
+        !selectedCity.isNullOrEmpty() -> selectedCity
+        else -> query
+    }
+}
+
+@Composable
+private fun CityTextField(
+    textValue: String,
+    data: ProfileCityAutocompleteData,
+    callbacks: ProfileCityAutocompleteCallbacks,
+    onFocusChanged: (Boolean) -> Unit
+) {
+    OutlinedTextField(
+        value = textValue,
+        onValueChange = {
+            if (data.selectedCity != null) callbacks.onClearSelection()
+            callbacks.onQueryChange(it)
+        },
+        label = { Text("City") },
+        placeholder = { Text("Start typing…") },
+        singleLine = true,
+        isError = data.error != null,
+        enabled = data.isEnabled,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, autoCorrectEnabled = false),
+        trailingIcon = {
+            if (data.selectedCity != null) {
+                IconButton(onClick = callbacks.onClearSelection) {
+                    M3Icon(Icons.Default.Close, contentDescription = "Clear")
                 }
             }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { onFocusChanged(it.isFocused) }
+    )
+}
+
+@Composable
+private fun CitySuggestionsDropdown(
+    suggestions: List<String>,
+    onSelect: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 300.dp)
+            .padding(top = 4.dp)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = MaterialTheme.shapes.small
+            )
+    ) {
+        items(suggestions.take(8)) { suggestion ->
+            CitySuggestionItem(suggestion = suggestion, onClick = { onSelect(suggestion) })
+            if (suggestion != suggestions.take(8).last()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+            }
         }
-        
-        ErrorText(error = data.error)
+    }
+}
+
+@Composable
+private fun CitySuggestionItem(
+    suggestion: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        M3Icon(
+            Icons.Default.LocationOn,
+            contentDescription = "Location",
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = suggestion,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
 
