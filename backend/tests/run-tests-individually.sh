@@ -24,6 +24,7 @@ FAILED_TESTS=""
 # List of test files (space-separated, works in /bin/sh)
 TEST_FILES="
 mocked/authM.test.ts
+mocked/blockM.test.ts
 mocked/buddyM.test.ts
 mocked/chatM.test.ts
 mocked/eventM.test.ts
@@ -31,6 +32,7 @@ mocked/mediaM.test.ts
 mocked/socketM.test.ts
 mocked/userM.test.ts
 unmocked/authNM.test.ts
+unmocked/blockNM.test.ts
 unmocked/buddyNM.test.ts
 unmocked/chatNM.test.ts
 unmocked/eventNM.test.ts
