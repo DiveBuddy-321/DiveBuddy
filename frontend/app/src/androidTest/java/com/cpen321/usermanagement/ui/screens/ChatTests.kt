@@ -14,8 +14,10 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import com.cpen321.usermanagement.data.local.preferences.TokenManager
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.repository.AuthRepositoryImpl
+import com.cpen321.usermanagement.data.repository.BlockRepositoryImpl
 import com.cpen321.usermanagement.data.repository.ChatRepositoryImpl
 import com.cpen321.usermanagement.data.repository.ProfileRepositoryImpl
+import com.cpen321.usermanagement.data.repository.BlockRepository
 import com.cpen321.usermanagement.data.repository.ChatRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.socket.SocketManager
@@ -53,6 +55,7 @@ class ChatTests {
     private lateinit var tokenManager: TokenManager
     private lateinit var chatRepository: ChatRepository
     private lateinit var profileRepository: ProfileRepository
+    private lateinit var blockRepository: BlockRepository
     private lateinit var chatViewModel: ChatViewModel
 
     @Before
@@ -68,6 +71,7 @@ class ChatTests {
             imageInterface = RetrofitClient.imageInterface,
             tokenManager = tokenManager
         )
+        blockRepository = BlockRepositoryImpl(RetrofitClient.blockInterface)
         
         // Set up authentication token - assume user is already logged in
         runBlocking {
@@ -95,6 +99,7 @@ class ChatTests {
         chatViewModel = ChatViewModel(
             chatRepository = chatRepository,
             profileRepository = profileRepository,
+            blockRepository = blockRepository,
             socketManager = socketManager,
             authRepository = authRepository
         )

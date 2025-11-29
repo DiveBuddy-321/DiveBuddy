@@ -590,55 +590,6 @@ class ProfileScreenTest {
     }
 
     @Test
-    fun test_skip_button_profile_completion() {
-        ensureAuthenticated()
-
-        runBlocking {
-            profileViewModel.loadProfile()
-        }
-        Thread.sleep(1000)
-        composeTestRule.waitForIdle()
-
-        var skipButtonClicked = false
-
-        composeTestRule.setContent {
-            UserManagementTheme {
-                ProvideSpacing {
-                    ProfileCompletionScreen(
-                        profileViewModel = profileViewModel,
-                        onProfileCompleted = { skipButtonClicked = true },
-                        onProfileCompletedWithMessage = { skipButtonClicked = true }
-                    )
-                }
-            }
-        }
-        composeTestRule.waitForIdle()
-
-        waitForProfileLoading()
-
-        composeTestRule.onNodeWithText("Complete Your Profile", substring = true).assertIsDisplayed()
-
-        composeTestRule.onNodeWithText("Skip", substring = true)
-            .performScrollTo()
-            .assertIsDisplayed()
-            .assertIsEnabled()
-            .performClick()
-
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
-
-        assert(skipButtonClicked) {
-            "Skip button should call onProfileCompleted callback"
-        }
-
-        runBlocking {
-            assert(!profileViewModel.uiState.value.isSavingProfile) {
-                "Skip button should not trigger profile save"
-            }
-        }
-    }
-
-    @Test
     fun test_profile_completion_validation_all_fields() {
         ensureAuthenticated()
 

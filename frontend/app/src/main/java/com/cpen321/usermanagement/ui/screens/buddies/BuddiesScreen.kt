@@ -26,6 +26,7 @@ import Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 import com.cpen321.usermanagement.common.Constants
@@ -188,6 +189,11 @@ private fun BuddiesFiltersSection(
     var maxLevel by remember { mutableStateOf(state.targetMaxLevel) }
     var minAge by remember { mutableStateOf(state.targetMinAge) }
     var maxAge by remember { mutableStateOf(state.targetMaxAge) }
+
+    // Initialize filters with default values (all levels) on first render
+    LaunchedEffect(Unit) {
+        callbacks.onFiltersChange(minLevel, maxLevel, minAge, maxAge)
+    }
 
     Column(
         modifier = Modifier.padding(bottom = spacing.large),
