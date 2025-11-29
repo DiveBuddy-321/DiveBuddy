@@ -13,6 +13,7 @@
 | Nov 28, 2025 | 4.2 Databases | Changed MongoDB description to include new table for storing blocked users in (blocker, blocked) pairs. |
 | Nov 28, 2025 | 4.1 APIs | Added a section for backend and REST interfaces related to the block user functionality. |
 | Nov 28, 2025 | 3.1 List of Features | Edited Event feature description for consistency with the app. |
+| Nov 28, 2025 | 3.2 Use Case Diagram | Update use case diagram to include 'Chat with Event Attendees/Organizers' instead of 'Receive Event Updates' |
 | Nov 28, 2025 | 3.4 Use Case Description | Edited descriptions for use cases that were implemented after M3. |
 | Nov 28, 2025 | 4.3 External Modules | No longer using Firebase for notifications. |
 | Nov 28, 2025 | 4.5 Dependencies Diagram | Update dependencies diagram |
@@ -44,7 +45,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 ### **3.2. Use Case Diagram**
 
-![Use Case Diagram](../documentation/images/use-case-diagram-2.png)
+![Use Case Diagram](../documentation/images/use-case-diagram-3.png)
 
 ### **3.3. Actors Description**
 
@@ -72,7 +73,7 @@ Users can view all of the events they have joined/created, as well as their stat
 - Browse Events: Users can browse through events created by dive club owners. Events can be browsed from a list view, showcasing information about the event such as location, date and time.
 - Register for Event: Users can join events that they see on their feed, given that the event has enough capacity. These users become event attendees.
 - Leave Event: The user who has previously registered for an event will be able to leave the event by clicking a button.
-- Chat with event organizers/attendees: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
+- Chat with Event Organizers/Attendees: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
 
 #### Use cases for feature 4: Buddy Matching
 - Find Matches: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests.
