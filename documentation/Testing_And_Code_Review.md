@@ -7,6 +7,7 @@
 | Nov 24, 2025 | 4.1 Location of Front-end Test Suite | Corrected frontend test locations, added all test files |
 | Nov 24, 2025 | 2.3, 2.4, 2.5 Jest Coverage Reports | Added coverage reports to reflect additional testing |
 | Nov 24, 2025 | 2.1.1 Tests | Edit line numbers for test locations after adding more tests for coverage, and comments describing tests |
+| Nov 28, 2025 | 2.1.1 Tests | Edit line numbers for test locations for block routes |
 
 ---
 
@@ -21,30 +22,35 @@
 | **POST /auth/signup**          | [`backend/tests/unmocked/authNM.test.ts#L48`] | [`backend/tests/mocked/authM.test.ts#L21`] | Google Authentication API/ Auth Service |
 | **POST /auth/signin**          | [`backend/tests/unmocked/authNM.test.ts#L463`] | [`backend/tests/mocked/authM.test.ts#L143`] | Google Authentication API/ Auth Service |
 | **GET /buddy**                 | [`backend/tests/unmocked/buddyNM.test.ts#L64`] | [`backend/tests/mocked/buddyM.test.ts#L66`] | User DB |
-| **GET /chats**                 | [`backend/tests/unmocked/chatNM.test.ts#L217`] | [`backend/tests/mocked/chatM.test.ts#L91`] | Chat DB |
-| **POST /chats**                 | [`backend/tests/unmocked/chatNM.test.ts#L130`] | [`backend/tests/mocked/chatM.test.ts#L272`] | Chat DB |
-| **GET /chats/:chatId**             | [`backend/tests/unmocked/chatNM.test.ts#L250`] | [`backend/tests/mocked/chatM.test.ts#L169`] | Chat DB |
-| **GET /chats/messages/:chatId**      | [`backend/tests/unmocked/chatNM.test.ts#L412`] | [`backend/tests/mocked/chatM.test.ts#L572`] | Chat DB |
-| **POST /chats/:chatId/messages/**     | [`backend/tests/unmocked/chatNM.test.ts#L315`] | [`backend/tests/mocked/chatM.test.ts#L407`] | Chat DB |
-| **GET /events**     | [`backend/tests/unmocked/eventNM.test.ts#L68`] | [`backend/tests/mocked/eventM.test.ts#L69`] | Event DB |
-| **GET /events/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L87`] | [`backend/tests/mocked/eventM.test.ts#L175`] | Event DB |
-| **POST /events**     | [`backend/tests/unmocked/eventNM.test.ts#L154`] | [`backend/tests/mocked/eventM.test.ts#L291`] | Event DB |
-| **PUT /events/join/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L283`] | [`backend/tests/mocked/eventM.test.ts#L576`] | Event DB |
-| **PUT /events/leave/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L342`] | [`backend/tests/mocked/eventM.test.ts#L718`] | Event DB |
-| **PUT /events/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L401`] | [`backend/tests/mocked/eventM.test.ts#L410`] | Event DB |
-| **DELETE /events/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L499`] | [`backend/tests/mocked/eventM.test.ts#L856`] | Event DB |
+| **GET /chats**                 | [`backend/tests/unmocked/chatNM.test.ts#L277`] | [`backend/tests/mocked/chatM.test.ts#L92`] | Chat DB |
+| **POST /chats**                 | [`backend/tests/unmocked/chatNM.test.ts#L137`] | [`backend/tests/mocked/chatM.test.ts#L387`] | Chat DB |
+| **GET /chats/:chatId**             | [`backend/tests/unmocked/chatNM.test.ts#L310`] | [`backend/tests/mocked/chatM.test.ts#L284`] | Chat DB |
+| **GET /chats/messages/:chatId**      | [`backend/tests/unmocked/chatNM.test.ts#L485`] | [`backend/tests/mocked/chatM.test.ts#L687`] | Chat DB |
+| **POST /chats/:chatId/messages/**     | [`backend/tests/unmocked/chatNM.test.ts#L388`] | [`backend/tests/mocked/chatM.test.ts#L522`] | Chat DB |
+| **GET /events**     | [`backend/tests/unmocked/eventNM.test.ts#L69`] | [`backend/tests/mocked/eventM.test.ts#L69`] | Event DB |
+| **GET /events/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L88`] | [`backend/tests/mocked/eventM.test.ts#L175`] | Event DB |
+| **POST /events**     | [`backend/tests/unmocked/eventNM.test.ts#L155`] | [`backend/tests/mocked/eventM.test.ts#L291`] | Event DB |
+| **PUT /events/join/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L284`] | [`backend/tests/mocked/eventM.test.ts#L576`] | Event DB |
+| **PUT /events/leave/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L343`] | [`backend/tests/mocked/eventM.test.ts#L718`] | Event DB |
+| **PUT /events/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L489`] | [`backend/tests/mocked/eventM.test.ts#L410`] | Event DB |
+| **DELETE /events/:eventId**     | [`backend/tests/unmocked/eventNM.test.ts#L587`] | [`backend/tests/mocked/eventM.test.ts#L856`] | Event DB |
 | **POST /media/upload**     | [`backend/tests/unmocked/mediaNM.test.ts#L130`] | [`backend/tests/mocked/mediaM.test.ts#L136`] | Media Service |
-| **GET /users**     | [`backend/tests/unmocked/userNM.test.ts#L82`] | [`backend/tests/mocked/userM.test.ts#L72`] | User DB |
-| **GET /users/profile**     | [`backend/tests/unmocked/userNM.test.ts#L101`] | [`backend/tests/mocked/userM.test.ts#L110`] | User DB |
-| **GET /users/:id**     | [`backend/tests/unmocked/userNM.test.ts#L122`] | [`backend/tests/mocked/userM.test.ts#L130`] | User DB |
-| **DELETE /users/**     | [`backend/tests/unmocked/userNM.test.ts#L674`] | [`backend/tests/mocked/userM.test.ts#L495`] | User DB |
-| **DELETE /users/:id**     | [`backend/tests/unmocked/userNM.test.ts#L436`] | [`backend/tests/mocked/userM.test.ts#L409`] | User DB |
-| **PUT /users/:id**     | [`backend/tests/unmocked/userNM.test.ts#L168`] | [`backend/tests/mocked/userM.test.ts#L189`] | User DB |
-| **POST /users/**     | [`backend/tests/unmocked/userNM.test.ts#L271`] | [`backend/tests/mocked/userM.test.ts#L297`] | User DB |
+| **GET /users**     | [`backend/tests/unmocked/userNM.test.ts#L83`] | [`backend/tests/mocked/userM.test.ts#L72`] | User DB |
+| **GET /users/profile**     | [`backend/tests/unmocked/userNM.test.ts#L102`] | [`backend/tests/mocked/userM.test.ts#L110`] | User DB |
+| **GET /users/:id**     | [`backend/tests/unmocked/userNM.test.ts#L123`] | [`backend/tests/mocked/userM.test.ts#L130`] | User DB |
+| **DELETE /users/**     | [`backend/tests/unmocked/userNM.test.ts#L730`] | [`backend/tests/mocked/userM.test.ts#L495`] | User DB |
+| **DELETE /users/:id**     | [`backend/tests/unmocked/userNM.test.ts#L492`] | [`backend/tests/mocked/userM.test.ts#L409`] | User DB |
+| **PUT /users/:id**     | [`backend/tests/unmocked/userNM.test.ts#L224`] | [`backend/tests/mocked/userM.test.ts#L189`] | User DB |
+| **POST /users/**     | [`backend/tests/unmocked/userNM.test.ts#L327`] | [`backend/tests/mocked/userM.test.ts#L297`] | User DB |
+| **POST /block**     | [`backend/tests/unmocked/blockNM.test.ts#L86`] | [`backend/tests/mocked/blockM.test.ts#L33`] | Block DB |
+| **GET /block**     | [`backend/tests/unmocked/blockNM.test.ts#L145`] | [`backend/tests/mocked/blockM.test.ts#L75`] | Block DB |
+| **GET /block/check/:targetUserId**     | [`backend/tests/unmocked/blockNM.test.ts#L176`] | [`backend/tests/mocked/blockM.test.ts#L90`] | Block DB |
+| **DELETE /block/:targetUserId**     | [`backend/tests/unmocked/blockNM.test.ts#L231`] | [`backend/tests/mocked/blockM.test.ts#L106`] | Block DB |
+
 
 #### 2.1.2. Commit Hash Where Tests Run
 
-`a6b3db05cf5185c0f3f2ecd0fb253b86b29b9a2d`
+`993c78a54e2b9ab7e213588c3c471658070a701f`
 
 #### 2.1.3. Explanation on How to Run the Tests
 
@@ -478,7 +484,7 @@ Before running any test, make sure the following are satisfied:
 
 ### 5.1. Commit Hash Where Codacy Ran
 
-`a97a33a65cbd4bdae90eb20c647a90aebf6fb6d1`
+`993c78a54e2b9ab7e213588c3c471658070a701f`
 
 ### 5.2. Unfixed Issues per Codacy Category
 No issues remaining as per screenshot below:
