@@ -50,7 +50,7 @@
 
 #### 2.1.2. Commit Hash Where Tests Run
 
-`a6b3db05cf5185c0f3f2ecd0fb253b86b29b9a2d`
+`993c78a54e2b9ab7e213588c3c471658070a701f`
 
 #### 2.1.3. Explanation on How to Run the Tests
 
@@ -484,7 +484,7 @@ Before running any test, make sure the following are satisfied:
 
 ### 5.1. Commit Hash Where Codacy Ran
 
-`a97a33a65cbd4bdae90eb20c647a90aebf6fb6d1`
+`993c78a54e2b9ab7e213588c3c471658070a701f`
 
 ### 5.2. Unfixed Issues per Codacy Category
 No issues remaining as per screenshot below:
