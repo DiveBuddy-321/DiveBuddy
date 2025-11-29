@@ -11,7 +11,13 @@
  | Oct 27, 2025 | 3.2 Use Case Diagram | Updated to reflect how we split the Match with Other User use case into two use cases as described above. |
 | Oct 27, 2025 | 4.4 Frameworks | Added Retrofit and Socket.IO frameworks for Android because they are used on the frontend for HTTP requests and live websocket for chats. |
 | Nov 28, 2025 | 4.2 Databases | Changed MongoDB description to include new table for storing blocked users in (blocker, blocked) pairs. |
-| NOv 28,, 2025 | 4.1 APIs | Added a section for backend and REST interfaces related to the block user functionality. |
+| Nov 28, 2025 | 4.1 APIs | Added a section for backend and REST interfaces related to the block user functionality. |
+| Nov 28, 2025 | 3.1 List of Features | Edited Event feature description for consistency with the app. |
+| Nov 28, 2025 | 3.2 Use Case Diagram | Update use case diagram to include 'Chat with Event Attendees/Organizers' instead of 'Receive Event Updates' |
+| Nov 28, 2025 | 3.4 Use Case Description | Edited descriptions for use cases that were implemented after M3. |
+| Nov 28, 2025 | 4.3 External Modules | No longer using Firebase for notifications. |
+| Nov 28, 2025 | 4.5 Dependencies Diagram | Update dependencies diagram |
+
 ---
 
 ## 2. Project Description
@@ -30,7 +36,7 @@ What sets DiveBuddy apart is its real-time buddy matching feature and event mana
 
 - Profile Management: After the authentication Sign Up process, the user will see a pop up form with fields that they must fill out to complete their profile. The fields will be: Name, Age, City, Experience Level (beginner, intermediate, advanced), and Bio (open text input). The user will be able to update their profile after the initial set up, in order to reflect any new changes. The City field will be a dropdown from the Google Maps API. Name will be a textbox, Age will be a number, Experience level will be a dropdown, and Bio is a text input of up to 1000 characters. A user can add a profile photo as well.
 
-- Event Management: Users will be able to create an event and become the event organizer. When creating the event, the user will be able to fill a form with the following fields: Name (text), Date/Time (DateTimePicker), Location (with Google Maps API), user capacity (number), estimated skill level (beginner, intermediate, or advanced). They can also upload an image for the event. The event organizer can update any of the fields of the event, as well delete the event. Users can view all of the above information about the event prior to joining, including the attendees list, and they will be added to the attendees list after joining.
+- Event Management: Users will be able to create an event and become the event organizer. When creating the event, the user will be able to fill a form with the following fields: Name (text), Date/Time (DateTimePicker), Location (with Google Maps API), user capacity (number), estimated skill level (beginner, intermediate, or advanced). The event organizer can update any of the fields of the event, as well delete the event. Users can view all of the above information about the event prior to joining, including the attendees list, and they will be added to the attendees list after joining.
 Users can view all of the events they have joined/created, as well as their status of Organizer/Attendee. Users can leave an event they have joined, and it will remove themselves from the attendee list. Events can be discovered through the Browse Events tab, and users can join events from there.
 
 - Buddy Matching: Users will be able to match with a single diving buddy if they are looking for a partner when diving because it is never recommended to go diving alone. With the user’s profile information, including their location and skill level, the buddy matching algorithm can be invoked to find a list of top other users that are compatible with the current user.
@@ -39,7 +45,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 ### **3.2. Use Case Diagram**
 
-![Use Case Diagram](../documentation/images/use-case-diagram-2.png)
+![Use Case Diagram](../documentation/images/use-case-diagram-3.png)
 
 ### **3.3. Actors Description**
 
@@ -67,8 +73,7 @@ Users can view all of the events they have joined/created, as well as their stat
 - Browse Events: Users can browse through events created by dive club owners. Events can be browsed from a list view, showcasing information about the event such as location, date and time.
 - Register for Event: Users can join events that they see on their feed, given that the event has enough capacity. These users become event attendees.
 - Leave Event: The user who has previously registered for an event will be able to leave the event by clicking a button.
-- Receive Event Updates (To be implemented in future milestone): After a user has joined an event, they will receive notifications if the event creator makes any updates to the event or deletes the event.
-- Chat with event organizers/attendees (To be implemented in future milestone): Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
+- Chat with Event Organizers/Attendees: Upon a user creating or joining an event, they will have access to a chat room available to all event attendees and the event organizer, where they can send messages to co-ordinate event planning or get to know each other before meeting up.
 
 #### Use cases for feature 4: Buddy Matching
 - Find Matches: A user can use the information that they’ve set in their profile to request to match with a diving buddy. The matching algorithm will find a list of top matches who have similar experience level and interests.
@@ -76,7 +81,7 @@ Users can view all of the events they have joined/created, as well as their stat
 
 #### Use cases for feature 5: Chat
 - Chat: After matching as buddy with another user, the users use the created chat room to chat with each other to coordinate joining events together, or go on diving excursions themselves. A chat room can also be opened between users who are attendees of the same event.
-- Block User (To be implemented in future milestone): When a user blocks another user, they can no longer message or receive messages from the user
+- Block User: When a user blocks another user, they can no longer message or receive messages from the user
 
 
 ### **3.5. Formal Use Case Specifications (6 Most Major Use Cases)**
@@ -415,7 +420,7 @@ Users can view all of the events they have joined/created, as well as their stat
         - **Purpose**: User will be added to the list of attendees (register) for requested event  
         - **Parameters**: userId, eventId (all required)  
         - **Returns**: Success message if user was able to successfully join the event, otherwise error message is returned
-          ```json
+          ```
           {
             message: string
           }
@@ -424,7 +429,7 @@ Users can view all of the events they have joined/created, as well as their stat
         - **Purpose**: User will be removed from the list of attendees (unregister) for the requested event  
         - **Parameters**: userId, eventId (all required)  
         - **Returns**: Success message if user was able to successfully unregister from the event, otherwise error message is returned
-          ```json
+          ```
           {
             message: string
           }
@@ -534,7 +539,7 @@ Users can view all of the events they have joined/created, as well as their stat
         - **Returns**:  
           - Success: a success message and a list of match buddies otherwise error message is returned  
           - Failure: failure message with instructions
-            ```json
+            ```
             {
               message: string
               data: { buddies: { user: User, distance: number } }
@@ -715,7 +720,7 @@ Users can view all of the events they have joined/created, as well as their stat
   				"message": "User blocked successfully"
 			}
   			```
-		- unblockUser: interacts with Users component
+		- unblockUser: Interacts with Users component
 			- Purpose: Unblocks the target user, allowing them to communicate with the calling user again
 			- Parameters: targetUserId (required)
 			- Returns: Success message if successfully unblocked target user, otherwise error message
@@ -724,18 +729,18 @@ Users can view all of the events they have joined/created, as well as their stat
   				“message”: ‘User unblocked successfully’
 			}
 			```
-		- getBlockedUsers: interacts with Users component
+		- getBlockedUsers: Interacts with Users component
 			- Purpose: Fetches a list of all users that the calling user has blocked
 			- Parameters: none
-			- Returns: A list of users that the calling user has blocked
+			- Returns: A list of UserIds corresponding to users that the calling user has blocked
            ```
 			{
   				"message”: “Blocked users fetched successfully”,
-  				“data”: User[ ]
+  				"data": { blockedUserIds: UserId[] }
 			}
 			```
 
-		- checkIfBlockedBy: interacts with Users component
+		- checkIfBlockedBy: Interacts with Users component
 			- Purpose: Checks if the calling user is blocked by the target user
 			- Parameters: targetUserId (required)
 			- Returns: A success message and True if the calling user is blocked by the target user, a success message and False if the calling user is not blocked by the target user, an error message if an error is encountered while 		determining whether or not the calling user has been blocked by the target user
@@ -747,11 +752,62 @@ Users can view all of the events they have joined/created, as well as their stat
 			```
 	- REST Interfaces:
 		- POST /block/
-		- Purpose: Adds the target user to the calling user’s blocked users
-		Parameters: 
+			- Purpose: Adds the target user to the calling user’s blocked users
+   			- Parameters: targetUserId (required). Payload is as follows:
+             ```
+              {
+  				targetUserId: string
+			  }
+             ```
+      		- Returns: Success message on success, otherwise failure message
+            ```
+              {
+  				message: string
+			  }
+             ```
 		- DELETE /block/:targetUserId
-		- GET /block	
-		-GET /block/check/:targetUserId
+  			- Purpose: Removes the target user from the calling user's blocked users
+     		- Parameters: targetUserId (required). Payload is as follows:
+       		 ```
+              {
+  				targetUserId: string
+			  }
+    		```
+    		- Returns: Success message on success, otherwise failure message
+            ```
+              {
+  				message: string
+			  }
+             ```
+		- GET /block
+  			- Purpose: Gets the list of the UserIds of the calling user's blocked users.
+    		- Parameters: None
+      		- Returns: Success message along with a list of UserIds on success, error message on error
+          	```
+              {
+  				message: string
+          		data: {
+          			blockedUserIds: string[]
+			  		}
+    		   }
+             ```
+		- GET /block/check/:targetUserId
+  			- Purpose: Checks whether or not the calling user is blocked by the target user
+     		- Parameters: targetUserId (required). Payload is as follows:
+         	```
+              {
+  				targetUserId: string
+			  }
+    		```
+    		- Returns: Success message along with a boolean flag for whether or not the calling user is blocked by the target user, otherwise error message
+        	```
+              {
+  				message: string
+         		data: {
+					isBlocked: boolean
+         		}
+			  }
+    		```   
 
 
 ### **4.2. Databases**
@@ -766,9 +822,6 @@ Users can view all of the events they have joined/created, as well as their stat
     - **Purpose**:  For secure OAuth login/sign-up with minimal setup
 2. **Google Maps API**
     - **Purpose**: For location-based event creation and browsing
-3. **Firebase Cloud Messaging (FCM)**
-    - **Purpose**: For event update notifications and buddy match alerts
-    - Note: This is not implemented yet in our MVP, but we will integrate it in M5.
 
 ### **4.4. Frameworks**
 
