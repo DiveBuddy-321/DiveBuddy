@@ -719,7 +719,7 @@ Users can view all of the events they have joined/created, as well as their stat
   				"message": "User blocked successfully"
 			}
   			```
-		- unblockUser: interacts with Users component
+		- unblockUser: Interacts with Users component
 			- Purpose: Unblocks the target user, allowing them to communicate with the calling user again
 			- Parameters: targetUserId (required)
 			- Returns: Success message if successfully unblocked target user, otherwise error message
@@ -728,18 +728,18 @@ Users can view all of the events they have joined/created, as well as their stat
   				“message”: ‘User unblocked successfully’
 			}
 			```
-		- getBlockedUsers: interacts with Users component
+		- getBlockedUsers: Interacts with Users component
 			- Purpose: Fetches a list of all users that the calling user has blocked
 			- Parameters: none
-			- Returns: A list of users that the calling user has blocked
+			- Returns: A list of UserIds corresponding to users that the calling user has blocked
            ```
 			{
   				"message”: “Blocked users fetched successfully”,
-  				“data”: User[ ]
+  				"data": { blockedUserIds: UserId[] }
 			}
 			```
 
-		- checkIfBlockedBy: interacts with Users component
+		- checkIfBlockedBy: Interacts with Users component
 			- Purpose: Checks if the calling user is blocked by the target user
 			- Parameters: targetUserId (required)
 			- Returns: A success message and True if the calling user is blocked by the target user, a success message and False if the calling user is not blocked by the target user, an error message if an error is encountered while 		determining whether or not the calling user has been blocked by the target user
@@ -751,11 +751,62 @@ Users can view all of the events they have joined/created, as well as their stat
 			```
 	- REST Interfaces:
 		- POST /block/
-		- Purpose: Adds the target user to the calling user’s blocked users
-		Parameters: 
+			- Purpose: Adds the target user to the calling user’s blocked users
+   			- Parameters: targetUserId (required). Payload is as follows:
+             ```
+              {
+  				targetUserId: string
+			  }
+             ```
+      		- Returns: Success message on success, otherwise failure message
+            ```
+              {
+  				message: string
+			  }
+             ```
 		- DELETE /block/:targetUserId
-		- GET /block	
+  			- Purpose: Removes the target user from the calling user's blocked users
+     		- Parameters: targetUserId (required). Payload is as follows:
+       		 ```
+              {
+  				targetUserId: string
+			  }
+    		```
+    		- Returns: Success message on success, otherwise failure message
+            ```
+              {
+  				message: string
+			  }
+             ```
+		- GET /block
+  			- Purpose: Gets the list of the UserIds of the calling user's blocked users.
+    		- Parameters: None
+      		- Returns: Success message along with a list of UserIds on success, error message on error
+          	```
+              {
+  				message: string
+          		data: {
+          			blockedUserIds: string[]
+			  		}
+    		   }
+             ```
 		- GET /block/check/:targetUserId
+  			- Purpose: Checks whether or not the calling user is blocked by the target user
+     		- Parameters: targetUserId (required). Payload is as follows:
+         	```
+              {
+  				targetUserId: string
+			  }
+    		```
+    		- Returns: Success message along with a boolean flag for whether or not the calling user is blocked by the target user, otherwise error message
+        	```
+              {
+  				message: string
+         		data: {
+					isBlocked: boolean
+         		}
+			  }
+    		```   
 
 
 ### **4.2. Databases**
